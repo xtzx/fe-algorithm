@@ -324,7 +324,7 @@ function twoSum_v2(nums: number[], target: number): number[] {
 - [x] Step 02: 哈希表与字符串 ✅
 - [x] Step 03: 链表 ✅
 - [x] Step 04: 栈与队列 ✅
-- [ ] Step 05: 二叉树
+- [x] Step 05: 二叉树 ✅
 - [ ] Step 06: 二分查找
 - [ ] Step 07: 回溯算法
 - [ ] Step 08: 动态规划
