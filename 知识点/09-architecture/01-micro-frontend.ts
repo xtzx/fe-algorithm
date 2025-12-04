@@ -142,10 +142,10 @@ export async function bootstrap() {
 
 export async function mount(props: any) {
   const { container, token } = props;
-  const dom = container 
-    ? container.querySelector('#root') 
+  const dom = container
+    ? container.querySelector('#root')
     : document.getElementById('root');
-  
+
   root = ReactDOM.createRoot(dom);
   root.render(<App token={token} />);
 }
@@ -351,7 +351,7 @@ export function mount(props: any) {
   props.onGlobalStateChange((state, prev) => {
     console.log('Sub app received:', state);
   });
-  
+
   props.setGlobalState({ count: 1 });
 }
 `;

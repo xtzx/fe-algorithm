@@ -249,16 +249,16 @@ interface Dependency {
 function FormRenderer({ schema, data, onSubmit }) {
   const [formData, setFormData] = useState(data);
   const [errors, setErrors] = useState({});
-  
+
   const renderedFields = useMemo(() => {
     return schema.fields.map(field => {
       // 根据依赖计算可见性
       const visible = evaluateDependencies(field.dependencies, formData);
       if (!visible) return null;
-      
+
       // 获取组件
       const Component = fieldComponents[field.type];
-      
+
       return (
         <Component
           key={field.id}
@@ -270,7 +270,7 @@ function FormRenderer({ schema, data, onSubmit }) {
       );
     });
   }, [schema, formData, errors]);
-  
+
   return <form onSubmit={handleSubmit}>{renderedFields}</form>;
 }
 `;

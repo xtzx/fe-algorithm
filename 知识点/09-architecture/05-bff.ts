@@ -92,7 +92,7 @@ function formatProduct(product) {
 // 3. 错误处理
 app.use((err, req, res, next) => {
   logger.error(err);
-  
+
   // 统一错误格式
   res.status(err.status || 500).json({
     code: err.code || 'INTERNAL_ERROR',
@@ -107,12 +107,12 @@ const cache = new LRUCache({ max: 1000, ttl: 60000 });
 app.get('/api/config', async (req, res) => {
   const cacheKey = 'app-config';
   let config = cache.get(cacheKey);
-  
+
   if (!config) {
     config = await configService.getAppConfig();
     cache.set(cacheKey, config);
   }
-  
+
   res.json(config);
 });
 `;
@@ -338,11 +338,11 @@ const securityExample = `
 // 1. JWT 认证中间件
 function authMiddleware(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
-  
+
   if (!token) {
     return res.status(401).json({ code: 401, message: 'Unauthorized' });
   }
-  
+
   try {
     const decoded = jwt.verify(token, SECRET_KEY);
     req.user = decoded;
@@ -482,20 +482,20 @@ instance.interceptors.request.use(
 instance.interceptors.response.use(
   (response) => {
     const { code, message, data } = response.data;
-    
+
     if (code !== 0) {
       // 业务错误
       handleBusinessError(code, message);
       return Promise.reject(new Error(message));
     }
-    
+
     return data;
   },
   (error: AxiosError) => {
     // HTTP 错误
     if (error.response) {
       const { status } = error.response;
-      
+
       switch (status) {
         case 401:
           // 跳转登录
@@ -512,7 +512,7 @@ instance.interceptors.response.use(
       // 网络错误
       message.error('网络异常');
     }
-    
+
     return Promise.reject(error);
   }
 );
@@ -521,13 +521,13 @@ instance.interceptors.response.use(
 export const request = {
   get: <T>(url: string, config?: AxiosRequestConfig) =>
     instance.get<any, T>(url, config),
-    
+
   post: <T>(url: string, data?: any, config?: AxiosRequestConfig) =>
     instance.post<any, T>(url, data, config),
-    
+
   put: <T>(url: string, data?: any, config?: AxiosRequestConfig) =>
     instance.put<any, T>(url, data, config),
-    
+
   delete: <T>(url: string, config?: AxiosRequestConfig) =>
     instance.delete<any, T>(url, config),
 };

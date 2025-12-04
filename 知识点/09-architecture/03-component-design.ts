@@ -116,7 +116,7 @@ const TabsUsageExample = `
 <Tabs defaultTab="tab1" onChange={handleChange}>
   <Tabs.Tab value="tab1">Tab 1</Tabs.Tab>
   <Tabs.Tab value="tab2">Tab 2</Tabs.Tab>
-  
+
   <Tabs.Panel value="tab1">Content 1</Tabs.Panel>
   <Tabs.Panel value="tab2">Content 2</Tabs.Panel>
 </Tabs>
@@ -337,7 +337,7 @@ function LoginForm() {
         onChange={handleChange('email')}
       />
       {errors.email && <span>{errors.email}</span>}
-      
+
       <button disabled={isSubmitting}>Submit</button>
     </form>
   );
@@ -461,7 +461,7 @@ const ThemeContext = createContext<Theme>(defaultTheme);
 
 function ThemeProvider({ theme, children }) {
   const mergedTheme = { ...defaultTheme, ...theme };
-  
+
   return (
     <ThemeContext.Provider value={mergedTheme}>
       <style>

@@ -218,7 +218,7 @@ const useBearStore = create<BearState>()(
 function BearCounter() {
   const bears = useBearStore((state) => state.bears);
   const increase = useBearStore((state) => state.increase);
-  
+
   return (
     <div>
       <span>{bears}</span>
@@ -312,7 +312,7 @@ const userAtom = atom(async (get) => {
 function Counter() {
   const [count, setCount] = useAtom(countAtom);
   const doubleCount = useAtomValue(doubleCountAtom);
-  
+
   return <div>{count} x 2 = {doubleCount}</div>;
 }
 `;
@@ -347,7 +347,7 @@ function useUser(userId: string) {
 // 变更
 function useUpdateUser() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: updateUser,
     // 乐观更新
@@ -372,10 +372,10 @@ function useUpdateUser() {
 function UserProfile({ userId }) {
   const { data, isLoading, error } = useUser(userId);
   const updateUser = useUpdateUser();
-  
+
   if (isLoading) return <Loading />;
   if (error) return <Error />;
-  
+
   return (
     <div>
       <h1>{data.name}</h1>
@@ -481,7 +481,7 @@ const useStore = create((set) => ({
   addToCart: (product) => set((state) => ({
     cart: [...state.cart, product]
   })),
-  
+
   // UI 状态
   sidebarOpen: false,
   toggleSidebar: () => set((state) => ({
