@@ -765,7 +765,7 @@ A: 1. 结构属性：return、child、sibling（链表结构）
 A: 双缓冲是同时维护两棵 Fiber 树：
    - current 树：当前显示
    - workInProgress 树：正在构建
-   
+
    好处：
    1. 构建失败可丢弃，不影响当前显示
    2. 构建过程可中断
@@ -776,7 +776,7 @@ A: 双缓冲是同时维护两棵 Fiber 树：
 A: 深度优先遍历，分两个阶段：
    1. "递"阶段（beginWork）：从根向下处理
    2. "归"阶段（completeWork）：从下向上
-   
+
    顺序：先 child，后 sibling，再 return
 
 💡 Q5: flags 有什么作用？
