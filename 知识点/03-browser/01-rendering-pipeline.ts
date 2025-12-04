@@ -141,7 +141,7 @@
  * <html>                          Document
  *   <head>                           │
  *     <title>Hi</title>         ┌────┴────┐
- *   </head>                   html        
+ *   </head>                   html
  *   <body>                      │
  *     <p>Hello</p>        ┌─────┴─────┐
  *   </body>              head        body
@@ -298,15 +298,15 @@
 const scriptLoading = `
   <!-- 普通脚本：阻塞解析 -->
   <script src="main.js"></script>
-  
+
   <!-- async：异步下载，下载完立即执行 -->
   <!-- 适合：独立脚本（统计、广告） -->
   <script async src="analytics.js"></script>
-  
+
   <!-- defer：异步下载，DOMContentLoaded 前执行 -->
   <!-- 适合：需要 DOM 的脚本 -->
   <script defer src="app.js"></script>
-  
+
   <!-- module：默认 defer 行为 -->
   <script type="module" src="module.js"></script>
 `;

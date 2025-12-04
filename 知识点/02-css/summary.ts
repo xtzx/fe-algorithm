@@ -25,6 +25,15 @@
  *
  * 切换：box-sizing: content-box | border-box
  * 推荐：全局使用 border-box
+ *
+ * ⚠️ 易错点：
+ * - margin 不计入盒模型尺寸，但影响布局
+ * - outline 不占用空间，不影响布局
+ * - 行内元素的垂直 padding/margin 有特殊表现
+ *
+ * 💡 面试追问：
+ * Q: 为什么推荐 border-box？
+ * A: 更直观，设置 width 就是最终宽度，方便计算布局
  */
 
 /**
@@ -36,12 +45,22 @@
  * - float 不为 none
  * - position 为 absolute/fixed
  * - display 为 inline-block/flex/grid/table-cell 等
- * - overflow 不为 visible
+ * - overflow 不为 visible（推荐 auto）
+ * - display: flow-root（最佳方案，无副作用）
  *
  * 作用：
  * - 清除浮动（解决高度塌陷）
  * - 防止 margin 折叠
  * - 阻止元素被浮动元素覆盖
+ *
+ * ⚠️ 易错点：
+ * - overflow: hidden 会裁剪内容，不是所有场景都适用
+ * - flex/grid 容器天然是 BFC
+ * - BFC 只能包含子元素的浮动，不能包含自身
+ *
+ * 💡 面试追问：
+ * Q: 还有哪些格式化上下文？
+ * A: IFC（行内）、GFC（Grid）、FFC（Flex）
  */
 
 /**
@@ -59,6 +78,19 @@
  * - flex-shrink：缩小比例
  * - flex-basis：初始大小
  * - flex: 1 = flex: 1 1 0%
+ *
+ * ⚠️ 易错点：
+ * - flex: 1 和 flex: auto 不同（0% vs auto）
+ * - flex-shrink 默认是 1，元素会收缩
+ * - min-width 默认是 auto，可能导致内容溢出
+ *
+ * 💡 面试追问：
+ * Q: flex: 1 具体代表什么？
+ * A: flex-grow: 1, flex-shrink: 1, flex-basis: 0%
+ *    元素会平分剩余空间
+ *
+ * Q: 如何让 flex 子元素不收缩？
+ * A: flex-shrink: 0 或 min-width: 0
  */
 
 /**

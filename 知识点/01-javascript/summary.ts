@@ -24,6 +24,15 @@
  * - 缺点：跨 iframe 失效
  *
  * 最准确的方式：Object.prototype.toString.call()
+ *
+ * ⚠️ 易错点：
+ * - typeof function 返回 "function"，但函数也是对象
+ * - typeof NaN 返回 "number"
+ * - [] instanceof Object 也是 true
+ *
+ * 💡 面试追问：为什么 typeof null === 'object'？
+ * - 历史遗留 bug，JS 早期用低位标记类型，null 全零被误判为对象
+ * - 修复会破坏现有代码，所以保留
  */
 
 /**
@@ -55,7 +64,18 @@
  * - 柯里化
  * - React Hooks
  *
- * 注意：不当使用可能导致内存泄漏
+ * ⚠️ 易错点：
+ * - 循环中 var 配合闭包的陷阱（let 可解决）
+ * - 闭包引用的是变量本身，不是值的快照
+ * - 不必要的闭包会占用内存
+ *
+ * 💡 面试追问：
+ * Q: 闭包为什么会导致内存泄漏？
+ * A: 函数引用外部变量，即使函数不再使用，
+ *    变量也不会被回收，需要手动解除引用
+ *
+ * Q: React Hooks 依赖数组和闭包的关系？
+ * A: Hooks 回调形成闭包，依赖数组决定是否重新创建闭包
  */
 
 /**
@@ -99,6 +119,19 @@
  * 微任务：Promise.then、MutationObserver、queueMicrotask
  *
  * 关键：微任务优先级高于宏任务
+ *
+ * ⚠️ 易错点：
+ * - setTimeout(fn, 0) 不是立即执行，最小延迟 4ms
+ * - Promise 构造函数中的代码是同步执行的
+ * - async/await 后面的代码相当于 then 回调（微任务）
+ * - Node.js 事件循环和浏览器有区别（process.nextTick、setImmediate）
+ *
+ * 💡 面试追问：
+ * Q: 微任务执行过程中产生的新微任务如何处理？
+ * A: 会在当前微任务队列中继续执行，直到清空
+ *
+ * Q: requestAnimationFrame 是宏任务还是微任务？
+ * A: 都不是，它在渲染前执行，每帧一次
  */
 
 /**

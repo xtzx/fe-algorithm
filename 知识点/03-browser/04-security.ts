@@ -227,16 +227,16 @@ function escapeHtml(str: string): string {
 // 4. CSP（内容安全策略）
 const cspExample = `
   <!-- HTTP 响应头 -->
-  Content-Security-Policy: 
+  Content-Security-Policy:
     default-src 'self';                    // 只允许同源资源
     script-src 'self' 'nonce-abc123';      // 脚本需要 nonce
     style-src 'self' 'unsafe-inline';       // 允许内联样式
     img-src *;                              // 图片可从任意来源
     connect-src 'self' https://api.example.com;  // AJAX 限制
-  
+
   <!-- HTML 标签 -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'">
-  
+
   <!-- 带 nonce 的脚本 -->
   <script nonce="abc123">
     // 这个脚本可以执行
@@ -299,7 +299,7 @@ const csrfToken = `
     <input type="text" name="amount">
     <button type="submit">转账</button>
   </form>
-  
+
   // 服务器验证 token 是否有效
   // 攻击者无法获取 token，请求会失败
 `;
@@ -309,7 +309,7 @@ const refererCheck = `
   // 服务器检查请求来源
   const referer = req.headers.referer;
   const origin = req.headers.origin;
-  
+
   if (!referer?.startsWith('https://bank.com') &&
       !origin?.startsWith('https://bank.com')) {
     return res.status(403).send('CSRF detected');
@@ -320,14 +320,14 @@ const refererCheck = `
 const doubleCookie = `
   // 服务器设置 Cookie
   Set-Cookie: csrf=random-value
-  
+
   // 前端请求时，将 Cookie 值放入请求头
   fetch('/api', {
     headers: {
       'X-CSRF-Token': getCookie('csrf')
     }
   })
-  
+
   // 服务器验证 Cookie 和 Header 是否匹配
   // 攻击者无法读取 Cookie，无法设置正确的 Header
 `;
@@ -366,19 +366,19 @@ const doubleCookie = `
 const securityHeaders = `
   // 防止点击劫持
   X-Frame-Options: DENY
-  
+
   // 禁止 MIME 类型嗅探
   X-Content-Type-Options: nosniff
-  
+
   // 启用 XSS 过滤器（已废弃，用 CSP 替代）
   X-XSS-Protection: 1; mode=block
-  
+
   // 强制 HTTPS
   Strict-Transport-Security: max-age=31536000; includeSubDomains
-  
+
   // 控制 Referer
   Referrer-Policy: strict-origin-when-cross-origin
-  
+
   // 权限策略
   Permissions-Policy: geolocation=(), microphone=()
 `;

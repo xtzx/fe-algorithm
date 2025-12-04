@@ -27,6 +27,20 @@
  * 11. 分层：创建图层树
  * 12. 绘制：生成绘制指令
  * 13. 合成：合成图层，显示
+ *
+ * ⚠️ 关键细节：
+ * - DNS 查询可能是递归或迭代
+ * - HTTP/2 可以复用 TCP 连接
+ * - CSS 不阻塞 DOM 解析，但阻塞渲染
+ * - JS 阻塞 DOM 解析（除非 async/defer）
+ * - 渲染进程和 GPU 进程协作完成合成
+ *
+ * 💡 面试追问：
+ * Q: 为什么 CSS 放 head，JS 放 body 底部？
+ * A: CSS 尽早加载避免白屏，JS 放底部不阻塞解析
+ *
+ * Q: DOMContentLoaded 和 load 的区别？
+ * A: DOMContentLoaded 是 DOM 解析完成，load 是所有资源加载完成
  */
 
 /**
@@ -48,6 +62,19 @@
  * - 缓存布局信息
  * - 脱离文档流后修改
  * - 使用 will-change
+ *
+ * ⚠️ 易错点：
+ * - 读取 offsetTop 等会强制同步布局
+ * - will-change 过度使用会消耗内存
+ * - visibility: hidden 会重绘，display: none 不会
+ * - transform/opacity 只跳过布局/绘制，不跳过合成
+ *
+ * 💡 面试追问：
+ * Q: 为什么 transform 性能好？
+ * A: transform 创建合成层，GPU 加速，不触发布局和绘制
+ *
+ * Q: 哪些操作会触发强制同步布局？
+ * A: 读取 offsetTop、scrollTop、getComputedStyle 等
  */
 
 /**
@@ -61,6 +88,18 @@
  * 关键概念：
  * - 隐藏类：优化属性访问
  * - 内联缓存：缓存属性查找结果
+ *
+ * ⚠️ 易错点：
+ * - 频繁改变对象形状会导致隐藏类失效
+ * - 动态类型会阻碍优化
+ * - try-catch 内的代码以前不会被优化（现在已改善）
+ *
+ * 💡 面试追问：
+ * Q: 什么情况会触发反优化（Deoptimization）？
+ * A: 类型假设失效、隐藏类变化、异常抛出
+ *
+ * Q: 如何写出 V8 友好的代码？
+ * A: 固定对象形状、避免 delete、使用 TypedArray、避免稀疏数组
  */
 
 /**
@@ -80,6 +119,20 @@
  * 优化：
  * - 增量标记
  * - 并发标记
+ *
+ * ⚠️ 常见内存泄漏场景：
+ * - 意外的全局变量
+ * - 未清理的定时器/事件监听
+ * - 闭包引用
+ * - 脱离 DOM 的引用
+ * - console.log 打印的对象（开发环境）
+ *
+ * 💡 面试追问：
+ * Q: WeakMap 和 Map 的区别？
+ * A: WeakMap 键是弱引用，不阻止垃圾回收
+ *
+ * Q: 如何排查内存泄漏？
+ * A: Chrome DevTools Memory 面板，对比堆快照
  */
 
 /**
@@ -288,7 +341,7 @@
  * - 禁止 eval
  *
  * 示例：
- * Content-Security-Policy: 
+ * Content-Security-Policy:
  *   default-src 'self';
  *   script-src 'self' 'nonce-xxx';
  *   style-src 'self' 'unsafe-inline';

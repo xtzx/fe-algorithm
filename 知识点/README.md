@@ -636,7 +636,7 @@
 - [x] Step 01: JavaScript 核心 ✅
 - [x] Step 02: CSS 深入 ✅
 - [x] Step 03: 浏览器原理 ✅
-- [ ] Step 04: 网络协议
+- [x] Step 04: 网络协议 ✅
 
 ### 进阶篇
 - [ ] Step 05: 性能优化

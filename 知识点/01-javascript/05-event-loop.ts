@@ -478,5 +478,86 @@ function isMainThread(): boolean {
   return typeof window !== 'undefined' && typeof window.document !== 'undefined';
 }
 
+// ============================================================
+// 🔥 高频面试追问（增强版）
+// ============================================================
+
+/**
+ * 追问 1：setTimeout(fn, 0) 真的是 0 毫秒吗？
+ *
+ * 不是！
+ * - HTML5 规范：嵌套超过 5 层，最小延迟 4ms
+ * - 浏览器实现：通常最小 1ms-4ms
+ * - 非活动标签页：可能被节流到 1000ms+
+ *
+ * 💡 如果需要更快的异步，用 queueMicrotask 或 MessageChannel
+ */
+
+/**
+ * 追问 2：Promise.then 一定是异步吗？
+ *
+ * 是的！即使 Promise 已经 resolved
+ * then 回调也会被放入微任务队列
+ *
+ * Promise.resolve().then(() => console.log(1));
+ * console.log(2);
+ * // 输出：2, 1
+ */
+
+/**
+ * 追问 3：async/await 如何影响事件循环？
+ *
+ * async 函数返回 Promise
+ * await 后面的代码相当于 then 回调
+ *
+ * async function foo() {
+ *   console.log(1);        // 同步
+ *   await Promise.resolve();
+ *   console.log(2);        // 微任务
+ * }
+ * foo();
+ * console.log(3);
+ * // 输出：1, 3, 2
+ */
+
+/**
+ * 追问 4：requestAnimationFrame 和 setTimeout 的区别？
+ *
+ * setTimeout：宏任务，时间不精确
+ * requestAnimationFrame：
+ * - 渲染前执行
+ * - 与屏幕刷新率同步（60fps = 16.6ms）
+ * - 页面不可见时暂停
+ * - 适合做动画
+ */
+
+/**
+ * 追问 5：Node.js 事件循环和浏览器有什么区别？
+ *
+ * Node.js 有 6 个阶段：
+ * timers → I/O callbacks → idle/prepare → poll → check → close
+ *
+ * 特殊 API：
+ * - process.nextTick：比微任务更优先
+ * - setImmediate：check 阶段执行
+ *
+ * ⚠️ Node.js 11+ 行为已与浏览器基本一致
+ */
+
+/**
+ * 追问 6：如何让浏览器在两个宏任务之间渲染？
+ *
+ * 方案 1：setTimeout
+ * setTimeout(() => { /* 第一个任务 */ }, 0);
+ * setTimeout(() => { /* 第二个任务 */ }, 0);
+ *
+ * 方案 2：MessageChannel（更快）
+ * const channel = new MessageChannel();
+ * channel.port1.onmessage = () => { /* 任务 */ };
+ * channel.port2.postMessage(null);
+ *
+ * ⚠️ 微任务不会让出主线程给渲染
+ */
+
 export { nextTick, timeSlice, isMainThread };
 
