@@ -105,7 +105,7 @@ let nextOldFiber = null;                       // 下一个旧 Fiber
 
 // 第一轮遍历
 for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
-  
+
   // 处理旧节点索引大于新节点索引的情况
   if (oldFiber.index > newIdx) {
     nextOldFiber = oldFiber;
@@ -132,7 +132,7 @@ for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
 
   // 处理复用情况...
   lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
-  
+
   // 构建新 Fiber 链表
   if (previousNewFiber === null) {
     resultingFirstChild = newFiber;
@@ -208,10 +208,10 @@ if (oldFiber === null) {
   for (; newIdx < newChildren.length; newIdx++) {
     const newFiber = createChild(returnFiber, newChildren[newIdx], lanes);
     if (newFiber === null) continue;
-    
+
     // 标记为需要插入
     lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
-    
+
     // 构建链表
     if (previousNewFiber === null) {
       resultingFirstChild = newFiber;
@@ -237,7 +237,7 @@ for (; newIdx < newChildren.length; newIdx++) {
     newChildren[newIdx],
     lanes,
   );
-  
+
   if (newFiber !== null) {
     if (newFiber.alternate !== null) {
       // 复用了，从 Map 中删除
@@ -261,7 +261,7 @@ const mapRemainingChildrenExplanation = `
 
 function mapRemainingChildren(returnFiber, currentFirstChild) {
   const existingChildren = new Map();
-  
+
   let existingChild = currentFirstChild;
   while (existingChild !== null) {
     if (existingChild.key !== null) {
@@ -273,7 +273,7 @@ function mapRemainingChildren(returnFiber, currentFirstChild) {
     }
     existingChild = existingChild.sibling;
   }
-  
+
   return existingChildren;
 }
 
@@ -305,11 +305,11 @@ function placeChild(newFiber, lastPlacedIndex, newIndex) {
   newFiber.index = newIndex;  // 更新索引
 
   const current = newFiber.alternate;
-  
+
   if (current !== null) {
     // 复用的节点，判断是否需要移动
     const oldIndex = current.index;  // 旧位置
-    
+
     if (oldIndex < lastPlacedIndex) {
       // ⭐ 旧位置 < 最后放置位置 → 需要移动
       newFiber.flags |= Placement;

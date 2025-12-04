@@ -340,7 +340,7 @@ const singleTextDiff = `
 Diff 过程:
 1. 检查第一个旧节点是否是文本节点
    child.tag === HostText?
-   
+
 2. 如果是文本节点 → 复用，只更新内容
 3. 如果不是文本节点 → 删除所有旧节点，创建新文本节点
 
@@ -353,7 +353,7 @@ function reconcileSingleTextNode(returnFiber, currentFirstChild, textContent) {
     existing.return = returnFiber;
     return existing;
   }
-  
+
   // 删除旧节点，创建新文本节点
   deleteRemainingChildren(returnFiber, currentFirstChild);
   const created = createFiberFromText(textContent, returnFiber.mode, lanes);

@@ -198,16 +198,16 @@ function reconcileChildFibers(returnFiber, currentFirstChild, newChild, lanes) {
       case REACT_PORTAL_TYPE:
         return reconcileSinglePortal(...);
     }
-    
+
     if (isArray(newChild)) {
       return reconcileChildrenArray(...);    // 多个子元素（核心！）
     }
   }
-  
+
   if (typeof newChild === 'string' || typeof newChild === 'number') {
     return reconcileSingleTextNode(...);     // 文本节点
   }
-  
+
   return deleteRemainingChildren(...);       // 其他情况删除所有
 }
 `;

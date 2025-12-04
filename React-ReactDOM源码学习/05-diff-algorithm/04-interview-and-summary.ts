@@ -161,10 +161,10 @@ A: O(n)。通过三个策略降低复杂度：
 
 💡 Q2: 为什么不能用 index 作为 key？
 A: 当列表发生重排时，index 会改变：
-   
+
    旧: [A(key=0), B(key=1), C(key=2)]
    新: [C(key=0), A(key=1), B(key=2)]  // 反转
-   
+
    React 认为 key=0 的元素从 A 变成了 C，会更新内容而不是移动。
    这导致：
    1. 不必要的 DOM 更新
@@ -181,7 +181,7 @@ A: 每次渲染 key 都变化，React 认为所有节点都是新的：
 A: 针对不同场景优化：
    - 第一轮：处理「更新」（最常见场景），O(n) 线性扫描
    - 第二轮：处理「新增/删除/移动」，使用 Map 优化查找
-   
+
    大多数情况第一轮就能完成，保证常见场景性能最优
 
 💡 Q5: placeChild 中 lastPlacedIndex 的作用是什么？
@@ -189,7 +189,7 @@ A: 用于判断节点是否需要移动：
    - lastPlacedIndex 记录「最后一个不需要移动的节点」的旧位置
    - 如果当前节点的旧位置 < lastPlacedIndex，说明它需要移动
    - 这是一种「找最长递增子序列」的简化实现
-   
+
    示例：旧 [A,B,C,D] → 新 [A,C,D,B]
    - A: oldIndex=0, lastPlacedIndex=0, 不移动
    - C: oldIndex=2 > 0, lastPlacedIndex=2, 不移动
@@ -207,26 +207,26 @@ A: Diff 结果是给 Fiber 打上 flags 标记：
    - Placement: 需要插入或移动
    - ChildDeletion: 有子节点需要删除
    - Update: 需要更新属性
-   
+
    副作用在 Commit 阶段的 Mutation 子阶段执行。
 
 💡 Q8: React Diff 和 Vue Diff 有什么区别？
-A: 
+A:
    React（单向遍历）:
    - 从左到右遍历
    - 使用 lastPlacedIndex 判断移动
    - 思路简单，但移动可能不是最优
-   
+
    Vue2（双端比较）:
    - 新旧各两个指针
    - 头头、尾尾、头尾、尾头四种比较
    - 更快找到移动节点
-   
+
    Vue3（最长递增子序列）:
    - 先双端比较处理两端不变的
    - 中间部分用最长递增子序列
    - 移动次数最少
-   
+
    为什么 React 不用双端？
    - Fiber 是单向链表，没有 prev 指针
    - 增加 prev 会增加内存和维护成本
@@ -235,14 +235,14 @@ A:
 A: deleteChild 函数：
    1. 将要删除的 Fiber 加入 returnFiber.deletions 数组
    2. 给 returnFiber 添加 ChildDeletion flag
-   
+
    Commit 阶段：
    1. 递归调用 componentWillUnmount
    2. 从 DOM 树移除节点
    3. 清理 ref
 
 💡 Q10: 为什么 Fiber 的结构是单向链表而不是数组？
-A: 
+A:
    1. 增删更高效：链表 O(1)，数组 O(n)
    2. 遍历可中断：保存当前指针即可恢复
    3. 内存友好：不需要预分配空间

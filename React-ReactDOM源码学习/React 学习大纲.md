@@ -15,6 +15,29 @@
 4. **性能优化**：基于原理进行有针对性的性能优化
 5. **架构能力**：学习顶级开源项目的工程化实践
 
+
+
+
+Phase 0: 架构设计 - 工程化/包设计/核心包
+
+Phase 1: JSX 与 React 元素
+
+Phase 2: Fiber 架构
+
+Phase 3: 渲染流程
+
+Phase 4: Hooks 原理
+
+Phase 5: Diff 算法
+
+Phase 6: 调度机制
+
+Phase 7: 并发特性
+
+Phase 8: 事件系统
+
+
+
 ---
 
 ## Part 1: 工程化架构设计
@@ -59,6 +82,7 @@
 ```
 
 **学习要点**：
+
 - 理解为什么 React 项目需要 40+ 个包
 - 理解包之间的依赖关系管理
 - 理解统一版本发布的好处
@@ -148,6 +172,7 @@ const moduleTypes = {
 ```
 
 **学习要点**：
+
 - React 需要为 10+ 种环境构建不同版本
 - 理解 dev/prod/profiling 三种构建的区别
 - 理解 Facebook 内部版本 vs 开源版本的差异
@@ -198,6 +223,7 @@ if (__EXPERIMENTAL__) {
 ```
 
 **构建流程**：
+
 ```
 源码 → Babel 转换 → Rollup 打包 → Closure Compiler 压缩
                                           ↓
@@ -414,6 +440,7 @@ function resolveDispatcher() {
 ```
 
 **为什么这样设计？**
+
 - 允许不同环境有不同实现
 - react-dom 和 react-native 可以有不同的 Hooks 实现
 - 支持 DEV/PROD 不同行为
@@ -559,6 +586,7 @@ export function commitUpdate(domElement, updatePayload) {
 ```
 
 **为什么独立成包？**
+
 - 可以被非 React 项目使用
 - 方便独立测试和优化
 - 未来可能成为浏览器标准（scheduler.postTask）
@@ -601,28 +629,28 @@ export const enableSyncDefaultUpdates = true;
 
 ### 2.3 所有包一览表
 
-| 分类 | 包名 | 说明 | 重要程度 |
-|------|------|------|---------|
-| **核心** | react | React API（Hooks、JSX、Component） | ⭐⭐⭐⭐ |
-| **核心** | react-reconciler | 协调器（Fiber、Diff、更新队列） | ⭐⭐⭐⭐⭐ |
-| **核心** | scheduler | 调度器（时间切片、优先级） | ⭐⭐⭐ |
-| **核心** | shared | 共享代码（Symbol、工具函数） | ⭐⭐ |
-| **渲染器** | react-dom | Web DOM 渲染 | ⭐⭐⭐⭐ |
-| **渲染器** | react-native-renderer | React Native 渲染 | ⭐⭐ |
-| **渲染器** | react-art | Canvas/SVG 渲染 | ⭐ |
-| **渲染器** | react-test-renderer | 测试渲染器 | ⭐⭐ |
-| **渲染器** | react-noop-renderer | 空渲染器（测试用） | ⭐ |
-| **工具** | react-is | 类型判断 | ⭐⭐ |
-| **工具** | use-sync-external-store | 外部状态同步 | ⭐⭐ |
-| **工具** | use-subscription | 订阅管理 | ⭐ |
-| **开发** | eslint-plugin-react-hooks | Hooks 规则检查 | ⭐⭐⭐ |
-| **开发** | react-refresh | 快速刷新（HMR） | ⭐⭐ |
-| **开发** | react-devtools* | DevTools 系列 | ⭐⭐ |
-| **服务端** | react-server | Server Components 核心 | ⭐⭐ |
-| **服务端** | react-server-dom-webpack | Webpack 集成 | ⭐⭐ |
-| **服务端** | react-client | 客户端 RSC 消费 | ⭐⭐ |
-| **实验性** | react-cache | 缓存（实验） | ⭐ |
-| **实验性** | react-fetch | 数据获取（实验） | ⭐ |
+| 分类             | 包名                      | 说明                               | 重要程度   |
+| ---------------- | ------------------------- | ---------------------------------- | ---------- |
+| **核心**   | react                     | React API（Hooks、JSX、Component） | ⭐⭐⭐⭐   |
+| **核心**   | react-reconciler          | 协调器（Fiber、Diff、更新队列）    | ⭐⭐⭐⭐⭐ |
+| **核心**   | scheduler                 | 调度器（时间切片、优先级）         | ⭐⭐⭐     |
+| **核心**   | shared                    | 共享代码（Symbol、工具函数）       | ⭐⭐       |
+| **渲染器** | react-dom                 | Web DOM 渲染                       | ⭐⭐⭐⭐   |
+| **渲染器** | react-native-renderer     | React Native 渲染                  | ⭐⭐       |
+| **渲染器** | react-art                 | Canvas/SVG 渲染                    | ⭐         |
+| **渲染器** | react-test-renderer       | 测试渲染器                         | ⭐⭐       |
+| **渲染器** | react-noop-renderer       | 空渲染器（测试用）                 | ⭐         |
+| **工具**   | react-is                  | 类型判断                           | ⭐⭐       |
+| **工具**   | use-sync-external-store   | 外部状态同步                       | ⭐⭐       |
+| **工具**   | use-subscription          | 订阅管理                           | ⭐         |
+| **开发**   | eslint-plugin-react-hooks | Hooks 规则检查                     | ⭐⭐⭐     |
+| **开发**   | react-refresh             | 快速刷新（HMR）                    | ⭐⭐       |
+| **开发**   | react-devtools*           | DevTools 系列                      | ⭐⭐       |
+| **服务端** | react-server              | Server Components 核心             | ⭐⭐       |
+| **服务端** | react-server-dom-webpack  | Webpack 集成                       | ⭐⭐       |
+| **服务端** | react-client              | 客户端 RSC 消费                    | ⭐⭐       |
+| **实验性** | react-cache               | 缓存（实验）                       | ⭐         |
+| **实验性** | react-fetch               | 数据获取（实验）                   | ⭐         |
 
 ---
 
