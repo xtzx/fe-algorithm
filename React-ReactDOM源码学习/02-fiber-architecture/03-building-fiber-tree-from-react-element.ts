@@ -102,7 +102,7 @@ export function createFiberFromTypeAndProps(
   let resolvedType = type;
 
   // ========== 判断 type 类型，决定 tag ==========
-  
+
   if (typeof type === 'function') {
     // 函数或类
     if (shouldConstruct(type)) {
@@ -122,7 +122,7 @@ export function createFiberFromTypeAndProps(
         return createFiberFromSuspense(pendingProps, mode, lanes, key);
       // ... 其他特殊类型
     }
-    
+
     // 检查 $$typeof（Provider、Consumer、ForwardRef、Memo 等）
     if (typeof type === 'object' && type !== null) {
       switch (type.$$typeof) {
@@ -450,7 +450,7 @@ function workLoop() {
 function performUnitOfWork(fiber) {
   // ========== beginWork 阶段 ==========
   const next = beginWork(fiber);  // 返回 child 或 null
-  
+
   if (next !== null) {
     // 有 child，继续向下
     workInProgress = next;
@@ -462,22 +462,22 @@ function performUnitOfWork(fiber) {
 
 function completeUnitOfWork(fiber) {
   let completedWork = fiber;
-  
+
   while (completedWork !== null) {
     // ========== completeWork 阶段 ==========
     completeWork(completedWork);
-    
+
     const sibling = completedWork.sibling;
     if (sibling !== null) {
       // 有 sibling，beginWork(sibling)
       workInProgress = sibling;
       return;
     }
-    
+
     // 没有 sibling，继续向上完成 parent
     completedWork = completedWork.return;
   }
-  
+
   // 到达根节点，整棵树处理完成
   workInProgress = null;
 }
@@ -497,8 +497,8 @@ const fullBuildDemo = `
 组件代码:
 ─────────────────────────
 
-function Child() { 
-  return <span>child</span>; 
+function Child() {
+  return <span>child</span>;
 }
 
 function App() {

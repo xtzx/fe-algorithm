@@ -117,7 +117,7 @@ alternate 的作用:
 
    function createWorkInProgress(current, pendingProps) {
      let workInProgress = current.alternate;
-     
+
      if (workInProgress === null) {
        // 首次渲染：创建新的 Fiber
        workInProgress = createFiber(...);
@@ -131,7 +131,7 @@ alternate 的作用:
        workInProgress.deletions = null;
        // ... 复制其他需要的属性
      }
-     
+
      return workInProgress;
    }
 
@@ -140,12 +140,12 @@ alternate 的作用:
    ─────────────────────────
 
    在 Render 阶段，可以通过 alternate 访问"当前显示的状态"
-   
+
    // 在 workInProgress 上工作时
    const current = workInProgress.alternate;
    const oldProps = current?.memoizedProps;
    const newProps = workInProgress.pendingProps;
-   
+
    // 比较新旧 props，决定是否需要更新
 
 
@@ -157,7 +157,7 @@ alternate 的作用:
 
    // Commit 完成后
    fiberRoot.current = finishedWork;  // finishedWork 是 workInProgress 树的根
-   
+
    // 这样：
    // - 原 workInProgress 变成新的 current（显示给用户）
    // - 原 current 变成新的 alternate（等待下次复用）
@@ -308,7 +308,7 @@ const createWorkInProgressAnalysis = `
 // 核心函数：为 current Fiber 创建/复用 workInProgress
 export function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
   let workInProgress = current.alternate;
-  
+
   // ========== 分支 1：首次渲染，alternate 不存在 ==========
   if (workInProgress === null) {
     // 创建新的 Fiber
@@ -318,52 +318,52 @@ export function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
       current.key,
       current.mode,
     );
-    
+
     // 复制 Instance 相关字段
     workInProgress.elementType = current.elementType;
     workInProgress.type = current.type;
     workInProgress.stateNode = current.stateNode;  // 共享 DOM 节点
-    
+
     // 建立双向引用
     workInProgress.alternate = current;
     current.alternate = workInProgress;
-  } 
+  }
   // ========== 分支 2：更新渲染，复用 alternate ==========
   else {
     // 更新 props
     workInProgress.pendingProps = pendingProps;
     workInProgress.type = current.type;
-    
+
     // 重置副作用（这是新一轮渲染）
     workInProgress.flags = NoFlags;
     workInProgress.subtreeFlags = NoFlags;
     workInProgress.deletions = null;
   }
-  
+
   // ========== 公共部分：复制需要的字段 ==========
-  
+
   // 复制 Lane 相关
   workInProgress.flags = current.flags & StaticMask;  // 保留静态 flags
   workInProgress.childLanes = current.childLanes;
   workInProgress.lanes = current.lanes;
-  
+
   // 复制树关系（后续会被更新）
   workInProgress.child = current.child;
   workInProgress.sibling = current.sibling;
   workInProgress.index = current.index;
   workInProgress.ref = current.ref;
-  
+
   // 复制状态
   workInProgress.memoizedProps = current.memoizedProps;
   workInProgress.memoizedState = current.memoizedState;
   workInProgress.updateQueue = current.updateQueue;
-  
+
   // 复制 Context 依赖
   workInProgress.dependencies = current.dependencies === null
     ? null
-    : { lanes: current.dependencies.lanes, 
+    : { lanes: current.dependencies.lanes,
         firstContext: current.dependencies.firstContext };
-  
+
   return workInProgress;
 }
 
