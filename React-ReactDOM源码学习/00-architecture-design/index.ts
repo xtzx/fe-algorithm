@@ -835,7 +835,7 @@ export function commitTextUpdate(textInstance, oldText, newText) {
 
 const interviewQuestions = `
 💡 Q1: React 为什么选择 Monorepo？
-A: 
+A:
    1. 代码共享方便（shared 包）
    2. 原子化提交（一次修改多个包）
    3. 统一的构建和测试流程
