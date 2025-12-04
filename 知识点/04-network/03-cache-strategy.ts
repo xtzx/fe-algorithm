@@ -306,7 +306,7 @@ const cacheFirst = `
         })
     );
   });
-  
+
   // 适用：静态资源、不常更新的内容
 `;
 
@@ -329,7 +329,7 @@ const networkFirst = `
         })
     );
   });
-  
+
   // 适用：需要最新数据，但也要离线支持
 `;
 
@@ -349,21 +349,21 @@ const staleWhileRevalidate = `
       })
     );
   });
-  
+
   // 适用：频繁访问，允许短暂不一致
 `;
 
 // 4. Cache Only
 const cacheOnly = `
   event.respondWith(caches.match(event.request));
-  
+
   // 适用：离线页面、预缓存的静态资源
 `;
 
 // 5. Network Only
 const networkOnly = `
   event.respondWith(fetch(event.request));
-  
+
   // 适用：必须从网络获取的请求
 `;
 

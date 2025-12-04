@@ -60,7 +60,7 @@ function shortPolling(url: string, interval: number = 3000) {
 
   async function poll() {
     if (stopped) return;
-    
+
     try {
       const response = await fetch(url);
       const data = await response.json();
@@ -104,7 +104,7 @@ async function longPolling(url: string, onMessage: (data: any) => void) {
           // 超时时间应该比服务端挂起时间长
           signal: AbortSignal.timeout(60000),
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           onMessage(data);
@@ -190,22 +190,22 @@ const sseServerExample = `
   Content-Type: text/event-stream
   Cache-Control: no-cache
   Connection: keep-alive
-  
+
   // 响应体格式
   data: Hello World                    // 默认消息
-  
+
   event: notification                  // 自定义事件
   data: {"type": "new_message"}
-  
+
   id: 123                              // 消息 ID（用于重连）
   data: Message with ID
-  
+
   retry: 5000                          // 重连间隔（毫秒）
-  
+
   // 多行数据
   data: Line 1
   data: Line 2
-  
+
   // 消息之间用空行分隔
 `;
 
@@ -332,7 +332,7 @@ class WebSocketClient {
 
     // 指数退避
     const delay = this.reconnectInterval * Math.pow(2, this.reconnectAttempts - 1);
-    
+
     setTimeout(() => {
       this.connect().catch(console.error);
     }, Math.min(delay, 30000)); // 最大 30 秒
@@ -342,7 +342,7 @@ class WebSocketClient {
   private handleMessage(data: string) {
     try {
       const message = JSON.parse(data);
-      
+
       // 心跳响应
       if (message.type === 'pong') {
         return;
@@ -415,34 +415,34 @@ class WebSocketClient {
 const socketIOExample = `
   // 客户端
   import { io } from "socket.io-client";
-  
+
   const socket = io("http://localhost:3000", {
     reconnection: true,
     reconnectionAttempts: 5,
     reconnectionDelay: 1000,
   });
-  
+
   // 连接
   socket.on("connect", () => {
     console.log("Connected:", socket.id);
   });
-  
+
   // 监听事件
   socket.on("message", (data) => {
     console.log("Received:", data);
   });
-  
+
   // 发送事件
   socket.emit("chat", { text: "Hello" });
-  
+
   // 带回调的发送
   socket.emit("chat", { text: "Hello" }, (response) => {
     console.log("Ack:", response);
   });
-  
+
   // 加入房间
   socket.emit("join-room", "room-123");
-  
+
   // 离开房间
   socket.emit("leave-room", "room-123");
 `;

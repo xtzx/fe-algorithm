@@ -234,14 +234,14 @@
 function jsonp(url: string, callbackName: string): Promise<any> {
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    
+
     // 全局回调函数
     (window as any)[callbackName] = (data: any) => {
       resolve(data);
       document.body.removeChild(script);
       delete (window as any)[callbackName];
     };
-    
+
     script.src = `${url}?callback=${callbackName}`;
     script.onerror = reject;
     document.body.appendChild(script);
@@ -260,7 +260,7 @@ const proxyConfig = `
       }
     }
   }
-  
+
   // Nginx 配置
   location /api {
     proxy_pass http://backend.example.com;
@@ -292,7 +292,7 @@ const proxyConfig = `
  *
  * 💡 面试追问：
  * Q: JWT 如何实现登出？
- * A: 
+ * A:
  * - 方案 1：维护 Token 黑名单
  * - 方案 2：设置较短过期时间 + Refresh Token
  * - 方案 3：修改用户密钥使所有 Token 失效
@@ -372,7 +372,7 @@ class HttpClient {
 
   private async request<T>(url: string, options: RequestInit = {}): Promise<T> {
     const fullUrl = `${this.config.baseURL}${url}`;
-    
+
     // 添加 token
     const token = localStorage.getItem('token');
     const headers: Record<string, string> = {
