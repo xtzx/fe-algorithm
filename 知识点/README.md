@@ -635,7 +635,7 @@
 ### 基础篇
 - [x] Step 01: JavaScript 核心 ✅
 - [x] Step 02: CSS 深入 ✅
-- [ ] Step 03: 浏览器原理
+- [x] Step 03: 浏览器原理 ✅
 - [ ] Step 04: 网络协议
 
 ### 进阶篇

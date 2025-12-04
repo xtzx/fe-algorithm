@@ -38,12 +38,12 @@
 const bemExample = `
   /* Block: 独立组件 */
   .card {}
-  
+
   /* Element: 组件的一部分 */
   .card__header {}
   .card__body {}
   .card__footer {}
-  
+
   /* Modifier: 状态或变体 */
   .card--primary {}
   .card--disabled {}
@@ -63,16 +63,16 @@ const cssModulesExample = `
   .button {
     padding: 10px 20px;
   }
-  
+
   /* 编译后 */
   .styles_title_x7s2 {
     font-size: 24px;
   }
-  
+
   /* React 中使用 */
   // import styles from './styles.module.css';
   // <h1 className={styles.title}>Hello</h1>
-  
+
   /* 组合样式 */
   .title {
     composes: base from './base.module.css';
@@ -92,20 +92,20 @@ const cssInJsExample = `
     padding: 10px 20px;
     background: \${props => props.primary ? 'blue' : 'gray'};
     color: white;
-    
+
     &:hover {
       opacity: 0.8;
     }
-    
+
     \${props => props.large && css\`
       padding: 15px 30px;
       font-size: 18px;
     \`}
   \`;
-  
+
   // 使用
   // <Button primary large>Click</Button>
-  
+
   // Emotion
   const buttonStyle = css\`
     padding: 10px 20px;
@@ -127,12 +127,12 @@ const atomicCssExample = `
       Click
     </button>
   </div>
-  
+
   <!-- 优点 -->
   - 几乎零 CSS 体积增长（高度复用）
   - 无需命名
   - 样式与标记紧密关联
-  
+
   <!-- 缺点 -->
   - HTML 较臃肿
   - 学习成本
@@ -178,12 +178,12 @@ const scssFeatures = `
   // 1. 变量
   $primary-color: #1890ff;
   $spacing: 8px;
-  
+
   .button {
     background: $primary-color;
     padding: $spacing * 2;
   }
-  
+
   // 2. 嵌套
   .nav {
     ul {
@@ -199,14 +199,14 @@ const scssFeatures = `
       }
     }
   }
-  
+
   // 3. Mixin（混入）
   @mixin flex-center {
     display: flex;
     justify-content: center;
     align-items: center;
   }
-  
+
   @mixin ellipsis($lines: 1) {
     @if $lines == 1 {
       overflow: hidden;
@@ -219,42 +219,42 @@ const scssFeatures = `
       overflow: hidden;
     }
   }
-  
+
   .card {
     @include flex-center;
     .title {
       @include ellipsis(2);
     }
   }
-  
+
   // 4. 继承
   %button-base {
     padding: 10px 20px;
     border: none;
     border-radius: 4px;
   }
-  
+
   .btn-primary {
     @extend %button-base;
     background: $primary-color;
   }
-  
+
   // 5. 函数
   @function rem($px) {
     @return $px / 16 * 1rem;
   }
-  
+
   .text {
     font-size: rem(24);  // 1.5rem
   }
-  
+
   // 6. 循环
   @for $i from 1 through 5 {
     .mt-#{$i} {
       margin-top: $i * 8px;
     }
   }
-  
+
   // 7. 条件
   @mixin theme($mode) {
     @if $mode == dark {
@@ -307,7 +307,7 @@ const postcssConfig = `
       }),
     ]
   };
-  
+
   // 移动端适配
   // postcss.config.js
   module.exports = {
@@ -354,13 +354,13 @@ const designTokenExample = `
     --color-gray-100: #f5f5f5;
     --color-gray-200: #e5e5e5;
     --color-gray-900: #171717;
-    
+
     --color-blue-500: #1890ff;
     --color-blue-600: #096dd9;
-    
+
     --color-red-500: #ff4d4f;
     --color-green-500: #52c41a;
-    
+
     /* 间距 */
     --spacing-1: 4px;
     --spacing-2: 8px;
@@ -368,7 +368,7 @@ const designTokenExample = `
     --spacing-4: 16px;
     --spacing-6: 24px;
     --spacing-8: 32px;
-    
+
     /* 字体 */
     --font-size-xs: 12px;
     --font-size-sm: 14px;
@@ -376,27 +376,27 @@ const designTokenExample = `
     --font-size-lg: 18px;
     --font-size-xl: 20px;
     --font-size-2xl: 24px;
-    
+
     --font-weight-normal: 400;
     --font-weight-medium: 500;
     --font-weight-bold: 700;
-    
+
     /* 圆角 */
     --radius-sm: 2px;
     --radius-base: 4px;
     --radius-lg: 8px;
     --radius-full: 9999px;
-    
+
     /* 阴影 */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
     --shadow-base: 0 4px 6px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-    
+
     /* 过渡 */
     --transition-fast: 150ms ease;
     --transition-base: 300ms ease;
   }
-  
+
   /* 2. 语义 Token */
   :root {
     /* 颜色语义 */
@@ -404,18 +404,18 @@ const designTokenExample = `
     --color-primary-hover: var(--color-blue-600);
     --color-success: var(--color-green-500);
     --color-error: var(--color-red-500);
-    
+
     --color-text-primary: var(--color-gray-900);
     --color-text-secondary: var(--color-gray-600);
     --color-text-disabled: var(--color-gray-400);
-    
+
     --color-bg-page: var(--color-gray-50);
     --color-bg-container: #fff;
     --color-bg-elevated: #fff;
-    
+
     --color-border: var(--color-gray-200);
   }
-  
+
   /* 3. 组件 Token */
   :root {
     /* Button */
@@ -424,12 +424,12 @@ const designTokenExample = `
     --button-height-lg: 40px;
     --button-padding-x: var(--spacing-4);
     --button-border-radius: var(--radius-base);
-    
+
     /* Input */
     --input-height: 32px;
     --input-border-color: var(--color-border);
     --input-focus-border-color: var(--color-primary);
-    
+
     /* Card */
     --card-padding: var(--spacing-4);
     --card-border-radius: var(--radius-lg);
@@ -454,20 +454,20 @@ const themeWithCSSVariables = `
     --color-text: #333333;
     --color-primary: #1890ff;
   }
-  
+
   /* 暗色主题 */
   [data-theme="dark"] {
     --color-bg: #1a1a1a;
     --color-text: #ffffff;
     --color-primary: #177ddc;
   }
-  
+
   /* 使用变量 */
   body {
     background-color: var(--color-bg);
     color: var(--color-text);
   }
-  
+
   /* JavaScript 切换 */
   // document.documentElement.setAttribute('data-theme', 'dark');
 `;
@@ -478,17 +478,17 @@ const themeWithMediaQuery = `
     --color-bg: #ffffff;
     --color-text: #333333;
   }
-  
+
   @media (prefers-color-scheme: dark) {
     :root {
       --color-bg: #1a1a1a;
       --color-text: #ffffff;
     }
   }
-  
+
   /* JavaScript 检测 */
   // const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  
+
   /* 监听变化 */
   // window.matchMedia('(prefers-color-scheme: dark)')
   //   .addEventListener('change', e => {
@@ -506,7 +506,7 @@ const themeWithCSSinJS = `
       primary: '#1890ff',
     }
   };
-  
+
   const darkTheme = {
     colors: {
       bg: '#1a1a1a',
@@ -514,12 +514,12 @@ const themeWithCSSinJS = `
       primary: '#177ddc',
     }
   };
-  
+
   // 使用 ThemeProvider
   // <ThemeProvider theme={isDark ? darkTheme : lightTheme}>
   //   <App />
   // </ThemeProvider>
-  
+
   // 组件中使用
   // const Button = styled.button\`
   //   background: \${props => props.theme.colors.primary};

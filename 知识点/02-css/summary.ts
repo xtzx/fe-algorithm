@@ -245,7 +245,7 @@ const triangle = `
     border: 50px solid transparent;
     border-bottom-color: red;
   }
-  
+
   /* 等边三角形 */
   .equilateral {
     width: 0;
@@ -264,13 +264,13 @@ const twoColumn = `
   .container { display: flex; }
   .left { width: 200px; flex-shrink: 0; }
   .right { flex: 1; }
-  
+
   /* Grid */
   .container {
     display: grid;
     grid-template-columns: 200px 1fr;
   }
-  
+
   /* 浮动 + BFC */
   .left { float: left; width: 200px; }
   .right { overflow: hidden; }
@@ -284,7 +284,7 @@ const threeColumn = `
   .container { display: flex; }
   .left, .right { width: 200px; flex-shrink: 0; }
   .center { flex: 1; }
-  
+
   /* Grid */
   .container {
     display: grid;
@@ -302,7 +302,7 @@ const textEllipsis = `
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  
+
   /* 多行 */
   .multi-line {
     display: -webkit-box;
@@ -322,7 +322,7 @@ const clearFloat = `
     display: block;
     clear: both;
   }
-  
+
   /* 或者：触发 BFC */
   .parent {
     overflow: hidden;
@@ -338,13 +338,13 @@ const equalHeight = `
     display: flex;
     /* align-items 默认 stretch */
   }
-  
+
   /* Grid */
   .container {
     display: grid;
     grid-auto-flow: column;
   }
-  
+
   /* Table */
   .container { display: table; }
   .item { display: table-cell; }

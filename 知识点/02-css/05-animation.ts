@@ -26,19 +26,19 @@ const transitionBasic = `
   .button {
     background: #1890ff;
     transform: scale(1);
-    
+
     /* 单个属性 */
     transition: background 0.3s ease;
-    
+
     /* 多个属性 */
-    transition: 
+    transition:
       background 0.3s ease,
       transform 0.2s ease-out;
-    
+
     /* 所有属性 */
     transition: all 0.3s ease;  /* 不推荐：性能差 */
   }
-  
+
   .button:hover {
     background: #096dd9;
     transform: scale(1.05);
@@ -69,15 +69,15 @@ const timingFunctions = `
   .ease-smooth {
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
+
   .ease-bounce {
     transition-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55);
   }
-  
+
   .ease-elastic {
     transition-timing-function: cubic-bezier(0.68, -0.6, 0.32, 1.6);
   }
-  
+
   /* steps 阶梯函数 - 逐帧动画 */
   .sprite-animation {
     transition: background-position 0.5s steps(8);
@@ -108,7 +108,7 @@ const animationBasic = `
       transform: translateY(0);
     }
   }
-  
+
   @keyframes bounce {
     0%, 100% {
       transform: translateY(0);
@@ -117,12 +117,12 @@ const animationBasic = `
       transform: translateY(-30px);
     }
   }
-  
+
   /* 使用动画 */
   .fade-in {
     animation: fadeIn 0.5s ease forwards;
   }
-  
+
   .bounce {
     animation: bounce 1s ease-in-out infinite;
   }
@@ -144,23 +144,23 @@ const animationBasic = `
 const animationAdvanced = `
   /* 多动画组合 */
   .complex-animation {
-    animation: 
+    animation:
       fadeIn 0.5s ease forwards,
       pulse 2s ease-in-out 0.5s infinite;
   }
-  
+
   /* 延迟序列动画 */
   .item:nth-child(1) { animation-delay: 0s; }
   .item:nth-child(2) { animation-delay: 0.1s; }
   .item:nth-child(3) { animation-delay: 0.2s; }
   .item:nth-child(4) { animation-delay: 0.3s; }
-  
+
   /* CSS 变量控制延迟 */
   .item {
     animation: fadeIn 0.5s ease forwards;
     animation-delay: calc(var(--i) * 0.1s);
   }
-  
+
   /* 悬停暂停 */
   .carousel {
     animation: scroll 20s linear infinite;
@@ -195,7 +195,7 @@ const transformExamples = `
   .card-2d {
     transform: translateY(-10px) rotate(5deg) scale(1.1);
   }
-  
+
   /* 3D 变换 */
   .card-3d {
     perspective: 1000px;  /* 在父元素上设置 */
@@ -203,7 +203,7 @@ const transformExamples = `
   .card-3d:hover .front {
     transform: rotateY(180deg);
   }
-  
+
   /* 3D 翻转卡片 */
   .flip-card {
     perspective: 1000px;
@@ -224,7 +224,7 @@ const transformExamples = `
   .flip-card-back {
     transform: rotateY(180deg);
   }
-  
+
   /* transform-origin 变换原点 */
   .rotate-corner {
     transform-origin: top left;
@@ -266,7 +266,7 @@ const performanceOptimization = `
     left: 100px;
     top: 50px;
   }
-  
+
   /* ✅ 推荐：使用 transform */
   .good-animation {
     transition: transform 0.3s;
@@ -274,12 +274,12 @@ const performanceOptimization = `
   .good-animation:hover {
     transform: translate(100px, 50px);
   }
-  
+
   /* ❌ 避免：使用 width/height 做动画 */
   .bad-resize {
     transition: width 0.3s, height 0.3s;
   }
-  
+
   /* ✅ 推荐：使用 scale */
   .good-resize {
     transition: transform 0.3s;
@@ -287,12 +287,12 @@ const performanceOptimization = `
   .good-resize:hover {
     transform: scale(1.5);
   }
-  
+
   /* will-change 提升性能 */
   .will-animate {
     will-change: transform, opacity;
   }
-  
+
   /* 动画结束后移除 */
   .animated {
     animation: slideIn 0.5s ease forwards;
@@ -325,45 +325,45 @@ const performanceOptimization = `
 
 const flipExample = `
   /* FLIP 动画示例 */
-  
+
   // JavaScript 实现
   function flipAnimate(element, callback) {
     // 1. First - 记录初始状态
     const first = element.getBoundingClientRect();
-    
+
     // 2. Last - 执行 DOM 变化
     callback();
-    
+
     // 3. 记录最终状态
     const last = element.getBoundingClientRect();
-    
+
     // 4. Invert - 计算差值
     const deltaX = first.left - last.left;
     const deltaY = first.top - last.top;
     const deltaW = first.width / last.width;
     const deltaH = first.height / last.height;
-    
+
     // 5. 应用反转变换
     element.style.transform = \`
-      translate(\${deltaX}px, \${deltaY}px) 
+      translate(\${deltaX}px, \${deltaY}px)
       scale(\${deltaW}, \${deltaH})
     \`;
     element.style.transformOrigin = 'top left';
-    
+
     // 强制重绘
     element.offsetHeight;
-    
+
     // 6. Play - 添加过渡并移除变换
     element.style.transition = 'transform 0.3s ease';
     element.style.transform = '';
-    
+
     // 清理
     element.addEventListener('transitionend', () => {
       element.style.transition = '';
       element.style.transformOrigin = '';
     }, { once: true });
   }
-  
+
   // 使用
   // flipAnimate(card, () => {
   //   card.classList.toggle('expanded');
@@ -394,7 +394,7 @@ const commonAnimations = `
     from { opacity: 0; }
     to { opacity: 1; }
   }
-  
+
   @keyframes fadeInUp {
     from {
       opacity: 0;
@@ -405,7 +405,7 @@ const commonAnimations = `
       transform: translateY(0);
     }
   }
-  
+
   /* 2. 缩放 */
   @keyframes scaleIn {
     from {
@@ -417,7 +417,7 @@ const commonAnimations = `
       transform: scale(1);
     }
   }
-  
+
   @keyframes pulse {
     0%, 100% {
       transform: scale(1);
@@ -426,20 +426,20 @@ const commonAnimations = `
       transform: scale(1.05);
     }
   }
-  
+
   /* 3. 旋转 */
   @keyframes spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
   }
-  
+
   /* 4. 抖动 */
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-10px); }
     75% { transform: translateX(10px); }
   }
-  
+
   /* 5. 弹跳 */
   @keyframes bounce {
     0%, 20%, 50%, 80%, 100% {
@@ -452,7 +452,7 @@ const commonAnimations = `
       transform: translateY(-15px);
     }
   }
-  
+
   /* 6. 骨架屏 Shimmer */
   @keyframes shimmer {
     0% {
@@ -472,7 +472,7 @@ const commonAnimations = `
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
   }
-  
+
   /* 7. 加载动画 */
   .spinner {
     width: 40px;
@@ -482,7 +482,7 @@ const commonAnimations = `
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
-  
+
   /* 8. 打字机效果 */
   @keyframes typing {
     from { width: 0; }
@@ -492,7 +492,7 @@ const commonAnimations = `
     overflow: hidden;
     white-space: nowrap;
     border-right: 2px solid;
-    animation: 
+    animation:
       typing 3s steps(30, end),
       blink 0.5s step-end infinite alternate;
   }

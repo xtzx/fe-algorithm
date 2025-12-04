@@ -87,7 +87,7 @@ const remAdaptive = `
   //   rootValue: 75,
   //   propList: ['*']
   // }
-  
+
   .box {
     width: 2rem;     /* 设计稿 150px */
     height: 1.33rem; /* 设计稿 100px */
@@ -114,7 +114,7 @@ const vwAdaptive = `
   //   unitPrecision: 5,
   //   viewportUnit: 'vw'
   // }
-  
+
   .box {
     width: 20vw;     /* 设计稿 150px */
     height: 13.33vw; /* 设计稿 100px */
@@ -132,7 +132,7 @@ const remVwAdaptive = `
   html {
     font-size: 10vw;  /* 1rem = 视口宽度的 10% */
   }
-  
+
   /* 限制最大最小值 */
   @media screen and (max-width: 320px) {
     html { font-size: 32px; }
@@ -140,7 +140,7 @@ const remVwAdaptive = `
   @media screen and (min-width: 750px) {
     html { font-size: 75px; }
   }
-  
+
   .box {
     width: 2rem;     /* 150px */
     font-size: 0.28rem;
@@ -181,7 +181,7 @@ const mediaQueryExample = `
     width: 100%;
     padding: 15px;
   }
-  
+
   /* 平板 */
   @media screen and (min-width: 768px) {
     .container {
@@ -189,21 +189,21 @@ const mediaQueryExample = `
       margin: 0 auto;
     }
   }
-  
+
   /* 桌面 */
   @media screen and (min-width: 1024px) {
     .container {
       width: 970px;
     }
   }
-  
+
   /* 大桌面 */
   @media screen and (min-width: 1200px) {
     .container {
       width: 1170px;
     }
   }
-  
+
   /* 暗色模式 */
   @media (prefers-color-scheme: dark) {
     body {
@@ -211,7 +211,7 @@ const mediaQueryExample = `
       color: #fff;
     }
   }
-  
+
   /* 减少动画（无障碍） */
   @media (prefers-reduced-motion: reduce) {
     * {
@@ -267,7 +267,7 @@ const containerQueryExample = `
     /* container-type: normal;    不作为容器 */
     container-name: card;         /* 可选：命名容器 */
   }
-  
+
   /* 2. 基于容器大小应用样式 */
   @container (min-width: 400px) {
     .card {
@@ -275,14 +275,14 @@ const containerQueryExample = `
       gap: 20px;
     }
   }
-  
+
   /* 3. 指定容器名称 */
   @container card (min-width: 600px) {
     .card {
       flex-direction: row;
     }
   }
-  
+
   /* 4. 容器查询单位 */
   .card {
     /* cqw: 容器宽度的 1% */
@@ -307,9 +307,9 @@ const responsiveImageExample = `
     max-width: 100%;
     height: auto;
   }
-  
+
   /* 2. srcset + sizes */
-  <img 
+  <img
     src="small.jpg"
     srcset="
       small.jpg 480w,
@@ -323,7 +323,7 @@ const responsiveImageExample = `
     "
     alt="响应式图片"
   >
-  
+
   /* 3. picture 元素 */
   <picture>
     <source media="(min-width: 1200px)" srcset="large.webp" type="image/webp">
@@ -332,7 +332,7 @@ const responsiveImageExample = `
     <source media="(min-width: 800px)" srcset="medium.jpg">
     <img src="small.jpg" alt="响应式图片">
   </picture>
-  
+
   /* 4. object-fit 控制图片填充 */
   .cover-image {
     width: 100%;
@@ -370,15 +370,15 @@ const onePxBorder = `
     transform-origin: left top;
     pointer-events: none;
   }
-  
+
   /* 方案 2：viewport + rem（整体缩放） */
   /* 在 JS 中根据 devicePixelRatio 设置 initial-scale */
-  
+
   /* 方案 3：box-shadow */
   .border-1px {
     box-shadow: 0 0 0 0.5px #ccc;
   }
-  
+
   /* 方案 4：border-image + SVG */
 `;
 
@@ -391,11 +391,11 @@ const safeAreaExample = `
     padding-top: constant(safe-area-inset-top);     /* iOS 11.0-11.2 */
     padding-top: env(safe-area-inset-top);          /* iOS 11.2+ */
   }
-  
+
   .footer {
     padding-bottom: env(safe-area-inset-bottom);
   }
-  
+
   /* 需要在 viewport 中添加 */
   /* <meta name="viewport" content="..., viewport-fit=cover"> */
 `;
@@ -408,9 +408,9 @@ const clickDelayExample = `
   .button {
     touch-action: manipulation;  /* 移除双击缩放，消除 300ms 延迟 */
   }
-  
+
   /* 方案 2：viewport width=device-width 已自动处理 */
-  
+
   /* 方案 3：FastClick 库（旧方案） */
 `;
 
@@ -425,7 +425,7 @@ const orientationExample = `
   @media screen and (orientation: portrait) {
     /* 竖屏样式 */
   }
-  
+
   /* JavaScript 监听 */
   // window.addEventListener('orientationchange', () => {
   //   console.log(screen.orientation.angle);
@@ -465,17 +465,17 @@ const responsiveBestPractice = `
     max-width: 1200px;
     margin: 0 auto;
   }
-  
+
   .card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: clamp(1rem, 3vw, 2rem);
   }
-  
+
   .title {
     font-size: clamp(1.5rem, 4vw, 3rem);  /* 响应式字体 */
   }
-  
+
   /* 使用 CSS 变量管理断点 */
   :root {
     --container-padding: 1rem;
