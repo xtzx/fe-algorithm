@@ -246,10 +246,10 @@ const starTemplate = `
 ### Action（行动）
 1. 技术方案设计
    - xxx
-   
+
 2. 核心实现
    - xxx
-   
+
 3. 难点解决
    - 问题：xxx
    - 分析：xxx
