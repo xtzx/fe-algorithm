@@ -56,17 +56,17 @@ function deepClone<T>(target: T, map = new WeakMap()): T {
 
   // 3. 处理特殊对象
   const constructor = (target as any).constructor;
-  
+
   // Date
   if (target instanceof Date) {
     return new Date(target.getTime()) as T;
   }
-  
+
   // RegExp
   if (target instanceof RegExp) {
     return new RegExp(target.source, target.flags) as T;
   }
-  
+
   // Map
   if (target instanceof Map) {
     const result = new Map();
@@ -76,7 +76,7 @@ function deepClone<T>(target: T, map = new WeakMap()): T {
     });
     return result as T;
   }
-  
+
   // Set
   if (target instanceof Set) {
     const result = new Set();
@@ -86,13 +86,13 @@ function deepClone<T>(target: T, map = new WeakMap()): T {
     });
     return result as T;
   }
-  
+
   // ArrayBuffer
   if (target instanceof ArrayBuffer) {
     const result = target.slice(0);
     return result as T;
   }
-  
+
   // TypedArray
   if (ArrayBuffer.isView(target)) {
     const result = new (constructor as any)(
@@ -105,23 +105,23 @@ function deepClone<T>(target: T, map = new WeakMap()): T {
 
   // 4. 处理数组和普通对象
   const result = Array.isArray(target) ? [] : Object.create(Object.getPrototypeOf(target));
-  
+
   // 存入 map，处理循环引用
   map.set(target, result);
-  
+
   // 5. 复制普通属性
   for (const key in target) {
     if (Object.prototype.hasOwnProperty.call(target, key)) {
       result[key] = deepClone((target as any)[key], map);
     }
   }
-  
+
   // 6. 复制 Symbol 属性
   const symbolKeys = Object.getOwnPropertySymbols(target);
   for (const symbolKey of symbolKeys) {
     result[symbolKey] = deepClone((target as any)[symbolKey], map);
   }
-  
+
   return result as T;
 }
 
@@ -142,17 +142,17 @@ function cloneFunction(fn: Function): Function {
   if (!fn.prototype) {
     return fn; // 箭头函数无法复制，直接返回
   }
-  
+
   // 使用 new Function 复制
   const fnStr = fn.toString();
   const bodyStart = fnStr.indexOf('{') + 1;
   const bodyEnd = fnStr.lastIndexOf('}');
   const body = fnStr.substring(bodyStart, bodyEnd);
-  
+
   const paramStart = fnStr.indexOf('(') + 1;
   const paramEnd = fnStr.indexOf(')');
   const params = fnStr.substring(paramStart, paramEnd);
-  
+
   return new Function(params, body);
 }
 
@@ -173,33 +173,33 @@ function deepCloneIterative<T>(target: T): T {
 
   const map = new WeakMap();
   const root = Array.isArray(target) ? [] : {};
-  
+
   // 使用栈模拟递归
   const stack: Array<{
     parent: any;
     key: string | symbol | undefined;
     source: any;
   }> = [{ parent: null, key: undefined, source: target }];
-  
+
   map.set(target, root);
 
   while (stack.length > 0) {
     const { parent, key, source } = stack.pop()!;
-    
+
     let clone: any;
-    
+
     if (map.has(source)) {
       clone = map.get(source);
     } else {
       clone = Array.isArray(source) ? [] : {};
       map.set(source, clone);
-      
+
       // 添加子节点到栈
       const keys = [
         ...Object.keys(source),
         ...Object.getOwnPropertySymbols(source),
       ];
-      
+
       for (const k of keys) {
         const value = source[k];
         if (value !== null && typeof value === 'object') {
@@ -209,12 +209,12 @@ function deepCloneIterative<T>(target: T): T {
         }
       }
     }
-    
+
     if (parent !== null && key !== undefined) {
       parent[key] = clone;
     }
   }
-  
+
   return root as T;
 }
 

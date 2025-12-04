@@ -103,9 +103,9 @@ class EnhancedEventEmitter {
     if (!this.events.has(event)) {
       this.events.set(event, []);
     }
-    
+
     const handlers = this.events.get(event)!;
-    
+
     // 检查最大监听器数量
     if (handlers.length >= this.maxListeners) {
       console.warn(
@@ -113,7 +113,7 @@ class EnhancedEventEmitter {
         `${handlers.length + 1} ${String(event)} listeners added.`
       );
     }
-    
+
     handlers.push(handler);
     return this;
   }
@@ -146,11 +146,11 @@ class EnhancedEventEmitter {
 
     // 复制数组，防止在回调中修改
     const handlersToCall = [...handlers];
-    
+
     for (const handler of handlersToCall) {
       try {
         const result = handler(...args);
-        
+
         // 处理异步错误
         if (this.captureRejections && result instanceof Promise) {
           result.catch(error => {
@@ -166,7 +166,7 @@ class EnhancedEventEmitter {
         }
       }
     }
-    
+
     return true;
   }
 
@@ -184,14 +184,14 @@ class EnhancedEventEmitter {
   waitFor(event: string | symbol, timeout?: number): Promise<any[]> {
     return new Promise((resolve, reject) => {
       let timeoutId: ReturnType<typeof setTimeout> | undefined;
-      
+
       const handler = (...args: any[]) => {
         if (timeoutId) clearTimeout(timeoutId);
         resolve(args);
       };
-      
+
       this.once(event, handler);
-      
+
       if (timeout) {
         timeoutId = setTimeout(() => {
           this.off(event, handler);
@@ -341,13 +341,13 @@ class DOMEventDelegator {
   on(eventType: string, selector: string, handler: EventHandler): this {
     if (!this.handlers.has(eventType)) {
       this.handlers.set(eventType, new Map());
-      
+
       // 在 root 上添加事件监听
       this.root.addEventListener(eventType, (e) => {
         this.handleEvent(eventType, e);
       });
     }
-    
+
     this.handlers.get(eventType)!.set(selector, handler);
     return this;
   }
@@ -360,13 +360,13 @@ class DOMEventDelegator {
   private handleEvent(eventType: string, event: Event): void {
     const target = event.target as HTMLElement;
     const handlers = this.handlers.get(eventType);
-    
+
     if (!handlers) return;
-    
+
     handlers.forEach((handler, selector) => {
       // 向上查找匹配的元素
       let element: HTMLElement | null = target;
-      
+
       while (element && element !== this.root) {
         if (element.matches(selector)) {
           handler.call(element, event);
@@ -463,7 +463,7 @@ eventBus.emit('user:update', { id: 1, name: 'Tom' });
 useEffect(() => {
   const handler = (data) => setData(data);
   eventBus.on('data:change', handler);
-  
+
   return () => {
     eventBus.off('data:change', handler);
   };
@@ -481,12 +481,12 @@ class WebSocketClient extends EventEmitter {
   constructor(url: string) {
     super();
     this.ws = new WebSocket(url);
-    
+
     this.ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       this.emit(data.type, data.payload);
     };
-    
+
     this.ws.onopen = () => this.emit('connected');
     this.ws.onclose = () => this.emit('disconnected');
     this.ws.onerror = (e) => this.emit('error', e);
@@ -515,22 +515,22 @@ class PluginSystem extends EventEmitter {
 
   register(name: string, plugin: any) {
     this.plugins.set(name, plugin);
-    
+
     // 触发插件初始化钩子
     if (plugin.init) {
       plugin.init(this);
     }
-    
+
     this.emit('plugin:registered', name, plugin);
   }
 
   unregister(name: string) {
     const plugin = this.plugins.get(name);
-    
+
     if (plugin?.destroy) {
       plugin.destroy();
     }
-    
+
     this.plugins.delete(name);
     this.emit('plugin:unregistered', name);
   }
@@ -541,12 +541,12 @@ const myPlugin = {
   init(system: PluginSystem) {
     system.on('data:process', this.process);
   },
-  
+
   process(data: any) {
     // 处理数据
     return transformedData;
   },
-  
+
   destroy() {
     // 清理资源
   },

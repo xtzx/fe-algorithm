@@ -54,7 +54,7 @@ class Singleton {
 // 懒加载单例（使用闭包）
 const createSingleton = <T>(createInstance: () => T): (() => T) => {
   let instance: T | null = null;
-  
+
   return () => {
     if (instance === null) {
       instance = createInstance();
@@ -196,15 +196,15 @@ class ImageProxy {
 // 缓存代理
 function createCacheProxy<T extends (...args: any[]) => any>(fn: T): T {
   const cache = new Map<string, ReturnType<T>>();
-  
+
   return function(...args: Parameters<T>): ReturnType<T> {
     const key = JSON.stringify(args);
-    
+
     if (cache.has(key)) {
       console.log('Cache hit:', key);
       return cache.get(key)!;
     }
-    
+
     const result = fn(...args);
     cache.set(key, result);
     return result;
@@ -283,16 +283,16 @@ class Validator {
 
   validate(data: Record<string, string>): { valid: boolean; errors: Record<string, string> } {
     const errors: Record<string, string> = {};
-    
+
     for (const rule of this.rules) {
       const value = data[rule.field] || '';
       const strategy = strategies[rule.strategy];
-      
+
       if (strategy && !strategy.validate(value)) {
         errors[rule.field] = strategy.message;
       }
     }
-    
+
     return {
       valid: Object.keys(errors).length === 0,
       errors,
@@ -344,14 +344,14 @@ function measureTime<T extends (...args: any[]) => any>(fn: T): T {
 // TypeScript 装饰器
 function Log(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
   const original = descriptor.value;
-  
+
   descriptor.value = function(...args: any[]) {
     console.log(`[${propertyKey}] called with:`, args);
     const result = original.apply(this, args);
     console.log(`[${propertyKey}] returned:`, result);
     return result;
   };
-  
+
   return descriptor;
 }
 
@@ -359,14 +359,14 @@ function Debounce(delay: number) {
   return function(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
     const original = descriptor.value;
     let timeoutId: ReturnType<typeof setTimeout>;
-    
+
     descriptor.value = function(...args: any[]) {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         original.apply(this, args);
       }, delay);
     };
-    
+
     return descriptor;
   };
 }

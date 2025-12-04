@@ -246,7 +246,7 @@ const asyncAwaitImpl = `
 function asyncToGenerator(generatorFn) {
   return function(...args) {
     const gen = generatorFn.apply(this, args);
-    
+
     return new Promise((resolve, reject) => {
       function step(key, arg) {
         let result;
@@ -255,17 +255,17 @@ function asyncToGenerator(generatorFn) {
         } catch (error) {
           return reject(error);
         }
-        
+
         if (result.done) {
           return resolve(result.value);
         }
-        
+
         Promise.resolve(result.value).then(
           val => step('next', val),
           err => step('throw', err)
         );
       }
-      
+
       step('next');
     });
   };
@@ -311,7 +311,7 @@ class LRUCache {
 
   get(key: any) {
     if (!this.cache.has(key)) return -1;
-    
+
     const value = this.cache.get(key);
     // 移到最后（最近使用）
     this.cache.delete(key);

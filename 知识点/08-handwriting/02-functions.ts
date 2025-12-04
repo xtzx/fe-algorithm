@@ -27,19 +27,19 @@ function myCall<T, R>(
 ): R {
   // 处理 null/undefined
   const ctx = context ?? globalThis;
-  
+
   // 使用 Symbol 避免属性名冲突
   const key = Symbol('fn');
-  
+
   // 将函数作为对象的方法
   (ctx as any)[key] = this;
-  
+
   // 调用并获取结果
   const result = (ctx as any)[key](...args);
-  
+
   // 删除临时属性
   delete (ctx as any)[key];
-  
+
   return result;
 }
 
@@ -59,11 +59,11 @@ function myApply<T, R>(
 ): R {
   const ctx = context ?? globalThis;
   const key = Symbol('fn');
-  
+
   (ctx as any)[key] = this;
   const result = args ? (ctx as any)[key](...args) : (ctx as any)[key]();
   delete (ctx as any)[key];
-  
+
   return result;
 }
 
@@ -82,20 +82,20 @@ function myBind<T, R>(
   ...args: any[]
 ): (...newArgs: any[]) => R {
   const fn = this;
-  
+
   const boundFn = function(this: any, ...newArgs: any[]) {
     // 判断是否是 new 调用
     const isNew = this instanceof boundFn;
-    
+
     // new 调用时 this 指向新对象，否则使用绑定的 context
     return fn.apply(isNew ? this : context, [...args, ...newArgs]);
   };
-  
+
   // 保持原型链
   if (fn.prototype) {
     boundFn.prototype = Object.create(fn.prototype);
   }
-  
+
   return boundFn;
 }
 
@@ -121,7 +121,7 @@ function debounce<T extends (...args: any[]) => any>(
   options: DebounceOptions = {}
 ): T & { cancel: () => void; flush: () => void } {
   const { leading = false, trailing = true, maxWait } = options;
-  
+
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   let lastCallTime: number | undefined;
   let lastInvokeTime = 0;
@@ -238,7 +238,7 @@ function throttle<T extends (...args: any[]) => any>(
   options: ThrottleOptions = {}
 ): T & { cancel: () => void } {
   const { leading = true, trailing = true } = options;
-  
+
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   let lastTime = 0;
   let lastArgs: Parameters<T> | null = null;
@@ -254,7 +254,7 @@ function throttle<T extends (...args: any[]) => any>(
 
   function throttled(this: any, ...args: Parameters<T>): void {
     const now = Date.now();
-    
+
     if (!lastTime && !leading) {
       lastTime = now;
     }
@@ -309,10 +309,10 @@ function myNew<T>(
 ): T {
   // 1. 创建新对象，链接原型
   const obj = Object.create(constructor.prototype);
-  
+
   // 2. 执行构造函数，绑定 this
   const result = constructor.apply(obj, args);
-  
+
   // 3. 如果构造函数返回对象，则返回该对象
   return result instanceof Object ? result : obj;
 }
@@ -327,17 +327,17 @@ function myInstanceof(obj: any, constructor: Function): boolean {
   if (obj === null || typeof obj !== 'object') {
     return false;
   }
-  
+
   let proto = Object.getPrototypeOf(obj);
   const prototype = constructor.prototype;
-  
+
   while (proto !== null) {
     if (proto === prototype) {
       return true;
     }
     proto = Object.getPrototypeOf(proto);
   }
-  
+
   return false;
 }
 
@@ -412,7 +412,7 @@ function myFlat<T>(arr: T[], depth: number = 1): T[] {
   if (depth <= 0) {
     return arr.slice();
   }
-  
+
   return arr.reduce((acc: T[], item) => {
     if (Array.isArray(item)) {
       return [...acc, ...myFlat(item, depth - 1)];
@@ -432,7 +432,7 @@ function myReduce<T, U>(
 ): U {
   let acc: U;
   let startIndex: number;
-  
+
   if (initialValue !== undefined) {
     acc = initialValue;
     startIndex = 0;
@@ -443,11 +443,11 @@ function myReduce<T, U>(
     acc = arr[0] as unknown as U;
     startIndex = 1;
   }
-  
+
   for (let i = startIndex; i < arr.length; i++) {
     acc = callback(acc, arr[i], i, arr);
   }
-  
+
   return acc;
 }
 
