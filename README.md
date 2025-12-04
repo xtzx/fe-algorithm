@@ -327,7 +327,7 @@ function twoSum_v2(nums: number[], target: number): number[] {
 - [x] Step 05: 二叉树 ✅
 - [x] Step 06: 二分查找 ✅
 - [x] Step 07: 回溯算法 ✅
-- [ ] Step 08: 动态规划
+- [x] Step 08: 动态规划 ✅
 
 ---
 
