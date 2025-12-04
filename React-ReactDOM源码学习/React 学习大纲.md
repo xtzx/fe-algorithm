@@ -754,13 +754,13 @@ type Hook = {
 function mountState(initialState) {
   // 1. 创建 Hook 节点
   const hook = mountWorkInProgressHook();
-  
+
   // 2. 初始化状态
   if (typeof initialState === 'function') {
     initialState = initialState();
   }
   hook.memoizedState = hook.baseState = initialState;
-  
+
   // 3. 创建更新队列
   const queue = {
     pending: null,
@@ -770,11 +770,11 @@ function mountState(initialState) {
     lastRenderedState: initialState,
   };
   hook.queue = queue;
-  
+
   // 4. 绑定 dispatch
   const dispatch = dispatchSetState.bind(null, currentlyRenderingFiber, queue);
   queue.dispatch = dispatch;
-  
+
   return [hook.memoizedState, dispatch];
 }
 
@@ -795,7 +795,7 @@ function mountWorkInProgressHook() {
     // 添加到链表尾部
     workInProgressHook = workInProgressHook.next = hook;
   }
-  
+
   return workInProgressHook;
 }
 ```

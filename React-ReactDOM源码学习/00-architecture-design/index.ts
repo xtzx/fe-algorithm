@@ -1,18 +1,20 @@
 /**
  * ============================================================
- * 📚 React 架构设计深度解析
+ * 📚 Phase 0: React 架构设计深度解析
  * ============================================================
  *
  * 🎯 学习目标：
- * 1. 理解 React 项目的工程化架构
- * 2. 理解 Monorepo 多包设计理念
- * 3. 掌握核心包之间的依赖关系
- * 4. 学习顶级开源项目的设计思想
+ * 1. 理解 React 项目的工程化架构设计
+ * 2. 掌握 Monorepo 多包开发模式
+ * 3. 理解构建系统和优化策略
+ * 4. 掌握核心包之间的依赖关系
  *
- * 📁 核心目录：
- * - packages/       # 所有包
- * - scripts/        # 构建和工具脚本
- * - fixtures/       # 测试用例和示例
+ * 📁 核心源码位置：
+ * - package.json                     # 根配置
+ * - scripts/rollup/build.js          # 构建入口
+ * - scripts/rollup/bundles.js        # 包配置
+ * - babel.config.js                  # Babel 配置
+ * - packages/                        # 所有包
  *
  * ⏱️ 预计时间：4-6 小时
  */
@@ -23,304 +25,506 @@
 
 /**
  * =====================================================
- * 1.1 Monorepo 架构
+ * 1.1 Monorepo 架构深度解析
  * =====================================================
  *
- * React 采用 Monorepo（单仓多包）架构
+ * 📁 源码位置: package.json
  *
- * 📊 为什么选择 Monorepo？
+ * ```json
+ * {
+ *   "private": true,
+ *   "workspaces": ["packages/*"]
+ * }
+ * ```
+ *
+ * 📊 为什么 React 选择 Monorepo？
  *
  * ┌─────────────────────────────────────────────────────────────────┐
  * │                    Monorepo vs Multirepo                        │
  * │                                                                 │
- * │  Monorepo 优势：                                                │
- * │  ✅ 代码共享方便（shared 包）                                    │
- * │  ✅ 统一的构建流程                                               │
- * │  ✅ 原子化的代码提交（一次提交可跨多个包）                         │
- * │  ✅ 依赖关系清晰可见                                             │
- * │  ✅ 统一的版本管理                                               │
+ * │  问题场景：react-dom 需要修改 react-reconciler 的一个 API        │
  * │                                                                 │
- * │  适用场景：                                                      │
- * │  - 包之间有紧密的依赖关系                                        │
- * │  - 需要频繁跨包修改                                              │
- * │  - 统一的发布节奏                                                │
+ * │  Multirepo 流程：                                               │
+ * │  1. 在 react-reconciler 仓库修改                                │
+ * │  2. 发布新版本 react-reconciler@1.0.1                           │
+ * │  3. 在 react-dom 仓库更新依赖                                   │
+ * │  4. 测试 → 发布 react-dom@18.0.1                                │
+ * │  5. 如果发现问题，再重复整个流程...                              │
+ * │                                                                 │
+ * │  Monorepo 流程：                                                │
+ * │  1. 在同一个 PR 中修改两个包                                     │
+ * │  2. 统一测试                                                    │
+ * │  3. 一次性发布                                                  │
+ * │                                                                 │
+ * │  ✅ 效率提升 5-10 倍！                                          │
  * └─────────────────────────────────────────────────────────────────┘
- *
- * 📊 React 的 Monorepo 结构
- *
- * react/
- * ├── packages/          # 40+ 个包
- * │   ├── react/         # 核心 API
- * │   ├── react-dom/     # DOM 渲染器
- * │   ├── react-reconciler/  # 协调器（可复用）
- * │   ├── scheduler/     # 调度器（独立包）
- * │   └── shared/        # 共享代码
- * ├── scripts/           # 构建脚本
- * └── fixtures/          # 测试示例
  */
 
 /**
- * =====================================================
- * 1.2 构建系统（Rollup + Babel）
- * =====================================================
+ * 📊 Yarn Workspaces 工作原理
  *
- * 📊 为什么选择 Rollup 而不是 Webpack？
+ * 目录结构：
+ * ```
+ * react/
+ * ├── node_modules/
+ * │   ├── react -> ../packages/react          # 符号链接
+ * │   ├── react-dom -> ../packages/react-dom  # 符号链接
+ * │   ├── scheduler -> ../packages/scheduler  # 符号链接
+ * │   └── ... (外部依赖)
+ * └── packages/
+ *     ├── react/
+ *     ├── react-dom/
+ *     └── scheduler/
+ * ```
  *
- * | 特性 | Rollup | Webpack |
- * |------|--------|---------|
- * | 适用场景 | 库打包 | 应用打包 |
- * | Tree-shaking | 原生支持 | 需配置 |
- * | 输出格式 | 多种（ESM/CJS/UMD） | 主要 CJS |
- * | 代码体积 | 更小 | 较大 |
- * | 构建速度 | 快 | 较慢 |
+ * 优势：
+ * 1. 包之间可以直接 import，无需发布
+ * 2. 依赖统一提升到根目录，减少重复
+ * 3. 统一的 node_modules，版本一致性
+ */
+
+// ============================================================
+// 1.2 构建系统深度解析
+// ============================================================
+
+/**
+ * 📁 源码位置: scripts/rollup/build.js
  *
- * 💡 结论：库打包选 Rollup，应用打包选 Webpack/Vite
- *
- * 📁 构建脚本位置：scripts/rollup/
+ * 📊 构建流程
  *
  * ```
- * scripts/rollup/
- * ├── build.js              # 构建入口
- * ├── bundles.js            # 包配置（定义每个包的构建选项）
- * ├── modules.js            # 模块映射
- * ├── packaging.js          # 打包配置
- * ├── plugins/              # Rollup 插件
- * │   ├── closure-plugin.js # Google Closure Compiler
- * │   ├── sizes-plugin.js   # 体积统计
- * │   └── ...
- * └── shims/                # 垫片
+ * yarn build
+ *     │
+ *     ▼
+ * scripts/rollup/build.js
+ *     │
+ *     ├── 1. 解析命令行参数
+ *     │      yarn build react react-dom --type=NODE_DEV
+ *     │
+ *     ├── 2. 加载包配置
+ *     │      const Bundles = require('./bundles');
+ *     │
+ *     ├── 3. 遍历构建配置
+ *     │      for (const bundle of Bundles.bundles) { ... }
+ *     │
+ *     ├── 4. Rollup 打包
+ *     │      const result = await rollup.rollup(inputOptions);
+ *     │
+ *     ├── 5. Closure Compiler 压缩（生产版本）
+ *     │
+ *     └── 6. 输出到 build/ 目录
  * ```
  */
 
-// 构建配置示例（简化版）
-const bundleConfig = {
-  // 包名
-  bundleTypes: [
-    'NODE',           // CommonJS for Node
-    'NODE_DEV',       // Development build
-    'NODE_PROD',      // Production build (minified)
-    'FB_WWW_DEV',     // Facebook internal
-    'FB_WWW_PROD',
-    'RN_OSS_DEV',     // React Native
-    'RN_OSS_PROD',
-  ],
+/**
+ * 📊 Rollup 插件链
+ *
+ * 📁 源码位置: scripts/rollup/build.js (第 96-250 行)
+ */
 
-  // 输出格式
-  moduleTypes: {
-    'NODE': 'cjs',    // CommonJS
-    'ESM': 'esm',     // ES Modules
-    'UMD': 'umd',     // Universal Module Definition
-  },
+const rollupPluginChain = `
+Rollup 插件执行顺序：
+
+1. rollup-plugin-node-resolve
+   │  解析 node_modules 中的模块
+   ▼
+2. rollup-plugin-babel
+   │  Babel 转译（JSX、Flow 类型移除）
+   ▼
+3. rollup-plugin-commonjs
+   │  转换 CommonJS 为 ES Modules
+   ▼
+4. rollup-plugin-replace
+   │  替换环境变量（__DEV__、__PROFILE__）
+   ▼
+5. use-forks-plugin（自定义）
+   │  条件编译，选择不同实现
+   │  例：ReactFiberHooks.new.js vs ReactFiberHooks.old.js
+   ▼
+6. strip-unused-imports（自定义）
+   │  移除未使用的 import
+   ▼
+7. rollup-plugin-prettier
+   │  代码格式化（开发版本）
+   ▼
+8. closure-plugin（自定义）
+   │  Google Closure Compiler 压缩（生产版本）
+   ▼
+9. sizes-plugin（自定义）
+   │  输出体积统计
+   ▼
+输出文件
+`;
+
+/**
+ * 📊 bundles.js 核心配置解析
+ *
+ * 📁 源码位置: scripts/rollup/bundles.js
+ */
+
+// 构建类型定义
+const bundleTypes = {
+  // Node.js 环境
+  NODE_ES2015: 'NODE_ES2015',     // ES2015 语法（现代 Node）
+  NODE_ESM: 'NODE_ESM',           // ES Modules 格式
+  NODE_DEV: 'NODE_DEV',           // 开发版本（含警告）
+  NODE_PROD: 'NODE_PROD',         // 生产版本（压缩）
+  NODE_PROFILING: 'NODE_PROFILING', // 性能分析版
+
+  // 浏览器 UMD
+  UMD_DEV: 'UMD_DEV',             // UMD 开发版
+  UMD_PROD: 'UMD_PROD',           // UMD 生产版
+  UMD_PROFILING: 'UMD_PROFILING', // UMD 性能分析版
+
+  // Facebook 内部
+  FB_WWW_DEV: 'FB_WWW_DEV',       // Facebook 网站开发版
+  FB_WWW_PROD: 'FB_WWW_PROD',     // Facebook 网站生产版
+  FB_WWW_PROFILING: 'FB_WWW_PROFILING',
+
+  // React Native
+  RN_OSS_DEV: 'RN_OSS_DEV',       // RN 开源开发版
+  RN_OSS_PROD: 'RN_OSS_PROD',     // RN 开源生产版
+  RN_FB_DEV: 'RN_FB_DEV',         // RN Facebook 内部开发版
+  RN_FB_PROD: 'RN_FB_PROD',       // RN Facebook 内部生产版
 };
 
-/**
- * =====================================================
- * 1.3 Babel 配置（编译策略）
- * =====================================================
- *
- * 📁 位置：babel.config.js, scripts/babel/
- *
- * React 的 Babel 配置特点：
- *
- * 1. 按环境编译
- *    - DEV: 保留调试信息、警告
- *    - PROD: 移除 DEV-only 代码
- *
- * 2. 条件编译（类似 C 的宏）
- *    ```js
- *    if (__DEV__) {
- *      console.warn('This is development only');
- *    }
- *    ```
- *    生产构建时，__DEV__ 被替换为 false，
- *    然后被 Dead Code Elimination 移除
- *
- * 3. Flow 类型移除
- *    React 使用 Flow 做类型检查
- *    构建时移除 Flow 类型注解
- */
+// 模块类型定义
+const moduleTypes = {
+  ISOMORPHIC: 'ISOMORPHIC',       // 同构代码（如 react）
+  RENDERER: 'RENDERER',           // 渲染器（如 react-dom）
+  RENDERER_UTILS: 'RENDERER_UTILS', // 渲染器工具
+  RECONCILER: 'RECONCILER',       // 协调器
+};
+
+// react 包的构建配置示例
+const reactBundleConfig = {
+  bundleTypes: [
+    'UMD_DEV',
+    'UMD_PROD',
+    'UMD_PROFILING',
+    'NODE_DEV',
+    'NODE_PROD',
+    'FB_WWW_DEV',
+    'FB_WWW_PROD',
+    'FB_WWW_PROFILING',
+    'RN_FB_DEV',
+    'RN_FB_PROD',
+    'RN_FB_PROFILING',
+  ],
+  moduleType: 'ISOMORPHIC',
+  entry: 'react',
+  global: 'React',              // UMD 全局变量名
+  minifyWithProdErrorCodes: false,
+  wrapWithModuleBoundaries: true,
+  externals: ['ReactNativeInternalFeatureFlags'],
+};
+
+// ============================================================
+// 1.3 条件编译机制（核心！）
+// ============================================================
 
 /**
- * =====================================================
- * 1.4 本地开发流程
- * =====================================================
+ * 📁 源码中随处可见的条件编译
  *
- * 📊 开发命令
+ * 📊 条件编译变量
  *
- * ```bash
- * # 安装依赖
- * yarn install
+ * 1. __DEV__
+ *    - 开发模式标志
+ *    - 构建时替换为 true/false
+ *    - 用于：警告信息、参数校验、调试日志
  *
- * # 构建所有包
- * yarn build
+ * 2. __PROFILE__
+ *    - 性能分析模式
+ *    - 用于：Profiler 组件、性能指标收集
  *
- * # 构建特定包
- * yarn build react react-dom
- *
- * # 开发模式（watch）
- * yarn build react react-dom --type=NODE_DEV
- *
- * # 运行测试
- * yarn test
- *
- * # 运行特定测试
- * yarn test ReactHooks
- *
- * # 类型检查
- * yarn flow
- *
- * # Lint
- * yarn lint
- * ```
- *
- * 📊 本地调试（fixtures）
- *
- * fixtures/ 目录提供了各种测试场景：
- * - fixtures/dom/         # DOM 相关测试
- * - fixtures/concurrent/  # 并发模式测试
- * - fixtures/ssr/         # SSR 测试
- *
- * ```bash
- * cd fixtures/dom
- * yarn install
- * yarn start
- * ```
+ * 3. __EXPERIMENTAL__
+ *    - 实验特性标志
+ *    - 用于：新 API、未稳定功能
  */
 
-/**
- * =====================================================
- * 1.5 构建优化策略
- * =====================================================
- *
- * 📊 体积优化
- *
- * 1. Google Closure Compiler
- *    - 比 Terser 更激进的压缩
- *    - 属性名混淆
- *    - 死代码消除
- *
- * 2. 条件编译
- *    ```js
- *    // 开发版本保留
- *    if (__DEV__) {
- *      validateProps(props);
- *    }
- *    // 生产版本被移除
- *    ```
- *
- * 3. 错误码映射
- *    ```js
- *    // 开发版本
- *    throw new Error('Invalid hook call');
- *
- *    // 生产版本
- *    throw new Error(formatProdErrorMessage(321));
- *    // 错误码 321 可在官网查询详细信息
- *    ```
- *    📁 位置：scripts/error-codes/
- *
- * 4. Tree-shaking 友好
- *    - 使用 ES Modules 导出
- *    - 避免副作用
- *
- * 📊 构建产物分析
- *
- * ```
- * react.development.js     # 开发版（带警告）
- * react.production.min.js  # 生产版（压缩）
- * react.profiling.min.js   # 性能分析版
- * ```
- */
+// 条件编译示例
+const conditionalCompilationExample = `
+// 📁 源码示例（到处都有）
+
+// 1. 开发模式警告
+if (__DEV__) {
+  console.warn(
+    'Warning: Invalid prop \`%s\` supplied to \`%s\`.',
+    propName,
+    componentName
+  );
+}
+
+// 2. 开发模式参数校验
+function createElement(type, props, children) {
+  if (__DEV__) {
+    // 校验 type 是否合法
+    if (type === undefined || type === null) {
+      console.error('createElement: type is invalid');
+    }
+    // 校验 key 是否使用正确
+    if (props && props.key !== undefined) {
+      checkKeyStringCoercion(props.key);
+    }
+  }
+  // 实际创建逻辑...
+}
+
+// 3. 性能分析代码
+if (__PROFILE__) {
+  recordCommitTime();
+  recordLayoutEffectDuration(finishedWork);
+}
+
+// 4. 实验特性
+if (__EXPERIMENTAL__) {
+  // Server Components 相关代码
+  exports.experimental_use = use;
+}
+`;
 
 /**
- * =====================================================
- * 1.6 测试体系
- * =====================================================
+ * 📊 构建时替换过程
  *
- * 📁 测试配置：scripts/jest/
+ * 📁 源码位置: scripts/rollup/build.js (rollup-plugin-replace)
  *
- * 📊 测试类型
+ * ```javascript
+ * // 开发构建
+ * replace({
+ *   __DEV__: 'true',
+ *   __PROFILE__: 'true',
+ *   __EXPERIMENTAL__: 'true',
+ * })
  *
- * 1. 单元测试
- *    - 每个包的 __tests__/ 目录
- *    - Jest + React Testing Library
- *
- * 2. 集成测试
- *    - fixtures/ 目录
- *    - 真实 DOM 环境
- *
- * 3. 模糊测试（Fuzz Testing）
- *    - 随机输入测试
- *    - 边界情况覆盖
- *
- * 4. 性能测试
- *    - scripts/bench/
- *    - 基准测试对比
- */
-
-/**
- * =====================================================
- * 1.7 CI/CD 流程
- * =====================================================
- *
- * 📁 配置：scripts/circleci/
- *
- * 📊 流水线
- *
+ * // 生产构建
+ * replace({
+ *   __DEV__: 'false',           // 替换为 false
+ *   __PROFILE__: 'false',
+ *   __EXPERIMENTAL__: 'false',
+ * })
  * ```
- * PR 提交
- *    │
- *    ├── Lint Check
- *    ├── Flow Type Check
- *    ├── Unit Tests
- *    ├── Integration Tests
- *    ├── Build (多环境)
- *    └── Size Check（体积对比）
- *    │
- *    ▼
- * 合并到 main
- *    │
- *    ├── 发布到 npm（canary）
- *    └── 更新文档
+ *
+ * 替换后：
+ * ```javascript
+ * if (false) {    // __DEV__ 被替换
+ *   console.warn(...);
+ * }
+ * ```
+ *
+ * Closure Compiler Dead Code Elimination：
+ * ```javascript
+ * // 整个 if 块被移除！
  * ```
  */
 
 // ============================================================
-// Part 2: 包设计（Packages）
+// 1.4 构建优化策略
+// ============================================================
+
+/**
+ * 📊 优化策略 1: Google Closure Compiler
+ *
+ * 📁 源码位置: scripts/rollup/plugins/closure-plugin.js
+ *
+ * 为什么用 Closure Compiler 而不是 Terser？
+ *
+ * | 特性 | Closure Compiler | Terser |
+ * |------|------------------|--------|
+ * | 压缩率 | 更高（约 10-15%） | 标准 |
+ * | 属性重命名 | 支持 | 不支持 |
+ * | Dead Code | 更激进 | 保守 |
+ * | 速度 | 较慢 | 快 |
+ *
+ * 配置：
+ * ```javascript
+ * const closureOptions = {
+ *   compilation_level: 'SIMPLE',  // SIMPLE/ADVANCED
+ *   language_in: 'ECMASCRIPT_2015',
+ *   language_out: 'ECMASCRIPT5_STRICT',
+ *   env: 'CUSTOM',
+ *   warning_level: 'QUIET',
+ * };
+ * ```
+ */
+
+/**
+ * 📊 优化策略 2: 错误码压缩
+ *
+ * 📁 源码位置: scripts/error-codes/
+ *
+ * ```
+ * scripts/error-codes/
+ * ├── codes.json           # 错误码映射
+ * ├── extract-errors.js    # 提取错误信息
+ * └── replace-invariant-error-codes.js  # 替换错误码
+ * ```
+ */
+
+const errorCodeExample = `
+// 📁 codes.json（部分）
+{
+  "1": "Invalid argument passed to %s",
+  "130": "Element type is invalid: expected a string...",
+  "321": "Invalid hook call. Hooks can only be called inside...",
+  "423": "Rendered fewer hooks than expected..."
+}
+
+// 开发版本（便于调试）
+throw new Error(
+  'Invalid hook call. Hooks can only be called inside of the body ' +
+  'of a function component. This could happen for one of the following reasons:\\n' +
+  '1. You might have mismatching versions of React and the renderer...'
+);
+
+// 生产版本（体积优化）
+throw new Error(formatProdErrorMessage(321));
+
+// formatProdErrorMessage 返回：
+// "Minified React error #321; visit https://reactjs.org/docs/error-decoder.html?invariant=321 for the full message"
+`;
+
+/**
+ * 📊 优化策略 3: 分支文件（Forks）
+ *
+ * 📁 源码位置: scripts/rollup/forks.js
+ *
+ * React 使用"分支文件"为不同环境提供不同实现
+ */
+
+const forksExample = `
+// 📁 packages/react-reconciler/src/
+
+// 主文件（入口）
+ReactFiberHooks.js
+
+// 分支文件
+ReactFiberHooks.new.js    // 新版实现（当前使用）
+ReactFiberHooks.old.js    // 旧版实现（兼容）
+
+// forks.js 配置
+'react-reconciler/src/ReactFiberHooks': (bundleType) => {
+  if (enableNewReconciler) {
+    return 'react-reconciler/src/ReactFiberHooks.new.js';
+  }
+  return 'react-reconciler/src/ReactFiberHooks.old.js';
+}
+
+// 构建时根据 enableNewReconciler 选择使用哪个文件
+`;
+
+// ============================================================
+// 1.5 产物分析
+// ============================================================
+
+/**
+ * 📊 构建产物结构
+ */
+
+const buildOutputStructure = `
+build/
+├── node_modules/
+│   ├── react/
+│   │   ├── package.json
+│   │   ├── index.js                      # 入口
+│   │   ├── cjs/
+│   │   │   ├── react.development.js      # CJS 开发版 (~100KB)
+│   │   │   └── react.production.min.js   # CJS 生产版 (~6KB)
+│   │   └── umd/
+│   │       ├── react.development.js      # UMD 开发版
+│   │       └── react.production.min.js   # UMD 生产版
+│   │
+│   ├── react-dom/
+│   │   ├── package.json
+│   │   ├── index.js
+│   │   ├── client.js                     # createRoot 入口
+│   │   ├── server.js                     # SSR 入口
+│   │   └── cjs/
+│   │       ├── react-dom.development.js      # ~1MB
+│   │       └── react-dom.production.min.js   # ~130KB
+│   │
+│   └── scheduler/
+│       ├── package.json
+│       └── cjs/
+│           ├── scheduler.development.js
+│           └── scheduler.production.min.js
+
+// 入口文件示例 (react/index.js)
+'use strict';
+
+if (process.env.NODE_ENV === 'production') {
+  module.exports = require('./cjs/react.production.min.js');
+} else {
+  module.exports = require('./cjs/react.development.js');
+}
+`;
+
+// ============================================================
+// Part 2: 包设计
 // ============================================================
 
 /**
  * =====================================================
- * 2.1 包分类概览
+ * 2.1 包架构全景图
  * =====================================================
- *
- * 📊 按功能分类
- *
- * ┌─────────────────────────────────────────────────────────────────┐
- * │                     React 包架构                                │
- * │                                                                 │
- * │  ┌─────────────────────────────────────────────────────────┐   │
- * │  │                    用户 API 层                           │   │
- * │  │  react │ react-dom │ react-native-renderer              │   │
- * │  └────────────────────────┬────────────────────────────────┘   │
- * │                           │                                     │
- * │  ┌────────────────────────▼────────────────────────────────┐   │
- * │  │                    协调器层                              │   │
- * │  │              react-reconciler                            │   │
- * │  └────────────────────────┬────────────────────────────────┘   │
- * │                           │                                     │
- * │  ┌────────────────────────▼────────────────────────────────┐   │
- * │  │                    调度器层                              │   │
- * │  │                  scheduler                               │   │
- * │  └─────────────────────────────────────────────────────────┘   │
- * │                                                                 │
- * │  ┌─────────────────────────────────────────────────────────┐   │
- * │  │                    工具/共享层                           │   │
- * │  │  shared │ react-is │ use-sync-external-store            │   │
- * │  └─────────────────────────────────────────────────────────┘   │
- * │                                                                 │
- * └─────────────────────────────────────────────────────────────────┘
  */
+
+const packageArchitecture = `
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         React 包架构                                    │
+│                                                                         │
+│  ┌───────────────────────────────────────────────────────────────────┐ │
+│  │                        用户 API 层                                 │ │
+│  │                                                                   │ │
+│  │   react              react-dom            react-native-renderer   │ │
+│  │   • createElement    • createRoot         • 原生组件渲染          │ │
+│  │   • useState         • hydrate            • 桥接通信              │ │
+│  │   • useEffect        • 事件系统                                   │ │
+│  │   • Component        • DOM 操作                                   │ │
+│  │                                                                   │ │
+│  └────────────────────────────────┬──────────────────────────────────┘ │
+│                                   │                                     │
+│                                   │ 依赖                                │
+│                                   ▼                                     │
+│  ┌───────────────────────────────────────────────────────────────────┐ │
+│  │                        协调层                                      │ │
+│  │                                                                   │ │
+│  │                    react-reconciler                               │ │
+│  │                                                                   │ │
+│  │   • Fiber 架构（数据结构、双缓冲）                                 │ │
+│  │   • Hooks 实现（useState、useEffect 的真正逻辑）                   │ │
+│  │   • Diff 算法（reconcileChildFibers）                             │ │
+│  │   • 更新队列（Update、UpdateQueue）                               │ │
+│  │   • 工作循环（workLoop、beginWork、completeWork）                  │ │
+│  │   • Commit 阶段（DOM 操作的调度）                                  │ │
+│  │                                                                   │ │
+│  └────────────────────────────────┬──────────────────────────────────┘ │
+│                                   │                                     │
+│                                   │ 依赖                                │
+│                                   ▼                                     │
+│  ┌───────────────────────────────────────────────────────────────────┐ │
+│  │                        调度层                                      │ │
+│  │                                                                   │ │
+│  │                      scheduler                                    │ │
+│  │                                                                   │ │
+│  │   • 任务优先级（5 个级别）                                         │ │
+│  │   • 时间切片（默认 5ms）                                           │ │
+│  │   • 任务队列（小顶堆）                                             │ │
+│  │   • MessageChannel（调度实现）                                     │ │
+│  │                                                                   │ │
+│  └───────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+│  ┌───────────────────────────────────────────────────────────────────┐ │
+│  │                        工具/共享层                                 │ │
+│  │                                                                   │ │
+│  │   shared            react-is          use-sync-external-store     │ │
+│  │   • ReactSymbols    • isElement       • useSyncExternalStore      │ │
+│  │   • ReactTypes      • isValidType     • 外部状态同步              │ │
+│  │   • FeatureFlags    • 类型判断                                    │ │
+│  │                                                                   │ │
+│  └───────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+`;
 
 /**
  * =====================================================
@@ -328,206 +532,126 @@ const bundleConfig = {
  * =====================================================
  */
 
-const corePackages = {
-  // ========== 核心 API ==========
-  'react': {
-    description: 'React 核心 API',
-    exports: [
-      'createElement',
-      'Component',
-      'useState',
-      'useEffect',
-      'useContext',
-      'useRef',
-      'useMemo',
-      'useCallback',
-      'useReducer',
-      'useTransition',
-      'useDeferredValue',
-      'Suspense',
-      'lazy',
-      'memo',
-      'forwardRef',
-      'createContext',
-    ],
-    dependencies: ['shared'],
-    size: '~6KB (gzip)',
-  },
-
-  'react-dom': {
-    description: 'DOM 渲染器',
-    exports: [
-      'createRoot',
-      'hydrateRoot',
-      'render (legacy)',
-      'hydrate (legacy)',
-      'flushSync',
-      'createPortal',
-    ],
-    subModules: {
-      'react-dom/client': '客户端渲染 API',
-      'react-dom/server': '服务端渲染 API',
-    },
-    dependencies: ['react', 'react-reconciler', 'scheduler', 'shared'],
-    size: '~40KB (gzip)',
-  },
-
-  'react-reconciler': {
-    description: '协调器（Fiber 核心）',
-    purpose: [
-      '实现 Fiber 架构',
-      '实现 Diff 算法',
-      '实现 Hooks',
-      '管理更新队列',
-      '协调渲染过程',
-    ],
-    designPattern: '平台无关的协调逻辑，可被不同渲染器复用',
-    dependencies: ['scheduler', 'shared'],
-    note: '这是 React 最核心的包，阅读源码重点',
-  },
-
-  'scheduler': {
-    description: '调度器（独立包）',
-    purpose: [
-      '任务优先级管理',
-      '时间切片',
-      '任务调度',
-    ],
-    designPattern: '与 React 解耦，可独立使用',
-    exports: [
-      'unstable_scheduleCallback',
-      'unstable_cancelCallback',
-      'unstable_shouldYield',
-      'unstable_now',
-    ],
-    note: '可以在非 React 项目中使用',
-  },
-
-  'shared': {
-    description: '共享工具',
-    contents: [
-      'ReactSymbols.js - Symbol 定义',
-      'ReactTypes.js - 类型定义',
-      'ReactFeatureFlags.js - 特性开关',
-      'objectIs.js - Object.is polyfill',
-      'shallowEqual.js - 浅比较',
-    ],
-  },
-};
-
 /**
- * =====================================================
- * 2.3 渲染器包
- * =====================================================
+ * 📊 react 包
+ *
+ * 📁 源码位置: packages/react/src/
  */
 
-const rendererPackages = {
-  'react-dom': 'Web DOM 渲染',
-  'react-native-renderer': 'React Native 渲染',
-  'react-art': 'Canvas/SVG 渲染',
-  'react-test-renderer': '测试用渲染器（无 DOM）',
-  'react-noop-renderer': '空渲染器（测试用）',
-};
+const reactPackageStructure = `
+packages/react/src/
+├── React.js                  # ⭐ 入口文件，所有导出
+├── ReactBaseClasses.js       # Component、PureComponent
+├── ReactElement.js           # createElement、isValidElement
+├── ReactHooks.js             # ⭐ Hooks API 定义（非实现！）
+├── ReactContext.js           # createContext
+├── ReactLazy.js              # lazy
+├── ReactMemo.js              # memo
+├── ReactForwardRef.js        # forwardRef
+├── ReactChildren.js          # Children.map/forEach/count
+├── ReactCurrentDispatcher.js # ⭐ dispatcher 指针
+├── ReactCurrentOwner.js      # 当前渲染的 Fiber
+├── ReactSharedInternals.js   # 共享内部对象
+├── ReactStartTransition.js   # startTransition
+├── ReactAct.js               # act（测试用）
+└── jsx/
+    └── ReactJSXElement.js    # 新 JSX 运行时 (jsx, jsxs)
+`;
 
 /**
- * 📊 自定义渲染器
+ * 📊 react-reconciler 包
  *
- * React 的渲染器是可扩展的！
- *
- * react-reconciler 提供了 HostConfig 接口，
- * 只需实现这些方法，就可以渲染到任何平台：
- *
- * ```js
- * const hostConfig = {
- *   createInstance(type, props) { ... },
- *   appendChild(parent, child) { ... },
- *   removeChild(parent, child) { ... },
- *   commitUpdate(instance, updatePayload) { ... },
- *   // ... 更多方法
- * };
- *
- * const MyRenderer = ReactReconciler(hostConfig);
- * ```
- *
- * 社区案例：
- * - react-three-fiber: 渲染到 Three.js
- * - react-konva: 渲染到 Canvas
- * - ink: 渲染到终端
+ * 📁 源码位置: packages/react-reconciler/src/
  */
+
+const reconcilerPackageStructure = `
+packages/react-reconciler/src/
+│
+├── ⭐ 核心文件
+│   ├── ReactFiber.new.js              # Fiber 节点创建
+│   ├── ReactFiberWorkLoop.new.js      # ⭐⭐⭐ 工作循环（最核心！）
+│   ├── ReactFiberBeginWork.new.js     # ⭐⭐ beginWork（递阶段）
+│   ├── ReactFiberCompleteWork.new.js  # ⭐⭐ completeWork（归阶段）
+│   ├── ReactFiberCommitWork.new.js    # ⭐⭐ Commit 阶段
+│   ├── ReactFiberHooks.new.js         # ⭐⭐⭐ Hooks 实现
+│   └── ReactChildFiber.new.js         # ⭐⭐ Diff 算法
+│
+├── 数据结构
+│   ├── ReactFiberRoot.new.js          # FiberRoot
+│   ├── ReactFiberLane.new.js          # Lane 优先级
+│   ├── ReactFiberFlags.js             # 副作用标记
+│   └── ReactWorkTags.js               # Fiber 类型
+│
+├── 更新机制
+│   ├── ReactFiberClassUpdateQueue.new.js  # 类组件更新队列
+│   ├── ReactFiberConcurrentUpdates.new.js # 并发更新
+│   └── ReactFiberSyncTaskQueue.new.js     # 同步任务队列
+│
+├── Context 相关
+│   ├── ReactFiberContext.new.js       # Legacy Context
+│   └── ReactFiberNewContext.new.js    # New Context API
+│
+├── Suspense 相关
+│   ├── ReactFiberSuspenseComponent.new.js
+│   ├── ReactFiberSuspenseContext.new.js
+│   └── ReactFiberThrow.new.js         # 错误边界
+│
+└── 其他
+    ├── ReactFiberReconciler.new.js    # 协调器入口
+    ├── ReactFiberHostConfig.js        # ⭐ 宿主配置接口
+    └── ReactInternalTypes.js          # 类型定义
+`;
 
 /**
- * =====================================================
- * 2.4 开发工具包
- * =====================================================
+ * 📊 react-dom 包
+ *
+ * 📁 源码位置: packages/react-dom/src/
  */
 
-const devtoolsPackages = {
-  'react-devtools': 'DevTools 独立应用',
-  'react-devtools-core': 'DevTools 核心',
-  'react-devtools-extensions': '浏览器扩展',
-  'react-devtools-inline': '内联版本',
-  'react-devtools-shared': '共享组件',
-  'react-devtools-timeline': '时间线分析',
-  'react-debug-tools': '调试工具（Hooks 检查）',
-};
+const reactDomPackageStructure = `
+packages/react-dom/src/
+│
+├── client/
+│   ├── ReactDOM.js               # 客户端入口
+│   ├── ReactDOMRoot.js           # createRoot 实现
+│   └── ReactDOMHostConfig.js     # ⭐ HostConfig 实现
+│
+├── server/
+│   ├── ReactDOMServer.js         # 服务端入口
+│   ├── ReactDOMFizzServer.js     # 流式 SSR
+│   └── ReactDOMServerFormatConfig.js
+│
+├── events/
+│   ├── DOMPluginEventSystem.js   # ⭐ 事件系统入口
+│   ├── ReactDOMEventListener.js  # 事件监听
+│   ├── SyntheticEvent.js         # 合成事件
+│   ├── getEventPriority.js       # 事件优先级
+│   └── plugins/                  # 事件插件
+│       ├── SimpleEventPlugin.js
+│       ├── ChangeEventPlugin.js
+│       └── ...
+│
+└── shared/
+    ├── DOMProperty.js            # DOM 属性处理
+    ├── CSSProperty.js            # CSS 属性处理
+    └── sanitizeURL.js            # URL 安全处理
+`;
 
 /**
- * =====================================================
- * 2.5 服务端渲染包
- * =====================================================
+ * 📊 scheduler 包
+ *
+ * 📁 源码位置: packages/scheduler/src/
  */
 
-const ssrPackages = {
-  'react-server': 'Server Components 核心',
-  'react-server-dom-webpack': 'Webpack 集成',
-  'react-server-dom-relay': 'Relay 集成',
-  'react-client': '客户端 RSC 消费',
-};
-
-/**
- * =====================================================
- * 2.6 工具包
- * =====================================================
- */
-
-const utilityPackages = {
-  'react-is': {
-    description: '类型判断工具',
-    exports: [
-      'isElement',
-      'isValidElementType',
-      'isFragment',
-      'isPortal',
-      'isMemo',
-      'isLazy',
-    ],
-    useCase: '第三方库判断 React 元素类型',
-  },
-
-  'use-sync-external-store': {
-    description: '外部状态同步 Hook',
-    purpose: '解决外部状态与 React 并发模式的兼容问题',
-    useCase: 'Redux、Zustand 等状态库使用',
-  },
-
-  'use-subscription': {
-    description: '订阅管理 Hook',
-    purpose: '安全地订阅外部数据源',
-  },
-
-  'eslint-plugin-react-hooks': {
-    description: 'Hooks 规则检查',
-    rules: [
-      'rules-of-hooks: Hooks 调用规则',
-      'exhaustive-deps: 依赖数组检查',
-    ],
-  },
-
-  'react-refresh': {
-    description: '快速刷新（HMR）',
-    purpose: '开发时组件热更新，保留状态',
-  },
-};
+const schedulerPackageStructure = `
+packages/scheduler/src/
+├── Scheduler.js              # 调度器入口
+├── SchedulerMinHeap.js       # 小顶堆（优先级队列）
+├── SchedulerPriorities.js    # 优先级定义
+└── forks/
+    ├── Scheduler.js          # 通用实现
+    └── SchedulerPostTask.js  # postTask API 实现
+`;
 
 // ============================================================
 // Part 3: 核心包设计深入
@@ -535,278 +659,265 @@ const utilityPackages = {
 
 /**
  * =====================================================
- * 3.1 react 包设计
+ * 3.1 react 包设计哲学：API 定义与实现分离
  * =====================================================
  *
- * 📁 packages/react/src/
- *
- * ```
- * react/src/
- * ├── React.js              # 入口
- * ├── ReactElement.js       # createElement
- * ├── ReactHooks.js         # Hooks API（仅定义，实现在 reconciler）
- * ├── ReactContext.js       # Context API
- * ├── ReactLazy.js          # lazy()
- * ├── ReactMemo.js          # memo()
- * ├── ReactChildren.js      # Children 工具
- * └── jsx/
- *     └── ReactJSXElement.js # 新 JSX 转换
- * ```
- *
- * 📊 设计特点
- *
- * 1. API 定义与实现分离
- *    ```js
- *    // react 包只定义 API
- *    export function useState(initialState) {
- *      const dispatcher = resolveDispatcher();
- *      return dispatcher.useState(initialState);
- *    }
- *
- *    // 实现在 react-reconciler
- *    ```
- *
- * 2. dispatcher 模式
- *    - 允许不同环境有不同实现
- *    - 支持 DEV/PROD 不同行为
+ * 📁 源码位置: packages/react/src/ReactHooks.js
  */
 
+const dispatcherPatternExample = `
+// 📁 packages/react/src/ReactHooks.js
+
+import ReactCurrentDispatcher from './ReactCurrentDispatcher';
+
+// react 包只定义 API，不包含实现！
+export function useState(initialState) {
+  const dispatcher = resolveDispatcher();  // 获取当前 dispatcher
+  return dispatcher.useState(initialState); // 调用实现
+}
+
+export function useEffect(create, deps) {
+  const dispatcher = resolveDispatcher();
+  return dispatcher.useEffect(create, deps);
+}
+
+// dispatcher 是一个动态指针
+function resolveDispatcher() {
+  const dispatcher = ReactCurrentDispatcher.current;
+  if (__DEV__) {
+    if (dispatcher === null) {
+      console.error(
+        'Invalid hook call. Hooks can only be called inside ' +
+        'of the body of a function component...'
+      );
+    }
+  }
+  return dispatcher;
+}
+
+// 📁 packages/react/src/ReactCurrentDispatcher.js
+const ReactCurrentDispatcher = {
+  current: null,  // 在渲染时由 react-reconciler 设置
+};
+`;
+
 /**
- * =====================================================
- * 3.2 react-reconciler 包设计
- * =====================================================
- *
- * 📁 packages/react-reconciler/src/
+ * 📊 Dispatcher 模式的优势
  *
  * ```
- * react-reconciler/src/
- * ├── ReactFiber.js              # Fiber 节点
- * ├── ReactFiberWorkLoop.js      # 工作循环（核心！）
- * ├── ReactFiberBeginWork.js     # beginWork（递）
- * ├── ReactFiberCompleteWork.js  # completeWork（归）
- * ├── ReactFiberCommitWork.js    # Commit 阶段
- * ├── ReactFiberHooks.js         # Hooks 实现（核心！）
- * ├── ReactChildFiber.js         # Diff 算法
- * ├── ReactFiberLane.js          # Lane 优先级
- * ├── ReactFiberRoot.js          # FiberRoot
- * ├── ReactUpdateQueue.js        # 更新队列
- * └── ReactFiberReconciler.js    # 协调器入口
- * ```
+ *                    react 包
+ *                       │
+ *   ReactCurrentDispatcher.current
+ *                       │
+ *                       ▼
+ *              ┌─────────────────┐
+ *              │   Dispatcher    │
+ *              └────────┬────────┘
+ *                       │
+ *      ┌────────────────┼────────────────┐
+ *      │                │                │
+ *      ▼                ▼                ▼
+ * Hooks Dispatcher  Invalid Hooks   Server Hooks
+ * (正常渲染)        Dispatcher      Dispatcher
+ *                  (错误提示)       (SSR)
  *
- * 📊 核心流程
- *
- * ```
- * 更新触发
- *    │
- *    ▼
- * scheduleUpdateOnFiber()
- *    │
- *    ▼
- * ensureRootIsScheduled()
- *    │
- *    ▼
- * performSyncWorkOnRoot() / performConcurrentWorkOnRoot()
- *    │
- *    ├── renderRootSync() / renderRootConcurrent()
- *    │       │
- *    │       ▼
- *    │   workLoopSync() / workLoopConcurrent()
- *    │       │
- *    │       ├── beginWork()
- *    │       └── completeWork()
- *    │
- *    └── commitRoot()
- *            │
- *            ├── commitBeforeMutationEffects()
- *            ├── commitMutationEffects()
- *            └── commitLayoutEffects()
+ * 在 react-reconciler 渲染时：
+ * ReactCurrentDispatcher.current = HooksDispatcherOnMount;
+ * // 或
+ * ReactCurrentDispatcher.current = HooksDispatcherOnUpdate;
  * ```
  */
 
 /**
  * =====================================================
- * 3.3 react-dom 包设计
+ * 3.2 react-reconciler 核心：协调器入口
  * =====================================================
  *
- * 📁 packages/react-dom/src/
- *
- * ```
- * react-dom/src/
- * ├── client/
- * │   ├── ReactDOM.js            # 客户端入口
- * │   └── ReactDOMRoot.js        # createRoot
- * ├── server/
- * │   ├── ReactDOMServer.js      # 服务端入口
- * │   └── ReactDOMFizzServer.js  # 流式 SSR
- * ├── events/
- * │   ├── DOMPluginEventSystem.js  # 事件系统
- * │   ├── SyntheticEvent.js        # 合成事件
- * │   └── getEventPriority.js      # 事件优先级
- * └── shared/
- *     ├── DOMProperty.js         # DOM 属性处理
- *     └── CSSProperty.js         # CSS 属性处理
- * ```
- *
- * 📊 react-dom 是如何接入 react-reconciler 的？
- *
- * ```js
- * // react-dom 实现 HostConfig
- * const hostConfig = {
- *   // 创建 DOM 节点
- *   createInstance(type, props) {
- *     const element = document.createElement(type);
- *     // 设置属性...
- *     return element;
- *   },
- *
- *   // 添加子节点
- *   appendChild(parent, child) {
- *     parent.appendChild(child);
- *   },
- *
- *   // 更新属性
- *   commitUpdate(domElement, updatePayload) {
- *     // 更新 DOM 属性...
- *   },
- *
- *   // ... 更多方法
- * };
- *
- * // 使用 hostConfig 创建渲染器
- * const DOMRenderer = ReactReconciler(hostConfig);
- * ```
+ * 📁 源码位置: packages/react-reconciler/src/ReactFiberReconciler.new.js
  */
+
+const reconcilerEntryExample = `
+// 📁 ReactFiberReconciler.new.js（简化版）
+
+// 1. createContainer - 创建 FiberRoot
+export function createContainer(containerInfo, tag, hydrate) {
+  return createFiberRoot(containerInfo, tag, hydrate);
+}
+
+// 2. updateContainer - 触发更新
+export function updateContainer(element, container, parentComponent, callback) {
+  const current = container.current;  // 获取 rootFiber
+  const eventTime = requestEventTime();
+  const lane = requestUpdateLane(current);
+
+  // 创建更新对象
+  const update = createUpdate(eventTime, lane);
+  update.payload = { element };
+  update.callback = callback;
+
+  // 加入更新队列
+  enqueueUpdate(current, update, lane);
+
+  // 调度更新
+  scheduleUpdateOnFiber(current, lane, eventTime);
+
+  return lane;
+}
+
+// 3. batchedUpdates - 批量更新
+export { batchedUpdates } from './ReactFiberWorkLoop.new';
+
+// 4. flushSync - 同步刷新
+export { flushSync } from './ReactFiberWorkLoop.new';
+`;
 
 /**
  * =====================================================
- * 3.4 scheduler 包设计
+ * 3.3 HostConfig 接口：渲染器如何接入
  * =====================================================
  *
- * 📁 packages/scheduler/src/
- *
- * ```
- * scheduler/src/
- * ├── Scheduler.js              # 调度器主文件
- * ├── SchedulerMinHeap.js       # 小顶堆
- * ├── SchedulerPriorities.js    # 优先级定义
- * └── forks/
- *     ├── Scheduler.js          # 通用实现
- *     └── SchedulerHostConfig.js  # 平台适配
- * ```
- *
- * 📊 为什么 Scheduler 独立成包？
- *
- * 1. 可以被其他项目使用（不只是 React）
- * 2. 方便独立测试和优化
- * 3. 未来可能成为浏览器标准（scheduler.postTask）
+ * 📁 源码位置: packages/react-dom/src/client/ReactDOMHostConfig.js
  */
+
+const hostConfigExample = `
+// react-reconciler 定义了 HostConfig 接口
+// 不同渲染器（react-dom、react-native）实现这些接口
+
+// 📁 react-dom 的实现
+export function createInstance(type, props, rootContainerInstance) {
+  // 创建 DOM 元素
+  const domElement = document.createElement(type);
+  // 设置属性
+  updateFiberProps(domElement, props);
+  return domElement;
+}
+
+export function appendChild(parentInstance, child) {
+  parentInstance.appendChild(child);
+}
+
+export function insertBefore(parentInstance, child, beforeChild) {
+  parentInstance.insertBefore(child, beforeChild);
+}
+
+export function removeChild(parentInstance, child) {
+  parentInstance.removeChild(child);
+}
+
+export function commitUpdate(
+  domElement,
+  updatePayload,
+  type,
+  oldProps,
+  newProps
+) {
+  // 更新 DOM 属性
+  updateProperties(domElement, updatePayload, type, oldProps, newProps);
+}
+
+export function commitTextUpdate(textInstance, oldText, newText) {
+  textInstance.nodeValue = newText;
+}
+
+// react-native 的实现完全不同
+// export function createInstance(type, props) {
+//   return UIManager.createView(type, props);
+// }
+`;
 
 // ============================================================
-// Part 4: 学习建议与实践
+// Part 4: 面试题与实践
 // ============================================================
 
 /**
- * =====================================================
- * 4.1 源码阅读顺序
- * =====================================================
- *
- * 📊 推荐顺序（由浅入深）
- *
- * 第一阶段：基础概念
- * 1. shared/ReactSymbols.js - 了解各种类型标识
- * 2. react/src/ReactElement.js - 理解元素结构
- * 3. react/src/ReactHooks.js - 理解 Hooks API
- *
- * 第二阶段：核心机制
- * 4. react-reconciler/src/ReactFiber.js - Fiber 结构
- * 5. react-reconciler/src/ReactFiberWorkLoop.js - 工作循环
- * 6. react-reconciler/src/ReactFiberHooks.js - Hooks 实现
- *
- * 第三阶段：进阶内容
- * 7. react-reconciler/src/ReactChildFiber.js - Diff 算法
- * 8. scheduler/src/Scheduler.js - 调度算法
- * 9. react-dom/src/events/ - 事件系统
+ * 💡 面试题
  */
 
-/**
- * =====================================================
- * 4.2 调试技巧
- * =====================================================
- *
- * 1. 添加断点
- *    ```js
- *    // 在关键函数开头添加 debugger
- *    function beginWork(current, workInProgress) {
- *      debugger; // 暂停在这里
- *      // ...
- *    }
- *    ```
- *
- * 2. 使用 fixtures
- *    ```bash
- *    cd fixtures/dom
- *    yarn install
- *    yarn start
- *    ```
- *
- * 3. 添加 console.log
- *    ```js
- *    console.log('beginWork', workInProgress.type);
- *    ```
- */
+const interviewQuestions = `
+💡 Q1: React 为什么选择 Monorepo？
+A: 
+   1. 代码共享方便（shared 包）
+   2. 原子化提交（一次修改多个包）
+   3. 统一的构建和测试流程
+   4. 依赖版本一致性
+   5. 方便跨包重构
 
-/**
- * =====================================================
- * 4.3 面试应用
- * =====================================================
- *
- * 💡 Q: React 为什么选择 Monorepo？
- * A: 代码共享方便、统一构建、原子提交、依赖清晰
- *
- * 💡 Q: React 为什么用 Rollup 而不是 Webpack？
- * A: Rollup 适合库打包，Tree-shaking 更好，产物更小
- *
- * 💡 Q: Scheduler 为什么独立成包？
- * A: 可复用、可独立测试、未来可能成为标准
- *
- * 💡 Q: react 和 react-dom 为什么分离？
- * A: 跨平台设计，react 定义 API，react-dom/react-native 实现渲染
- *
- * 💡 Q: 如何实现自定义渲染器？
- * A: 使用 react-reconciler，实现 HostConfig 接口
- */
+💡 Q2: React 为什么用 Rollup 而不是 Webpack？
+A:
+   1. Rollup 适合库打包，Webpack 适合应用打包
+   2. Rollup 原生支持 Tree-shaking
+   3. Rollup 输出更小（无模块运行时）
+   4. 支持多种输出格式（ESM/CJS/UMD）
 
-/**
- * =====================================================
- * 4.4 实际开发价值
- * =====================================================
- *
- * 🏢 价值 1：理解构建优化
- * - 学习条件编译
- * - 学习 Tree-shaking 友好的写法
- * - 学习错误码压缩
- *
- * 🏢 价值 2：理解包设计
- * - 学习如何设计可复用的包
- * - 学习依赖管理
- * - 学习 API 设计
- *
- * 🏢 价值 3：理解大型项目组织
- * - 学习 Monorepo 实践
- * - 学习测试策略
- * - 学习 CI/CD 设计
- */
+💡 Q3: __DEV__ 是如何工作的？
+A:
+   1. 源码中使用 if (__DEV__) { ... }
+   2. 构建时 rollup-plugin-replace 替换为 true/false
+   3. 生产构建替换为 false 后
+   4. Closure Compiler 的 Dead Code Elimination 移除整个 if 块
+
+💡 Q4: react 和 react-reconciler 为什么分离？
+A:
+   1. react 定义 API，react-reconciler 实现逻辑
+   2. Dispatcher 模式允许不同实现
+   3. 支持多平台（DOM/Native/测试）
+   4. DEV/PROD 可以有不同行为
+
+💡 Q5: 如何实现自定义渲染器？
+A:
+   1. 安装 react-reconciler
+   2. 实现 HostConfig 接口（createInstance、appendChild 等）
+   3. 创建渲染器实例
+   4. 示例：react-three-fiber、ink（终端渲染）
+
+💡 Q6: React 的错误码压缩是怎么实现的？
+A:
+   1. 开发版本使用完整错误信息
+   2. 生产版本替换为错误码（如 321）
+   3. formatProdErrorMessage(321) 返回链接
+   4. 用户可以在官网查询完整信息
+`;
 
 // ============================================================
-// 导出
+// 学习检查清单
 // ============================================================
+
+/**
+ * ✅ Phase 0 学习检查
+ *
+ * 工程化架构：
+ * - [ ] 理解 Monorepo 的优势和 Yarn Workspaces 工作原理
+ * - [ ] 理解构建流程（Rollup 插件链）
+ * - [ ] 理解条件编译机制（__DEV__）
+ * - [ ] 理解构建优化策略（Closure Compiler、错误码）
+ *
+ * 包设计：
+ * - [ ] 能画出包架构图
+ * - [ ] 理解每个核心包的职责
+ * - [ ] 理解 react 和 react-reconciler 的分离设计
+ *
+ * 核心设计：
+ * - [ ] 理解 Dispatcher 模式
+ * - [ ] 理解 HostConfig 接口
+ * - [ ] 能说出 react-reconciler 的核心文件
+ */
 
 export {
-  bundleConfig,
-  corePackages,
-  rendererPackages,
-  devtoolsPackages,
-  ssrPackages,
-  utilityPackages,
+  bundleTypes,
+  moduleTypes,
+  reactBundleConfig,
+  rollupPluginChain,
+  conditionalCompilationExample,
+  errorCodeExample,
+  forksExample,
+  buildOutputStructure,
+  packageArchitecture,
+  reactPackageStructure,
+  reconcilerPackageStructure,
+  reactDomPackageStructure,
+  schedulerPackageStructure,
+  dispatcherPatternExample,
+  reconcilerEntryExample,
+  hostConfigExample,
+  interviewQuestions,
 };
-
