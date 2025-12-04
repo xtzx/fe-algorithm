@@ -487,7 +487,7 @@ class MarkdownEditor {
     this.input = container.querySelector('.editor')!;
     this.preview = container.querySelector('.preview')!;
     this.parser = new MarkdownParser();
-    
+
     this.input.addEventListener('input', this.handleInput);
   }
 

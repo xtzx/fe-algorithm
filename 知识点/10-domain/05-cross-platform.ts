@@ -259,12 +259,12 @@ const miniProgramExample = `
 <view class="container">
   <text>{{message}}</text>
   <button bindtap="handleTap">Click</button>
-  
+
   <!-- 列表渲染 -->
   <view wx:for="{{list}}" wx:key="id">
     {{item.name}}
   </view>
-  
+
   <!-- 条件渲染 -->
   <view wx:if="{{show}}">Visible</view>
 </view>
@@ -276,16 +276,16 @@ Page({
     list: [],
     show: true,
   },
-  
+
   onLoad() {
     this.fetchData();
   },
-  
+
   async fetchData() {
     const res = await wx.request({ url: '/api/list' });
     this.setData({ list: res.data });
   },
-  
+
   handleTap() {
     this.setData({ message: 'Clicked!' });
   },
@@ -344,7 +344,7 @@ import { useState } from 'react';
 
 function Counter() {
   const [count, setCount] = useState(0);
-  
+
   return (
     <View className="counter">
       <Text>Count: {count}</Text>

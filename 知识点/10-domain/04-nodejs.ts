@@ -146,13 +146,13 @@ const fs = require('fs');
 http.createServer((req, res) => {
   // 流式发送大文件
   const stream = fs.createReadStream('large-video.mp4');
-  
+
   // 设置 Content-Type
   res.setHeader('Content-Type', 'video/mp4');
-  
+
   // 管道连接
   stream.pipe(res);
-  
+
   // 错误处理
   stream.on('error', (err) => {
     res.statusCode = 500;
@@ -202,25 +202,25 @@ const numCPUs = require('os').cpus().length;
 
 if (cluster.isMaster) {
   console.log(\`Master \${process.pid} is running\`);
-  
+
   // 创建工作进程
   for (let i = 0; i < numCPUs; i++) {
     cluster.fork();
   }
-  
+
   // 监听工作进程退出，自动重启
   cluster.on('exit', (worker, code, signal) => {
     console.log(\`Worker \${worker.process.pid} died\`);
     cluster.fork(); // 重启
   });
-  
+
 } else {
   // 工作进程创建 HTTP 服务器
   http.createServer((req, res) => {
     res.writeHead(200);
     res.end(\`Hello from worker \${process.pid}\`);
   }).listen(8000);
-  
+
   console.log(\`Worker \${process.pid} started\`);
 }
 `;
@@ -235,7 +235,7 @@ function runWorker(data) {
     const worker = new Worker('./worker.js', {
       workerData: data
     });
-    
+
     worker.on('message', resolve);
     worker.on('error', reject);
     worker.on('exit', (code) => {
@@ -341,10 +341,10 @@ const path = require('path');
 // 递归读取目录
 async function readDirRecursive(dir) {
   const files = [];
-  
+
   async function walk(currentDir) {
     const entries = await fs.readdir(currentDir, { withFileTypes: true });
-    
+
     for (const entry of entries) {
       const fullPath = path.join(currentDir, entry.name);
       if (entry.isDirectory()) {
@@ -354,7 +354,7 @@ async function readDirRecursive(dir) {
       }
     }
   }
-  
+
   await walk(dir);
   return files;
 }
@@ -443,23 +443,23 @@ const numCPUs = require('os').cpus().length;
 if (cluster.isMaster) {
   // 主进程
   console.log(\`Master \${process.pid} is running\`);
-  
+
   // Fork workers
   for (let i = 0; i < numCPUs; i++) {
     cluster.fork();
   }
-  
+
   cluster.on('exit', (worker) => {
     console.log(\`Worker \${worker.process.pid} died, restarting...\`);
     cluster.fork();
   });
-  
+
 } else {
   // 工作进程
   const server = http.createServer((req, res) => {
     // 业务逻辑
   });
-  
+
   server.listen(8000);
   console.log(\`Worker \${process.pid} started\`);
 }
@@ -481,24 +481,24 @@ const Busboy = require('busboy');
 http.createServer((req, res) => {
   if (req.method === 'POST') {
     const busboy = Busboy({ headers: req.headers });
-    
+
     busboy.on('file', (name, file, info) => {
       const savePath = path.join(__dirname, 'uploads', info.filename);
       const writeStream = fs.createWriteStream(savePath);
-      
+
       // 流式写入，不占用大量内存
       file.pipe(writeStream);
-      
+
       file.on('end', () => {
         console.log(\`File \${info.filename} uploaded\`);
       });
     });
-    
+
     busboy.on('finish', () => {
       res.writeHead(200);
       res.end('Upload complete');
     });
-    
+
     req.pipe(busboy);
   }
 }).listen(3000);
