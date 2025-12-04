@@ -305,7 +305,7 @@ beginWork(current, workInProgress, renderLanes)
     │     // 更新阶段
     │     const oldProps = current.memoizedProps;
     │     const newProps = workInProgress.pendingProps;
-    │     
+    │
     │     if (oldProps === newProps && !hasContextChanged()) {
     │       // props 没变，尝试 bailout
     │       return bailoutOnAlreadyFinishedWork();
@@ -316,19 +316,19 @@ beginWork(current, workInProgress, renderLanes)
         switch (workInProgress.tag) {
           case FunctionComponent:
             return updateFunctionComponent(...);
-            
+
           case ClassComponent:
             return updateClassComponent(...);
-            
+
           case HostRoot:
             return updateHostRoot(...);
-            
+
           case HostComponent:
             return updateHostComponent(...);
-            
+
           case HostText:
             return updateHostText(...);
-            
+
           // ... 更多类型
         }
 `;
@@ -405,7 +405,7 @@ reconcileChildren(current, workInProgress, nextChildren)
     └── 更新阶段
         reconcileChildFibers(workInProgress, current.child, nextChildren, renderLanes)
         // 标记 Placement/Deletion 等副作用
-        
+
 reconcileChildFibers 内部（Diff 算法）:
     │
     ├── 单节点 Diff
@@ -437,7 +437,7 @@ const completeWorkExplanation = `
 completeWork(current, workInProgress, renderLanes)
     │
     └── switch (workInProgress.tag) {
-    
+
         case HostComponent:  // div, span 等
             │
             ├── 首次渲染（current === null）
@@ -454,7 +454,7 @@ completeWork(current, workInProgress, renderLanes)
                 │
                 └── workInProgress.updateQueue = updatePayload
                     workInProgress.flags |= Update  // 标记需要更新
-        
+
         case HostText:  // 文本节点
             │
             ├── 首次渲染
@@ -464,7 +464,7 @@ completeWork(current, workInProgress, renderLanes)
                 if (oldText !== newText) {
                   workInProgress.flags |= Update
                 }
-        
+
         case FunctionComponent:
         case ClassComponent:
             // 这些类型通常只做一些清理工作
@@ -894,11 +894,11 @@ A: beginWork（递阶段）：
 A: 1. Before Mutation：
       - getSnapshotBeforeUpdate
       - DOM 失焦处理
-   
+
    2. Mutation：
       - 执行 DOM 操作（增删改）
       - 卸载组件（componentWillUnmount）
-   
+
    3. Layout：
       - componentDidMount / componentDidUpdate
       - useLayoutEffect
@@ -907,7 +907,7 @@ A: 1. Before Mutation：
 💡 Q5: useEffect 和 useLayoutEffect 执行时机有什么区别？
 A: - useLayoutEffect 在 Layout 阶段同步执行
    - useEffect 在 Commit 完成后异步执行
-   
+
    执行顺序：
    Mutation → current 切换 → Layout(useLayoutEffect) → 渲染
    → 下一帧 → useEffect
@@ -915,7 +915,7 @@ A: - useLayoutEffect 在 Layout 阶段同步执行
 💡 Q6: current 指针什么时候切换？
 A: 在 Mutation 阶段之后、Layout 阶段之前
    root.current = finishedWork;
-   
+
    这样设计的原因：
    - Mutation 阶段操作的是旧 DOM
    - Layout 阶段（componentDidMount）需要访问新 DOM
