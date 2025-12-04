@@ -368,11 +368,11 @@ console.log(sym3 === sym4); // true
 function getTypeComplete(value: unknown): string {
   // null 特殊处理
   if (value === null) return 'null';
-  
+
   // 基本类型使用 typeof
   const type = typeof value;
   if (type !== 'object') return type;
-  
+
   // 引用类型使用 toString
   return Object.prototype.toString.call(value).slice(8, -1).toLowerCase();
 }
