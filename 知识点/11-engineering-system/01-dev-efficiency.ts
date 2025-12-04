@@ -77,7 +77,7 @@ import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
-  
+
   return {
     define: {
       __API_URL__: JSON.stringify(env.VITE_API_URL),
@@ -109,7 +109,7 @@ const handlers = [
       ])
     );
   }),
-  
+
   rest.post('/api/users', async (req, res, ctx) => {
     const body = await req.json();
     return res(
@@ -198,9 +198,9 @@ program
         default: true,
       },
     ]);
-    
+
     const spinner = ora('创建项目中...').start();
-    
+
     try {
       await createProject(projectName, { ...options, ...answers });
       spinner.succeed(chalk.green('项目创建成功！'));
@@ -258,7 +258,7 @@ export class UsersApi {
   async getUsers(): Promise<User[]> {
     return axios.get('/api/users');
   }
-  
+
   async createUser(data: Partial<User>): Promise<User> {
     return axios.post('/api/users', data);
   }
@@ -284,7 +284,7 @@ export const \${name}: React.FC<\${name}Props> = (props) => {
 
 export default \${name};
 \`;
-  
+
   return template;
 }
 `;
@@ -323,19 +323,19 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
-      
+
       - name: Install
         run: pnpm install --frozen-lockfile
-      
+
       - name: Lint
         run: pnpm lint
-      
+
       - name: Type Check
         run: pnpm type-check
-      
+
       - name: Unit Test
         run: pnpm test:coverage
-      
+
       - name: Upload Coverage
         uses: codecov/codecov-action@v3
 
@@ -346,10 +346,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-      
+
       - name: Build
         run: pnpm build
-      
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -397,21 +397,21 @@ const vscodeExtensionsExample = `
     "esbenp.prettier-vscode",
     "dbaeumer.vscode-eslint",
     "bradlc.vscode-tailwindcss",
-    
+
     // 效率
     "christian-kohler.path-intellisense",
     "formulahendry.auto-rename-tag",
     "steoates.autoimport",
     "wix.vscode-import-cost",
-    
+
     // 调试
     "ms-vscode.vscode-typescript-next",
     "usernamehw.errorlens",
-    
+
     // Git
     "eamodio.gitlens",
     "mhutchie.git-graph",
-    
+
     // 测试
     "vitest.explorer"
   ]

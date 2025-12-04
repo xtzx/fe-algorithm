@@ -241,23 +241,23 @@ const typedocExample = `
 // 代码注释示例
 /**
  * 用户服务类
- * 
+ *
  * @example
  * \`\`\`typescript
  * const userService = new UserService();
  * const user = await userService.getUser('123');
  * \`\`\`
- * 
+ *
  * @public
  */
 export class UserService {
   /**
    * 获取用户信息
-   * 
+   *
    * @param id - 用户 ID
    * @returns 用户信息
    * @throws {NotFoundError} 用户不存在时抛出
-   * 
+   *
    * @example
    * \`\`\`typescript
    * const user = await userService.getUser('123');
@@ -270,7 +270,7 @@ export class UserService {
 
   /**
    * 创建用户
-   * 
+   *
    * @param data - 用户数据
    * @param data.name - 用户名
    * @param data.email - 邮箱地址

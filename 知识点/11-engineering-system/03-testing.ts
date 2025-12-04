@@ -161,7 +161,7 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
     e.preventDefault();
     setError('');
     setLoading(true);
-    
+
     try {
       await onSubmit({ email, password });
     } catch (err) {
@@ -204,7 +204,7 @@ import { LoginForm } from './LoginForm';
 describe('LoginForm', () => {
   it('should render form fields', () => {
     render(<LoginForm onSubmit={vi.fn()} />);
-    
+
     expect(screen.getByLabelText('Email')).toBeInTheDocument();
     expect(screen.getByLabelText('Password')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Login' })).toBeInTheDocument();
@@ -213,13 +213,13 @@ describe('LoginForm', () => {
   it('should submit form with user input', async () => {
     const user = userEvent.setup();
     const handleSubmit = vi.fn().mockResolvedValue(undefined);
-    
+
     render(<LoginForm onSubmit={handleSubmit} />);
-    
+
     await user.type(screen.getByLabelText('Email'), 'test@example.com');
     await user.type(screen.getByLabelText('Password'), 'password123');
     await user.click(screen.getByRole('button', { name: 'Login' }));
-    
+
     await waitFor(() => {
       expect(handleSubmit).toHaveBeenCalledWith({
         email: 'test@example.com',
@@ -231,13 +231,13 @@ describe('LoginForm', () => {
   it('should show error message on failure', async () => {
     const user = userEvent.setup();
     const handleSubmit = vi.fn().mockRejectedValue(new Error('Invalid credentials'));
-    
+
     render(<LoginForm onSubmit={handleSubmit} />);
-    
+
     await user.type(screen.getByLabelText('Email'), 'test@example.com');
     await user.type(screen.getByLabelText('Password'), 'wrong');
     await user.click(screen.getByRole('button', { name: 'Login' }));
-    
+
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent('Invalid credentials');
     });
@@ -246,13 +246,13 @@ describe('LoginForm', () => {
   it('should disable button while loading', async () => {
     const user = userEvent.setup();
     const handleSubmit = vi.fn(() => new Promise(() => {})); // 永不 resolve
-    
+
     render(<LoginForm onSubmit={handleSubmit} />);
-    
+
     await user.type(screen.getByLabelText('Email'), 'test@example.com');
     await user.type(screen.getByLabelText('Password'), 'password');
     await user.click(screen.getByRole('button', { name: 'Login' }));
-    
+
     expect(screen.getByRole('button')).toBeDisabled();
     expect(screen.getByRole('button')).toHaveTextContent('Loading...');
   });
@@ -269,11 +269,11 @@ import { useState, useCallback } from 'react';
 
 export function useCounter(initialValue = 0) {
   const [count, setCount] = useState(initialValue);
-  
+
   const increment = useCallback(() => setCount(c => c + 1), []);
   const decrement = useCallback(() => setCount(c => c - 1), []);
   const reset = useCallback(() => setCount(initialValue), [initialValue]);
-  
+
   return { count, increment, decrement, reset };
 }
 
@@ -295,33 +295,33 @@ describe('useCounter', () => {
 
   it('should increment counter', () => {
     const { result } = renderHook(() => useCounter());
-    
+
     act(() => {
       result.current.increment();
     });
-    
+
     expect(result.current.count).toBe(1);
   });
 
   it('should decrement counter', () => {
     const { result } = renderHook(() => useCounter(10));
-    
+
     act(() => {
       result.current.decrement();
     });
-    
+
     expect(result.current.count).toBe(9);
   });
 
   it('should reset counter', () => {
     const { result } = renderHook(() => useCounter(5));
-    
+
     act(() => {
       result.current.increment();
       result.current.increment();
     });
     expect(result.current.count).toBe(7);
-    
+
     act(() => {
       result.current.reset();
     });
@@ -381,7 +381,7 @@ test.describe('Login Flow', () => {
     await page.fill('[aria-label="Email"]', 'user@example.com');
     await page.fill('[aria-label="Password"]', 'password123');
     await page.click('button[type="submit"]');
-    
+
     // 等待跳转到首页
     await expect(page).toHaveURL('/dashboard');
     await expect(page.locator('h1')).toHaveText('Welcome');
@@ -391,14 +391,14 @@ test.describe('Login Flow', () => {
     await page.fill('[aria-label="Email"]', 'user@example.com');
     await page.fill('[aria-label="Password"]', 'wrong');
     await page.click('button[type="submit"]');
-    
+
     await expect(page.locator('[role="alert"]')).toHaveText('Invalid credentials');
     await expect(page).toHaveURL('/login');
   });
 
   test('should validate required fields', async ({ page }) => {
     await page.click('button[type="submit"]');
-    
+
     // 检查 HTML5 表单验证
     const email = page.locator('[aria-label="Email"]');
     await expect(email).toBeFocused();
@@ -419,7 +419,7 @@ describe('Mocking', () => {
   it('should mock function', () => {
     const mockFn = vi.fn();
     mockFn('arg1', 'arg2');
-    
+
     expect(mockFn).toHaveBeenCalled();
     expect(mockFn).toHaveBeenCalledWith('arg1', 'arg2');
   });
@@ -430,7 +430,7 @@ describe('Mocking', () => {
       .mockReturnValueOnce(1)
       .mockReturnValueOnce(2)
       .mockReturnValue(0);
-    
+
     expect(mockFn()).toBe(1);
     expect(mockFn()).toBe(2);
     expect(mockFn()).toBe(0);
@@ -441,10 +441,10 @@ describe('Mocking', () => {
     vi.mock('./api', () => ({
       fetchUser: vi.fn().mockResolvedValue({ id: 1, name: 'Test' }),
     }));
-    
+
     const { fetchUser } = await import('./api');
     const user = await fetchUser(1);
-    
+
     expect(user).toEqual({ id: 1, name: 'Test' });
   });
 
@@ -453,12 +453,12 @@ describe('Mocking', () => {
     const obj = {
       method: () => 'original',
     };
-    
+
     const spy = vi.spyOn(obj, 'method').mockReturnValue('mocked');
-    
+
     expect(obj.method()).toBe('mocked');
     expect(spy).toHaveBeenCalled();
-    
+
     spy.mockRestore();
     expect(obj.method()).toBe('original');
   });

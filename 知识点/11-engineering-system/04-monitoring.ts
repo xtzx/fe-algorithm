@@ -261,7 +261,7 @@ function sendToAnalytics(metric) {
     id: metric.id,
     delta: metric.delta,
   });
-  
+
   navigator.sendBeacon('/analytics', body);
 }
 
@@ -326,7 +326,7 @@ class BehaviorMonitor {
 
   private handleClick(event: MouseEvent) {
     const target = event.target as HTMLElement;
-    
+
     // 提取点击信息
     const data = {
       tagName: target.tagName,

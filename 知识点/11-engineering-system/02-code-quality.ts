@@ -71,13 +71,13 @@ module.exports = {
     '@typescript-eslint/no-unused-vars': 'error',
     '@typescript-eslint/no-explicit-any': 'warn',
     '@typescript-eslint/explicit-function-return-type': 'off',
-    
+
     // React
     'react/react-in-jsx-scope': 'off',
     'react/prop-types': 'off',
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': 'warn',
-    
+
     // Import
     'import/order': [
       'error',
@@ -88,7 +88,7 @@ module.exports = {
       },
     ],
     'import/no-cycle': 'error',
-    
+
     // 通用
     'no-console': ['warn', { allow: ['warn', 'error'] }],
     'prefer-const': 'error',
@@ -276,30 +276,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       # 1. 代码风格检查
       - name: Lint
         run: pnpm lint
-      
+
       # 2. 类型检查
       - name: Type Check
         run: pnpm type-check
-      
+
       # 3. 单元测试 + 覆盖率
       - name: Test
         run: pnpm test:coverage
-      
+
       # 4. 覆盖率门禁
       - name: Coverage Gate
         uses: codecov/codecov-action@v3
         with:
           fail_ci_if_error: true
           # 覆盖率低于 80% 失败
-          
+
       # 5. 构建检查
       - name: Build
         run: pnpm build
-      
+
       # 6. Bundle 大小检查
       - name: Bundle Size
         uses: preactjs/compressed-size-action@v2
@@ -352,19 +352,19 @@ const complexityRulesExample = `
   "rules": {
     // 圈复杂度 <= 10
     "complexity": ["error", { "max": 10 }],
-    
+
     // 函数最大行数
     "max-lines-per-function": ["warn", { "max": 50 }],
-    
+
     // 文件最大行数
     "max-lines": ["warn", { "max": 300 }],
-    
+
     // 最大嵌套深度
     "max-depth": ["error", { "max": 4 }],
-    
+
     // 最大回调嵌套
     "max-nested-callbacks": ["error", { "max": 3 }],
-    
+
     // 函数最大参数
     "max-params": ["warn", { "max": 4 }]
   }
