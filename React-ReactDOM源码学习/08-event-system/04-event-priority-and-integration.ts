@@ -197,9 +197,9 @@ const caseAOnClick = `
 
 function App() {
   const [count, setCount] = useState(0);
-  
+
   return (
-    <div 
+    <div
       onClickCapture={() => console.log('1. div capture')}
       onClick={() => console.log('4. div bubble')}
     >
@@ -393,7 +393,7 @@ const caseBOnChange = `
 
 function SearchInput() {
   const [value, setValue] = useState('');
-  
+
   return (
     <input
       type="text"
