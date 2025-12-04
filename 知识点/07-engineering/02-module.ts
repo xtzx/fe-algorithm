@@ -92,21 +92,21 @@ const { PI, add } = require('./math');
 function myRequire(modulePath: string) {
   // 1. 解析绝对路径
   const absolutePath = resolveModulePath(modulePath);
-  
+
   // 2. 检查缓存
   if (myRequire.cache[absolutePath]) {
     return myRequire.cache[absolutePath].exports;
   }
-  
+
   // 3. 创建 module 对象
   const module = {
     id: absolutePath,
     exports: {},
   };
-  
+
   // 4. 缓存
   myRequire.cache[absolutePath] = module;
-  
+
   // 5. 读取文件并执行
   const code = readFileSync(absolutePath);
   const wrapper = `
@@ -114,10 +114,10 @@ function myRequire(modulePath: string) {
       ${code}
     })
   `;
-  
+
   const fn = eval(wrapper);
   fn(module, module.exports, myRequire, getDirname(absolutePath), absolutePath);
-  
+
   // 6. 返回 exports
   return module.exports;
 }

@@ -50,17 +50,17 @@ module.exports = {
     main: './src/index.js',
     admin: './src/admin.js',
   },
-  
+
   // 输出
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: '[name].[contenthash].js',
     clean: true, // 清理旧文件
   },
-  
+
   // 模式
   mode: 'production',
-  
+
   // Loader
   module: {
     rules: [
@@ -84,7 +84,7 @@ module.exports = {
       },
     ],
   },
-  
+
   // Plugin
   plugins: [
     new HtmlWebpackPlugin({
@@ -94,7 +94,7 @@ module.exports = {
       filename: '[name].[contenthash].css',
     }),
   ],
-  
+
   // 优化
   optimization: {
     splitChunks: {
@@ -163,7 +163,7 @@ module.exports = function(source) {
 // 异步 Loader
 module.exports = function(source) {
   const callback = this.async();
-  
+
   someAsyncOperation(source, (err, result) => {
     if (err) return callback(err);
     callback(null, result);
@@ -180,13 +180,13 @@ class MyPlugin {
     compiler.hooks.emit.tapAsync('MyPlugin', (compilation, callback) => {
       // compilation 包含所有编译信息
       const assets = compilation.assets;
-      
+
       // 添加一个文件
       assets['filelist.txt'] = {
         source: () => Object.keys(assets).join('\\n'),
         size: () => Object.keys(assets).join('\\n').length,
       };
-      
+
       callback();
     });
   }
@@ -254,13 +254,13 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  
+
   // 依赖预构建
   optimizeDeps: {
     include: ['lodash-es'], // 强制预构建
     exclude: ['some-package'], // 排除预构建
   },
-  
+
   // 开发服务器
   server: {
     port: 3000,
@@ -271,7 +271,7 @@ export default defineConfig({
       },
     },
   },
-  
+
   // 构建配置
   build: {
     target: 'es2015',
@@ -325,7 +325,7 @@ module.exports = {
   cache: {
     type: 'filesystem',
   },
-  
+
   // 2. 代码分割
   optimization: {
     splitChunks: {
@@ -350,7 +350,7 @@ module.exports = {
       },
     },
   },
-  
+
   // 3. 减少搜索范围
   resolve: {
     alias: {
@@ -359,7 +359,7 @@ module.exports = {
     extensions: ['.js', '.jsx', '.ts', '.tsx'],
     modules: [path.resolve(__dirname, 'node_modules')],
   },
-  
+
   // 4. 并行处理
   module: {
     rules: [

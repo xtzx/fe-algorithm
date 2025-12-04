@@ -210,7 +210,7 @@ module.exports = function() {
     visitor: {
       CallExpression(path) {
         const callee = path.node.callee;
-        
+
         // 检查是否是 console.xxx
         if (
           callee.type === 'MemberExpression' &&
@@ -236,10 +236,10 @@ module.exports = function() {
       // 处理 async 函数
       'FunctionDeclaration|ArrowFunctionExpression|FunctionExpression'(path) {
         if (!path.node.async) return;
-        
+
         const body = path.node.body;
         if (body.type !== 'BlockStatement') return;
-        
+
         // 已经有 try-catch 的跳过
         if (
           body.body.length === 1 &&
@@ -247,7 +247,7 @@ module.exports = function() {
         ) {
           return;
         }
-        
+
         // 包装成 try-catch
         const tryStatement = t.tryStatement(
           t.blockStatement(body.body),
@@ -266,7 +266,7 @@ module.exports = function() {
             ])
           )
         );
-        
+
         body.body = [tryStatement];
       },
     },
@@ -285,7 +285,7 @@ module.exports = function() {
       // 给函数添加埋点
       'FunctionDeclaration|FunctionExpression|ArrowFunctionExpression'(path) {
         const functionName = path.node.id?.name || 'anonymous';
-        
+
         // 创建埋点代码
         const trackingCall = t.expressionStatement(
           t.callExpression(
@@ -301,7 +301,7 @@ module.exports = function() {
             ]
           )
         );
-        
+
         // 插入到函数体开头
         if (path.node.body.type === 'BlockStatement') {
           path.node.body.body.unshift(trackingCall);
@@ -402,7 +402,7 @@ const i18nPlugin = `
 module.exports = function({ types: t }) {
   const zhTexts = {};
   let index = 0;
-  
+
   return {
     visitor: {
       StringLiteral(path) {
@@ -411,7 +411,7 @@ module.exports = function({ types: t }) {
         if (/[\\u4e00-\\u9fa5]/.test(value)) {
           const key = 'text_' + index++;
           zhTexts[key] = value;
-          
+
           // 替换为 t(key)
           path.replaceWith(
             t.callExpression(t.identifier('t'), [t.stringLiteral(key)])
@@ -443,16 +443,16 @@ module.exports = function({ types: t }) {
       ImportDeclaration(path) {
         const source = path.node.source.value;
         if (source !== 'antd') return;
-        
+
         const specifiers = path.node.specifiers;
         if (!specifiers.length) return;
-        
+
         const newImports = specifiers
           .filter(s => t.isImportSpecifier(s))
           .map(s => {
             const name = s.imported.name;
             const kebabName = name.replace(/([A-Z])/g, '-$1').toLowerCase().slice(1);
-            
+
             return [
               // import Button from 'antd/es/button'
               t.importDeclaration(
@@ -467,7 +467,7 @@ module.exports = function({ types: t }) {
             ];
           })
           .flat();
-        
+
         path.replaceWithMultiple(newImports);
       },
     },
