@@ -235,7 +235,7 @@ A: 作用：标记低优先级更新，可被用户交互打断
    4. TransitionLane 在渲染时判断为可中断
 
 Q3: useTransition 和 startTransition 的区别？
-A: 
+A:
    startTransition：只是标记低优先级，没有状态
    useTransition：返回 [isPending, startTransition]
    - isPending 在过渡期间为 true
@@ -246,7 +246,7 @@ A: useDeferredValue：
    - 紧急更新时返回旧值
    - 同时调度 TransitionLane 更新
    - 适合无法控制 setState 的场景（如第三方库 props）
-   
+
    区别：
    - useTransition 主动包裹 setState
    - useDeferredValue 被动延迟值更新
@@ -260,14 +260,14 @@ A: 在 updateSuspenseComponent 中：
 
 Q6: 什么情况下更新是可中断的？
 A: 在 performConcurrentWorkOnRoot 中判断：
-   shouldTimeSlice = !includesBlockingLane(lanes) && 
+   shouldTimeSlice = !includesBlockingLane(lanes) &&
                      !includesExpiredLane(lanes)
    - 不包含 SyncLane、InputContinuousLane
    - 没有过期的 Lane
    - TransitionLane 满足这些条件，可中断
 
 Q7: 并发渲染被中断后如何恢复？
-A: 
+A:
    1. workInProgress 保留当前 Fiber
    2. performConcurrentWorkOnRoot 返回 continuation
    3. Scheduler 保存 continuation
@@ -281,7 +281,7 @@ A: 允许多个独立的 transition 同时存在：
    - 循环使用，避免 Lane 耗尽
 
 Q9: createRoot 和 render 的区别？
-A: 
+A:
    render (Legacy)：同步模式，不支持并发特性
    createRoot (Concurrent)：
    - 创建 ConcurrentRoot
@@ -290,7 +290,7 @@ A:
    - 支持 Suspense、Transitions
 
 Q10: 并发特性如何提升用户体验？
-A: 
+A:
    1. 输入响应：高优先级立即执行，输入不卡顿
    2. 平滑过渡：Transition 避免中间状态
    3. 无闪烁：Suspense + Transition 保持旧内容

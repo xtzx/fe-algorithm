@@ -140,19 +140,19 @@ requestUpdateLane(fiber) 的逻辑：
 function requestUpdateLane(fiber) {
   // 1. 检查是否在 transition 中
   const isTransition = ReactCurrentBatchConfig.transition !== null;
-  
+
   if (isTransition) {
     // ⭐ startTransition 内的更新
     return claimNextTransitionLane();
     // 返回 TransitionLane1 ~ TransitionLane16（循环分配）
   }
-  
+
   // 2. 获取当前事件优先级
   const updateLane = getCurrentUpdatePriority();
   if (updateLane !== NoLane) {
     return updateLane;
   }
-  
+
   // 3. 获取当前事件类型的优先级
   const eventLane = getCurrentEventPriority();
   return eventLane;
@@ -183,12 +183,12 @@ let nextTransitionLane = TransitionLane1;
 function claimNextTransitionLane() {
   const lane = nextTransitionLane;
   nextTransitionLane <<= 1;  // 左移一位
-  
+
   if ((nextTransitionLane & TransitionLanes) === NoLanes) {
     // 超出范围，回到第一个
     nextTransitionLane = TransitionLane1;
   }
-  
+
   return lane;
 }
 
@@ -231,12 +231,12 @@ includesBlockingLane 的实现:
 function includesBlockingLane(root, lanes) {
   // BlockingLane = SyncLane | InputContinuousLane
   // 如果包含这些 Lane，必须同步完成，不能中断
-  
+
   if (allowConcurrentByDefault) {
     // 如果开启了"默认并发"，只有 SyncLane 阻塞
     return (lanes & SyncLane) !== NoLanes;
   }
-  
+
   // 否则，SyncLane、InputContinuousLane、DefaultLane 都阻塞
   const SyncDefaultLanes = InputContinuousLane | DefaultLane;
   return (lanes & SyncDefaultLanes) !== NoLanes;
@@ -250,7 +250,7 @@ function includesBlockingLane(root, lanes) {
   while (workInProgress !== null && !shouldYield()) {
     performUnitOfWork(workInProgress);
   }
-  
+
   // shouldYield() 来自 Scheduler
   // 当执行时间 > 5ms 时返回 true
 
@@ -292,13 +292,13 @@ let workInProgressRootRenderLanes: Lanes = NoLanes; // 当前渲染的 lanes
 
 function performConcurrentWorkOnRoot(root, didTimeout) {
   // ...渲染逻辑...
-  
+
   if (workInProgress !== null) {
     // ⭐ 渲染未完成（被打断了）
     // 返回自身作为 continuation
     return performConcurrentWorkOnRoot.bind(null, root);
   }
-  
+
   // 渲染完成
   // ...commit 逻辑...
 }
@@ -306,7 +306,7 @@ function performConcurrentWorkOnRoot(root, didTimeout) {
 // 在 renderRootConcurrent 中:
 function renderRootConcurrent(root, lanes) {
   // 检查是否可以继续之前的工作
-  if (workInProgressRoot !== root || 
+  if (workInProgressRoot !== root ||
       workInProgressRootRenderLanes !== lanes) {
     // 不能继续，重新开始
     prepareFreshStack(root, lanes);
@@ -314,10 +314,10 @@ function renderRootConcurrent(root, lanes) {
     // ⭐ 可以继续！
     // workInProgress 还在，从上次位置继续
   }
-  
+
   // 执行工作循环
   workLoopConcurrent();
-  
+
   // 检查结果
   if (workInProgress !== null) {
     return RootInProgress;  // 未完成
@@ -334,7 +334,7 @@ function renderRootConcurrent(root, lanes) {
 
 2. 渲染的 lanes 变了
    workInProgressRootRenderLanes !== lanes
-   
+
    例如：之前在渲染 TransitionLane，现在要渲染 SyncLane
    之前的工作无效，需要重新开始
 
@@ -366,14 +366,14 @@ function main调度循环() {
       // 没有任务，等待
       break;
     }
-    
+
     // 2. 检查时间片
     const startTime = getCurrentTime();
-    
+
     // 3. 执行任务
     const callback = task.callback;  // = performConcurrentWorkOnRoot
     const continuation = callback(didTimeout);
-    
+
     // 4. 检查结果
     if (typeof continuation === 'function') {
       // 任务未完成，保存 continuation
@@ -382,7 +382,7 @@ function main调度循环() {
       // 任务完成，移出队列
       Scheduler.pop(taskQueue);
     }
-    
+
     // 5. 检查是否需要让出
     if (shouldYield()) {
       break;  // 让出主线程，下个宏任务继续
@@ -397,16 +397,16 @@ function main调度循环() {
 function performConcurrentWorkOnRoot(root, didTimeout) {
   // 1. 刷新 passive effects
   flushPassiveEffects();
-  
+
   // 2. 获取要处理的 lanes
   const lanes = getNextLanes(root, workInProgressRootRenderLanes);
-  
+
   // 3. 判断是否使用时间切片
-  const shouldTimeSlice = 
+  const shouldTimeSlice =
     !includesBlockingLane(lanes) &&
     !includesExpiredLane(lanes) &&
     !didTimeout;
-  
+
   // 4. 渲染
   let exitStatus;
   if (shouldTimeSlice) {
@@ -414,26 +414,26 @@ function performConcurrentWorkOnRoot(root, didTimeout) {
   } else {
     exitStatus = renderRootSync(root, lanes);
   }
-  
+
   // 5. 处理结果
   if (exitStatus === RootInProgress) {
     // 被打断，返回 continuation
     return performConcurrentWorkOnRoot.bind(null, root);
   }
-  
+
   if (exitStatus === RootCompleted) {
     // 完成渲染，提交
     commitRoot(root);
   }
-  
+
   // 6. 检查是否还有其他工作
   ensureRootIsScheduled(root);
-  
+
   if (root.callbackNode === originalCallbackNode) {
     // 还是同一个任务，继续
     return performConcurrentWorkOnRoot.bind(null, root);
   }
-  
+
   return null;
 }
 
@@ -443,12 +443,12 @@ function performConcurrentWorkOnRoot(root, didTimeout) {
 
 function renderRootConcurrent(root, lanes) {
   // 1. 检查是否可以复用之前的工作
-  if (workInProgressRoot !== root || 
+  if (workInProgressRoot !== root ||
       workInProgressRootRenderLanes !== lanes) {
     // 不能复用，重新开始
     prepareFreshStack(root, lanes);
   }
-  
+
   // 2. 工作循环（可中断）
   while (workInProgress !== null) {
     // 检查是否需要让出
@@ -456,11 +456,11 @@ function renderRootConcurrent(root, lanes) {
       // 时间片用完，暂停
       return RootInProgress;
     }
-    
+
     // 处理一个 Fiber
     performUnitOfWork(workInProgress);
   }
-  
+
   // 3. 全部完成
   return RootCompleted;
 }
@@ -471,10 +471,10 @@ function renderRootConcurrent(root, lanes) {
 
 function performUnitOfWork(unitOfWork) {
   const current = unitOfWork.alternate;
-  
+
   // 1. beginWork：处理当前 Fiber，返回子节点
   let next = beginWork(current, unitOfWork, renderLanes);
-  
+
   if (next !== null) {
     // 有子节点，继续处理子节点
     workInProgress = next;
@@ -584,7 +584,7 @@ A: 通过 Lane 判断。在 performConcurrentWorkOnRoot 中：
    startTransition 内的更新会分配 TransitionLane，属于可中断类型。
 
 Q2: 更新被打断后如何恢复？
-A: 
+A:
    1. workInProgress 保留当前 Fiber 位置
    2. performConcurrentWorkOnRoot 返回 continuation（自身）
    3. Scheduler 保存到 task.callback
@@ -599,7 +599,7 @@ A: 通过 claimNextTransitionLane() 循环分配：
    - 这样不同 transition 有不同的 lane，可以独立追踪
 
 Q4: 什么情况下必须重新开始渲染？
-A: 
+A:
    1. 根节点变了 (workInProgressRoot !== root)
    2. 渲染的 lanes 变了 (workInProgressRootRenderLanes !== lanes)
    3. 有更高优先级更新插入，需要包含新更新

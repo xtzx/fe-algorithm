@@ -76,7 +76,7 @@ export function createRoot(container, options) {
     onRecoverableError,
     transitionCallbacks,
   );
-  
+
   // 返回 ReactDOMRoot 实例
   return new ReactDOMRoot(root);
 }
@@ -103,7 +103,7 @@ import { startTransition } from 'react';
 function handleSearch(query) {
   // 高优先级：输入框立即更新
   setInputValue(query);
-  
+
   // 低优先级：搜索结果可以稍后更新
   startTransition(() => {
     setSearchResults(filterData(query));
@@ -149,10 +149,10 @@ const startTransitionSource = `
 export function startTransition(scope, options) {
   // 1. 保存当前 transition 状态
   const prevTransition = ReactCurrentBatchConfig.transition;
-  
+
   // 2. 设置新的 transition 标记 ⭐
   ReactCurrentBatchConfig.transition = {};
-  
+
   try {
     // 3. 执行回调（内部的 setState 会读取 transition 标记）
     scope();
@@ -202,16 +202,16 @@ function SearchComponent() {
   const [isPending, startTransition] = useTransition();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
-  
+
   function handleChange(e) {
     const value = e.target.value;
     setQuery(value);  // 高优先级
-    
+
     startTransition(() => {
       setResults(filterData(value));  // 低优先级
     });
   }
-  
+
   return (
     <div>
       <input value={query} onChange={handleChange} />
@@ -227,7 +227,7 @@ function SearchComponent() {
 startTransition（从 react 导入）：
   - 不提供 pending 状态
   - 可以在任何地方使用（包括组件外）
-  
+
 useTransition（Hook）：
   - 返回 [isPending, startTransition]
   - isPending 在过渡期间为 true
@@ -252,14 +252,14 @@ const useTransitionSource = `
 function mountTransition() {
   // 1. 使用 useState 管理 isPending 状态
   const [isPending, setPending] = mountState(false);
-  
+
   // 2. 创建 start 函数，绑定 setPending
   const start = startTransition.bind(null, setPending);
-  
+
   // 3. 保存到 Hook 中
   const hook = mountWorkInProgressHook();
   hook.memoizedState = start;
-  
+
   return [isPending, start];
 }
 
@@ -270,14 +270,14 @@ function startTransition(setPending, callback, options) {
   setCurrentUpdatePriority(
     higherEventPriority(previousPriority, ContinuousEventPriority),
   );
-  
+
   // 2. 设置 pending = true（高优先级，立即显示）
   setPending(true);
-  
+
   // 3. 设置 transition 标记
   const prevTransition = ReactCurrentBatchConfig.transition;
   ReactCurrentBatchConfig.transition = {};
-  
+
   try {
     // 4. 设置 pending = false（低优先级，过渡完成后生效）
     setPending(false);
@@ -320,16 +320,16 @@ import { useDeferredValue, useState, useMemo } from 'react';
 function SearchResults({ query }) {
   // query 是"最新值"，deferredQuery 是"延迟值"
   const deferredQuery = useDeferredValue(query);
-  
+
   // 使用延迟值进行昂贵计算
   const results = useMemo(
     () => filterLargeDataset(deferredQuery),
     [deferredQuery]
   );
-  
+
   // 检查是否"过时"
   const isStale = query !== deferredQuery;
-  
+
   return (
     <div style={{ opacity: isStale ? 0.5 : 1 }}>
       {results.map(item => <Item key={item.id} data={item} />)}
@@ -357,7 +357,7 @@ function SearchResults({ query }) {
 useTransition：
   - 主动包裹 setState
   - 控制"什么时候更新"
-  
+
 useDeferredValue：
   - 传入一个值
   - 控制"使用哪个版本的值"
@@ -390,10 +390,10 @@ function updateDeferredValue(value) {
 function updateDeferredValueImpl(hook, prevValue, value) {
   // 1. 判断当前是否是"紧急更新"
   const shouldDeferValue = !includesOnlyNonUrgentLanes(renderLanes);
-  
+
   if (shouldDeferValue) {
     // ⭐ 紧急更新：返回旧值，同时调度延迟更新
-    
+
     if (!is(value, prevValue)) {
       // 值变了，需要调度延迟更新
       const deferredLane = claimNextTransitionLane();  // 获取 TransitionLane
@@ -402,23 +402,23 @@ function updateDeferredValueImpl(hook, prevValue, value) {
         deferredLane,
       );
       markSkippedUpdateLanes(deferredLane);
-      
+
       // 标记为"不一致状态"
       hook.baseState = true;
     }
-    
+
     // 返回旧值
     return prevValue;
-    
+
   } else {
     // 非紧急更新（如 Transition）：使用新值
-    
+
     if (hook.baseState) {
       // 清除"不一致"标记
       hook.baseState = false;
       markWorkInProgressReceivedUpdate();
     }
-    
+
     hook.memoizedState = value;
     return value;
   }
@@ -510,7 +510,7 @@ function AsyncComponent() {
 function read() {
   if (status === 'resolved') return value;
   if (status === 'pending') throw promise;  // ⭐ 抛出 Promise
-  
+
   // 首次调用，发起请求
   status = 'pending';
   promise = fetch(url).then(data => {
@@ -534,17 +534,17 @@ const suspenseWithTransition = `
 function Tabs() {
   const [tab, setTab] = useState('home');
   const [isPending, startTransition] = useTransition();
-  
+
   function selectTab(nextTab) {
     startTransition(() => {
       setTab(nextTab);  // 低优先级
     });
   }
-  
+
   return (
     <div>
-      <TabButtons 
-        selectedTab={tab} 
+      <TabButtons
+        selectedTab={tab}
         onSelect={selectTab}
         isPending={isPending}
       />

@@ -40,7 +40,7 @@ const caseA_Code = `
 import { useState, useTransition, useMemo } from 'react';
 
 // 模拟大数据
-const generateData = (count) => 
+const generateData = (count) =>
   Array.from({ length: count }, (_, i) => ({
     id: i,
     name: \`Item \${i}\`,
@@ -52,42 +52,42 @@ const ALL_DATA = generateData(10000);
 function SearchableList() {
   // 输入框的值（高优先级）
   const [query, setQuery] = useState('');
-  
+
   // 用于过滤的查询词（低优先级）
   const [deferredQuery, setDeferredQuery] = useState('');
-  
+
   // isPending 用于显示加载状态
   const [isPending, startTransition] = useTransition();
-  
+
   // 过滤数据
   const filteredData = useMemo(() => {
-    return ALL_DATA.filter(item => 
+    return ALL_DATA.filter(item =>
       item.name.toLowerCase().includes(deferredQuery.toLowerCase())
     );
   }, [deferredQuery]);
-  
+
   function handleChange(e) {
     const value = e.target.value;
-    
+
     // ⭐ 高优先级：输入框立即更新
     setQuery(value);
-    
+
     // ⭐ 低优先级：列表稍后更新
     startTransition(() => {
       setDeferredQuery(value);
     });
   }
-  
+
   return (
     <div>
-      <input 
-        value={query} 
-        onChange={handleChange} 
+      <input
+        value={query}
+        onChange={handleChange}
         placeholder="Search..."
       />
-      
+
       {isPending && <div className="loading">Filtering...</div>}
-      
+
       <ul style={{ opacity: isPending ? 0.7 : 1 }}>
         {filteredData.slice(0, 100).map(item => (
           <li key={item.id}>
@@ -95,7 +95,7 @@ function SearchableList() {
           </li>
         ))}
       </ul>
-      
+
       <div>Showing {Math.min(100, filteredData.length)} of {filteredData.length} results</div>
     </div>
   );
@@ -352,7 +352,7 @@ function fetchData(key) {
         resolve(result);
       }, 1000);
     });
-    
+
     cache.set(key, {
       read() {
         if (status === 'pending') throw promise;  // ⭐ 挂起
@@ -373,22 +373,22 @@ function TabContent({ tabId }) {
 function TabsWithSuspense() {
   const [currentTab, setCurrentTab] = useState('home');
   const [isPending, startTransition] = useTransition();
-  
+
   function selectTab(tabId) {
     // ⭐ 使用 startTransition 包裹
     startTransition(() => {
       setCurrentTab(tabId);
     });
   }
-  
+
   return (
     <div>
       <div className="tabs">
         {['home', 'profile', 'settings'].map(tab => (
-          <button 
+          <button
             key={tab}
             onClick={() => selectTab(tab)}
-            style={{ 
+            style={{
               fontWeight: currentTab === tab ? 'bold' : 'normal',
               opacity: isPending ? 0.7 : 1
             }}
@@ -397,7 +397,7 @@ function TabsWithSuspense() {
           </button>
         ))}
       </div>
-      
+
       <Suspense fallback={<div>Loading...</div>}>
         <TabContent tabId={currentTab} />
       </Suspense>
@@ -408,12 +408,12 @@ function TabsWithSuspense() {
 // 不使用 Transition 的版本（对比）
 function TabsWithoutTransition() {
   const [currentTab, setCurrentTab] = useState('home');
-  
+
   return (
     <div>
       <div className="tabs">
         {['home', 'profile', 'settings'].map(tab => (
-          <button 
+          <button
             key={tab}
             onClick={() => setCurrentTab(tab)}  // 直接更新
           >
@@ -421,7 +421,7 @@ function TabsWithoutTransition() {
           </button>
         ))}
       </div>
-      
+
       <Suspense fallback={<div>Loading...</div>}>
         <TabContent tabId={currentTab} />
       </Suspense>
@@ -515,13 +515,13 @@ Suspense Fiber 的关键属性:
 
 SuspenseFiber {
   tag: SuspenseComponent (13),
-  
+
   // 子节点
   child: TabContent Fiber,
-  
+
   // 状态（控制显示 primary 还是 fallback）
   memoizedState: SuspenseState | null,
-  
+
   // SuspenseState 结构:
   // {
   //   dehydrated: null,      // SSR 相关
@@ -546,11 +546,11 @@ SuspenseFiber {
    workInProgress.flags |= ShouldCapture
 
 4. 根据是否在 Transition 中决定行为
-   
+
    普通更新:
      - 立即渲染 fallback
      - 显示 Loading
-   
+
    Transition 更新:
      - 保持显示 primary（旧内容）
      - 记录挂起状态
@@ -566,10 +566,10 @@ Promise resolve 触发重新渲染:
 
 promise.then(() => {
   // 📁 ReactFiberWorkLoop.new.js
-  
+
   // 标记需要重试
   markRootPinged(root, pingedLanes);
-  
+
   // 调度更新
   ensureRootIsScheduled(root);
 });
@@ -613,13 +613,13 @@ Transition 中的特殊处理:
 
 function updateSuspenseComponent(current, workInProgress) {
   const nextProps = workInProgress.pendingProps;
-  
+
   // 检查是否应该显示 fallback
   let showFallback = false;
-  
+
   if (didSuspend) {
     // 发生了挂起
-    
+
     if (isTransitionLane(renderLanes)) {
       // ⭐ 在 Transition 中
       // 不显示 fallback，保持旧内容
@@ -630,7 +630,7 @@ function updateSuspenseComponent(current, workInProgress) {
       showFallback = true;
     }
   }
-  
+
   if (showFallback) {
     // 渲染 fallback 子树
     return mountSuspenseFallbackChildren(...)
