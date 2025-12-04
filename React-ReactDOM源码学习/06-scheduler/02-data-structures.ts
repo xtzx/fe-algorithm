@@ -109,7 +109,7 @@ const taskCreation = `
 
 function unstable_scheduleCallback(priorityLevel, callback, options) {
   var currentTime = getCurrentTime();
-  
+
   // 1. 计算开始时间
   var startTime;
   if (options && options.delay > 0) {
@@ -117,7 +117,7 @@ function unstable_scheduleCallback(priorityLevel, callback, options) {
   } else {
     startTime = currentTime;
   }
-  
+
   // 2. 根据优先级计算超时时间
   var timeout;
   switch (priorityLevel) {
@@ -137,10 +137,10 @@ function unstable_scheduleCallback(priorityLevel, callback, options) {
     default:
       timeout = 5000;         // 5s 后过期
   }
-  
+
   // 3. 计算过期时间
   var expirationTime = startTime + timeout;
-  
+
   // 4. 创建任务对象
   var newTask = {
     id: taskIdCounter++,
@@ -150,7 +150,7 @@ function unstable_scheduleCallback(priorityLevel, callback, options) {
     expirationTime,
     sortIndex: -1,   // 稍后设置
   };
-  
+
   // 5. 入队
   if (startTime > currentTime) {
     // 延迟任务 → timerQueue
@@ -161,7 +161,7 @@ function unstable_scheduleCallback(priorityLevel, callback, options) {
     newTask.sortIndex = expirationTime;
     push(taskQueue, newTask);
   }
-  
+
   return newTask;
 }
 `;
@@ -308,20 +308,20 @@ const minHeapExample = `
 
 1. push(Task{id:1, sortIndex:100})
    堆: [100]
-   
+
 2. push(Task{id:2, sortIndex:50})
    堆: [50, 100]  (50 上浮到堆顶)
-   
+
 3. push(Task{id:3, sortIndex:80})
    堆: [50, 100, 80]
-   
+
 4. push(Task{id:4, sortIndex:30})
    堆: [30, 50, 80, 100]  (30 上浮到堆顶)
 
-5. pop() 
+5. pop()
    返回 Task{id:4, sortIndex:30}
    堆: [50, 100, 80]  (100 下沉)
-   
+
 6. peek()
    返回 Task{id:2, sortIndex:50}
    堆不变

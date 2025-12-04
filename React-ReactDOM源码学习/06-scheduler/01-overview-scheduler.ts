@@ -183,22 +183,22 @@ shouldYieldToHost() 的判断逻辑:
 
 function shouldYieldToHost() {
   const timeElapsed = getCurrentTime() - startTime;
-  
+
   // 1. 如果执行时间 < 5ms，继续执行
   if (timeElapsed < frameInterval) {
     return false;  // 不让出
   }
-  
+
   // 2. 如果有待处理的用户输入，让出
   if (isInputPending()) {
     return true;   // 让出
   }
-  
+
   // 3. 执行时间过长，强制让出
   if (timeElapsed > maxInterval) {
     return true;   // 让出
   }
-  
+
   return true;     // 默认让出
 }
 
@@ -314,7 +314,7 @@ const interviewPoints = `
 💡 面试要点
 
 Q1: 为什么 React 需要自己实现 Scheduler，而不用 requestIdleCallback?
-A: 
+A:
    1. requestIdleCallback 兼容性差（Safari 不支持）
    2. 一帧内只执行一次，频率太低
    3. 无法控制优先级

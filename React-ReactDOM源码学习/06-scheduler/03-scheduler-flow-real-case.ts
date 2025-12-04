@@ -136,13 +136,13 @@ const workLoopPseudoCode = `
 
 function workLoop(hasTimeRemaining, initialTime) {
   let currentTime = initialTime;
-  
+
   // 检查延迟任务是否到期
   advanceTimers(currentTime);
-  
+
   // 获取最高优先级任务
   currentTask = peek(taskQueue);
-  
+
   while (currentTask !== null) {
     // ⭐ 关键判断：是否让出主线程
     if (
@@ -152,21 +152,21 @@ function workLoop(hasTimeRemaining, initialTime) {
       // 让出主线程，下次继续
       break;
     }
-    
+
     // 获取任务回调
     const callback = currentTask.callback;
-    
+
     if (typeof callback === 'function') {
       currentTask.callback = null;
-      
+
       // 判断是否已超时
       const didUserCallbackTimeout = currentTask.expirationTime <= currentTime;
-      
+
       // ⭐ 执行任务
       const continuationCallback = callback(didUserCallbackTimeout);
-      
+
       currentTime = getCurrentTime();
-      
+
       if (typeof continuationCallback === 'function') {
         // 任务返回函数 → 任务未完成，下次继续
         currentTask.callback = continuationCallback;
@@ -176,18 +176,18 @@ function workLoop(hasTimeRemaining, initialTime) {
           pop(taskQueue);
         }
       }
-      
+
       // 再次检查延迟任务
       advanceTimers(currentTime);
     } else {
       // callback 为 null，任务被取消
       pop(taskQueue);
     }
-    
+
     // 获取下一个任务
     currentTask = peek(taskQueue);
   }
-  
+
   // 返回是否还有任务
   if (currentTask !== null) {
     return true;   // 还有任务，需要再次调度
@@ -223,10 +223,10 @@ import { shouldYield } from 'scheduler';
 // performUnitOfWork: 处理单个 Fiber
 function performUnitOfWork(unitOfWork) {
   const current = unitOfWork.alternate;
-  
+
   // beginWork: 递阶段
   let next = beginWork(current, unitOfWork, renderLanes);
-  
+
   if (next === null) {
     // 没有子节点，进入归阶段
     completeUnitOfWork(unitOfWork);
@@ -288,10 +288,10 @@ function SearchableList() {
 
   const handleChange = (e) => {
     const value = e.target.value;
-    
+
     // 1. 高优先级：输入框立即更新
     setInputValue(value);
-    
+
     // 2. 低优先级：列表可以稍后更新
     startTransition(() => {
       setSearchQuery(value);
@@ -336,7 +336,7 @@ T=0ms: 用户输入字符 'a'
        │
        └── startTransition(() => setSearchQuery('a'))
            └── lane = TransitionLane (低优先级)
-       
+
        scheduleUpdateOnFiber() 被调用两次
 
 T=0.1ms: ensureRootIsScheduled()
@@ -493,15 +493,15 @@ const caseB_Code = `
 
 function VirtualList() {
   const [scrollTop, setScrollTop] = useState(0);
-  
+
   const handleScroll = (e) => {
     // 每次滚动都触发更新
     setScrollTop(e.target.scrollTop);
   };
-  
+
   // 计算可视区域内的项
   const visibleItems = calculateVisibleItems(scrollTop);
-  
+
   return (
     <div onScroll={handleScroll} style={{ height: 500, overflow: 'auto' }}>
       <div style={{ height: totalHeight }}>
@@ -539,7 +539,7 @@ T=16ms:  滚动事件 #2，scrollTop=200
              │   └── true，优先级相同
              │
              └── return; // 复用现有任务，不重新调度！⭐
-         
+
          // 但是 lane 已经被标记到 root.pendingLanes
 
 T=20ms:  task1 继续渲染...
@@ -576,10 +576,10 @@ const caseB_TaskReuse = `
 
 function ensureRootIsScheduled(root, currentTime) {
   const existingCallbackNode = root.callbackNode;
-  
+
   // 计算下一个要处理的 lanes
   const nextLanes = getNextLanes(root, ...);
-  
+
   if (nextLanes === NoLanes) {
     // 没有任务了
     if (existingCallbackNode !== null) {
@@ -587,21 +587,21 @@ function ensureRootIsScheduled(root, currentTime) {
     }
     return;
   }
-  
+
   const newCallbackPriority = getHighestPriorityLane(nextLanes);
   const existingCallbackPriority = root.callbackPriority;
-  
+
   // ⭐ 关键：优先级相同，复用任务
   if (existingCallbackPriority === newCallbackPriority) {
     // 不需要重新调度，复用现有任务
     return;
   }
-  
+
   // 优先级不同，取消旧任务，创建新任务
   if (existingCallbackNode !== null) {
     cancelCallback(existingCallbackNode);
   }
-  
+
   // 创建新任务...
   let newCallbackNode = scheduleCallback(priority, callback);
   root.callbackNode = newCallbackNode;
@@ -686,33 +686,33 @@ performConcurrentWorkOnRoot 返回值的含义:
 
 1. 返回 null
    → 任务完成，可以移出队列
-   
+
 2. 返回自身 (performConcurrentWorkOnRoot.bind(null, root))
    → 任务未完成，需要继续调度
-   
+
 📁 ReactFiberWorkLoop.new.js:829
 
 function performConcurrentWorkOnRoot(root, didTimeout) {
   // ... 渲染逻辑 ...
-  
+
   // 检查渲染结果
   if (workInProgress !== null) {
     // ⭐ 渲染未完成（被打断了）
     // 返回自身作为 continuation
     return performConcurrentWorkOnRoot.bind(null, root);
   }
-  
+
   // 渲染完成
   // ... commit 逻辑 ...
-  
+
   // 检查是否还有其他待处理的 lanes
   ensureRootIsScheduled(root, now());
-  
+
   if (root.callbackNode === originalCallbackNode) {
     // 如果任务没变，说明还需要继续处理其他 lanes
     return performConcurrentWorkOnRoot.bind(null, root);
   }
-  
+
   // 完全完成
   return null;
 }
@@ -721,9 +721,9 @@ Scheduler 中的处理:
 📁 Scheduler.js:189
 
 function workLoop() {
-  // ... 
+  // ...
   const continuationCallback = callback(didUserCallbackTimeout);
-  
+
   if (typeof continuationCallback === 'function') {
     // 任务未完成，保存 continuation
     currentTask.callback = continuationCallback;

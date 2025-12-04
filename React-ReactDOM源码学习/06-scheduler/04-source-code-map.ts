@@ -107,7 +107,7 @@ const scheduleCallbackDetail = `
 function unstable_scheduleCallback(priorityLevel, callback, options) {
   // 第 309 行: 获取当前时间
   var currentTime = getCurrentTime();
-  
+
   // 第 311-321 行: 计算开始时间
   var startTime;
   if (typeof options === 'object' && options !== null) {
@@ -120,7 +120,7 @@ function unstable_scheduleCallback(priorityLevel, callback, options) {
   } else {
     startTime = currentTime;
   }
-  
+
   // 第 323-341 行: 根据优先级设置超时时间
   var timeout;
   switch (priorityLevel) {
@@ -141,10 +141,10 @@ function unstable_scheduleCallback(priorityLevel, callback, options) {
       timeout = NORMAL_PRIORITY_TIMEOUT;  // 5000
       break;
   }
-  
+
   // 第 343 行: 计算过期时间
   var expirationTime = startTime + timeout;
-  
+
   // 第 345-355 行: 创建任务
   var newTask = {
     id: taskIdCounter++,
@@ -154,13 +154,13 @@ function unstable_scheduleCallback(priorityLevel, callback, options) {
     expirationTime,
     sortIndex: -1,
   };
-  
+
   // 第 357-387 行: 入队
   if (startTime > currentTime) {
     // 延迟任务
     newTask.sortIndex = startTime;
     push(timerQueue, newTask);
-    
+
     if (peek(taskQueue) === null && newTask === peek(timerQueue)) {
       // 这是唯一的任务，设置定时器
       if (isHostTimeoutScheduled) {
@@ -174,13 +174,13 @@ function unstable_scheduleCallback(priorityLevel, callback, options) {
     // 立即任务
     newTask.sortIndex = expirationTime;
     push(taskQueue, newTask);
-    
+
     if (!isHostCallbackScheduled && !isPerformingWork) {
       isHostCallbackScheduled = true;
       requestHostCallback(flushWork);
     }
   }
-  
+
   return newTask;
 }
 `;
@@ -195,13 +195,13 @@ const workLoopDetail = `
 function workLoop(hasTimeRemaining, initialTime) {
   // 第 190 行: 初始化时间
   let currentTime = initialTime;
-  
+
   // 第 191 行: 推进延迟任务（检查 timerQueue 中是否有到期的）
   advanceTimers(currentTime);
-  
+
   // 第 192 行: 取堆顶任务
   currentTask = peek(taskQueue);
-  
+
   // 第 193-233 行: 主循环
   while (
     currentTask !== null &&
@@ -215,26 +215,26 @@ function workLoop(hasTimeRemaining, initialTime) {
       // 让出主线程
       break;
     }
-    
+
     // 第 204 行: 获取回调
     const callback = currentTask.callback;
-    
+
     if (typeof callback === 'function') {
       // 第 206 行: 清空 callback（防止重复执行）
       currentTask.callback = null;
-      
+
       // 第 207 行: 设置当前优先级
       currentPriorityLevel = currentTask.priorityLevel;
-      
+
       // 第 208 行: 判断是否超时
       const didUserCallbackTimeout = currentTask.expirationTime <= currentTime;
-      
+
       // 第 212 行: ⭐ 执行任务
       const continuationCallback = callback(didUserCallbackTimeout);
-      
+
       // 第 213 行: 更新时间
       currentTime = getCurrentTime();
-      
+
       // 第 214-227 行: 处理返回值
       if (typeof continuationCallback === 'function') {
         // 任务未完成，保存 continuation
@@ -245,18 +245,18 @@ function workLoop(hasTimeRemaining, initialTime) {
           pop(taskQueue);
         }
       }
-      
+
       // 第 228 行: 再次检查延迟任务
       advanceTimers(currentTime);
     } else {
       // callback 为 null，任务被取消
       pop(taskQueue);
     }
-    
+
     // 第 232 行: 取下一个任务
     currentTask = peek(taskQueue);
   }
-  
+
   // 第 234-243 行: 返回是否还有任务
   if (currentTask !== null) {
     return true;
@@ -342,16 +342,16 @@ const ensureRootIsScheduledDetail = `
 function ensureRootIsScheduled(root, currentTime) {
   // 第 697 行: 获取现有任务
   const existingCallbackNode = root.callbackNode;
-  
+
   // 第 701 行: 标记饥饿的 lanes
   markStarvedLanesAsExpired(root, currentTime);
-  
+
   // 第 704-707 行: 获取下一个要处理的 lanes
   const nextLanes = getNextLanes(
     root,
     root === workInProgressRoot ? workInProgressRootRenderLanes : NoLanes,
   );
-  
+
   // 第 709-716 行: 没有任务，取消调度
   if (nextLanes === NoLanes) {
     if (existingCallbackNode !== null) {
@@ -361,22 +361,22 @@ function ensureRootIsScheduled(root, currentTime) {
     root.callbackPriority = NoLane;
     return;
   }
-  
+
   // 第 720 行: 获取最高优先级
   const newCallbackPriority = getHighestPriorityLane(nextLanes);
-  
+
   // 第 723-750 行: ⭐ 关键！判断是否复用现有任务
   const existingCallbackPriority = root.callbackPriority;
   if (existingCallbackPriority === newCallbackPriority) {
     // 优先级相同，复用现有任务
     return;
   }
-  
+
   // 第 752-755 行: 优先级不同，取消旧任务
   if (existingCallbackNode != null) {
     cancelCallback(existingCallbackNode);
   }
-  
+
   // 第 758-821 行: 调度新任务
   let newCallbackNode;
   if (newCallbackPriority === SyncLane) {
@@ -419,7 +419,7 @@ function ensureRootIsScheduled(root, currentTime) {
       performConcurrentWorkOnRoot.bind(null, root),
     );
   }
-  
+
   // 第 823-824 行: 保存任务引用
   root.callbackPriority = newCallbackPriority;
   root.callbackNode = newCallbackNode;
