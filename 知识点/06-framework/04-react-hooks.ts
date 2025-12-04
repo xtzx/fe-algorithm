@@ -193,7 +193,7 @@ function useEffect(create: () => (() => void) | void, deps?: any[]) {
   const hook = getCurrentHook();
 
   const prevEffect = hook.memoizedState as Effect | null;
-  
+
   // 判断依赖是否变化
   let hasChanged = true;
   if (prevEffect && deps !== undefined) {
@@ -258,7 +258,7 @@ function useMemo<T>(factory: () => T, deps: any[]): T {
   const hook = getCurrentHook();
 
   const prevDeps = hook.memoizedState?.[1];
-  
+
   // 依赖不变，返回缓存值
   if (prevDeps && deps.every((dep, i) => Object.is(dep, prevDeps[i]))) {
     return hook.memoizedState[0];
@@ -323,7 +323,7 @@ function Component({ items }) {
 function Component({ condition }) {
   const [state, setState] = useState(0);
   const [name, setName] = useState('');
-  
+
   // 条件逻辑放在 Hook 之后
   if (condition) {
     // 使用 state
@@ -344,25 +344,25 @@ function Component({ condition }) {
 const closureTrapExample = `
 function Counter() {
   const [count, setCount] = useState(0);
-  
+
   // ❌ 闭包陷阱：setTimeout 捕获的是旧的 count
   const handleClick = () => {
     setTimeout(() => {
       console.log(count); // 永远是点击时的值
     }, 1000);
   };
-  
+
   // ✅ 解决 1：使用函数式更新
   const handleClick2 = () => {
     setTimeout(() => {
       setCount(prev => prev + 1); // 使用最新的 state
     }, 1000);
   };
-  
+
   // ✅ 解决 2：使用 ref
   const countRef = useRef(count);
   countRef.current = count;
-  
+
   const handleClick3 = () => {
     setTimeout(() => {
       console.log(countRef.current); // 最新值
@@ -465,7 +465,7 @@ function useFetch<T>(url: string) {
 
   useEffect(() => {
     let cancelled = false;
-    
+
     setLoading(true);
     fetch(url)
       .then(res => res.json())
@@ -522,7 +522,7 @@ function useDebounce<T>(value: T, delay: number): T {
 function SearchInput() {
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query, 300);
-  
+
   useEffect(() => {
     if (debouncedQuery) {
       // 发起搜索请求
@@ -538,11 +538,11 @@ export {
   useRef,
   useMemo,
   useCallback,
-  
+
   // 辅助函数
   setCurrentFiber,
   getCurrentHook,
-  
+
   // 示例
   hooksRulesExample,
   closureTrapExample,

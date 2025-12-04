@@ -110,7 +110,7 @@ class Watcher {
 
 function defineReactive(obj: any, key: string, val: any) {
   const dep = new Dep();
-  
+
   // 递归处理嵌套对象
   if (typeof val === 'object' && val !== null) {
     observe(val);
@@ -137,7 +137,7 @@ function defineReactive(obj: any, key: string, val: any) {
 
 function observe(obj: any) {
   if (typeof obj !== 'object' || obj === null) return;
-  
+
   Object.keys(obj).forEach(key => {
     defineReactive(obj, key, obj[key]);
   });
@@ -183,19 +183,19 @@ let activeEffect: Function | null = null;
 // 依赖收集
 function track(target: object, key: string | symbol) {
   if (!activeEffect) return;
-  
+
   let depsMap = targetMap.get(target);
   if (!depsMap) {
     depsMap = new Map();
     targetMap.set(target, depsMap);
   }
-  
+
   let deps = depsMap.get(key);
   if (!deps) {
     deps = new Set();
     depsMap.set(key, deps);
   }
-  
+
   deps.add(activeEffect);
 }
 
@@ -203,7 +203,7 @@ function track(target: object, key: string | symbol) {
 function trigger(target: object, key: string | symbol) {
   const depsMap = targetMap.get(target);
   if (!depsMap) return;
-  
+
   const deps = depsMap.get(key);
   if (deps) {
     deps.forEach(effect => effect());
@@ -216,28 +216,28 @@ function reactive<T extends object>(target: T): T {
     get(target, key, receiver) {
       const result = Reflect.get(target, key, receiver);
       track(target, key); // 依赖收集
-      
+
       // 深层响应式
       if (typeof result === 'object' && result !== null) {
         return reactive(result);
       }
       return result;
     },
-    
+
     set(target, key, value, receiver) {
       const oldValue = Reflect.get(target, key, receiver);
       const result = Reflect.set(target, key, value, receiver);
-      
+
       if (oldValue !== value) {
         trigger(target, key); // 派发更新
       }
       return result;
     },
-    
+
     deleteProperty(target, key) {
       const hadKey = Reflect.has(target, key);
       const result = Reflect.deleteProperty(target, key);
-      
+
       if (hadKey && result) {
         trigger(target, key);
       }
@@ -277,12 +277,12 @@ function effect(fn: Function) {
 function computed<T>(getter: () => T) {
   let cached: T;
   let dirty = true;
-  
+
   const effectFn = effect(() => {
     cached = getter();
     dirty = false;
   });
-  
+
   return {
     get value() {
       if (dirty) {
@@ -329,7 +329,7 @@ function shallowReactive<T extends object>(target: T): T {
  * 📊 readonly vs reactive
  *
  * readonly：只读响应式，不能修改
- * 
+ *
  * 使用场景：
  * - props（组件接收的属性）
  * - 防止意外修改
@@ -504,11 +504,11 @@ const state = reactive({
 
 export const store = {
   state: readonly(state),
-  
+
   increment() {
     state.count++;
   },
-  
+
   setUser(user) {
     state.user = user;
   },
@@ -537,7 +537,7 @@ export {
   Watcher,
   defineReactive,
   observe,
-  
+
   // Vue3 风格
   reactive,
   ref,
@@ -547,7 +547,7 @@ export {
   trigger,
   shallowReactive,
   readonly,
-  
+
   // 示例
   reactivityPitfalls,
   simpleStoreExample,

@@ -66,26 +66,26 @@ interface FiberNode {
   tag: number;           // 组件类型（函数组件、类组件、DOM 元素等）
   type: any;             // 对应的 React 元素类型
   key: string | null;    // key 属性
-  
+
   // === 动态数据 ===
   memoizedState: any;    // Hooks 链表 / 类组件 state
   memoizedProps: any;    // 上次渲染的 props
   pendingProps: any;     // 新的 props
   updateQueue: any;      // 更新队列
-  
+
   // === 副作用 ===
   flags: number;         // 副作用标记（新增、更新、删除）
   subtreeFlags: number;  // 子树副作用标记
   deletions: FiberNode[] | null; // 要删除的子 Fiber
-  
+
   // === 关系指针（链表结构）===
   return: FiberNode | null;   // 父节点
   child: FiberNode | null;    // 第一个子节点
   sibling: FiberNode | null;  // 下一个兄弟节点
-  
+
   // === 双缓冲 ===
   alternate: FiberNode | null; // 对应的另一个 Fiber（current/workInProgress）
-  
+
   // === DOM ===
   stateNode: any;        // 对应的真实 DOM 或组件实例
 }
@@ -115,26 +115,26 @@ interface FiberNode {
 function performUnitOfWork(fiber: FiberNode): FiberNode | null {
   // 1. 处理当前 Fiber（beginWork）
   beginWork(fiber);
-  
+
   // 2. 如果有子节点，返回子节点
   if (fiber.child) {
     return fiber.child;
   }
-  
+
   // 3. 没有子节点，处理当前节点（completeWork）
   let current: FiberNode | null = fiber;
   while (current) {
     completeWork(current);
-    
+
     // 4. 有兄弟节点，返回兄弟节点
     if (current.sibling) {
       return current.sibling;
     }
-    
+
     // 5. 没有兄弟节点，返回父节点继续处理
     current = current.return;
   }
-  
+
   return null;
 }
 
@@ -189,7 +189,7 @@ function completeWork(fiber: FiberNode) {
 // 双缓冲创建 workInProgress
 function createWorkInProgress(current: FiberNode, pendingProps: any): FiberNode {
   let workInProgress = current.alternate;
-  
+
   if (workInProgress === null) {
     // 首次渲染，创建新 Fiber
     workInProgress = {
@@ -197,20 +197,20 @@ function createWorkInProgress(current: FiberNode, pendingProps: any): FiberNode 
       type: current.type,
       key: current.key,
       stateNode: current.stateNode,
-      
+
       return: null,
       child: null,
       sibling: null,
-      
+
       memoizedState: current.memoizedState,
       memoizedProps: current.memoizedProps,
       pendingProps: pendingProps,
       updateQueue: current.updateQueue,
-      
+
       flags: 0,
       subtreeFlags: 0,
       deletions: null,
-      
+
       alternate: current,
     };
     current.alternate = workInProgress;
@@ -221,7 +221,7 @@ function createWorkInProgress(current: FiberNode, pendingProps: any): FiberNode 
     workInProgress.subtreeFlags = 0;
     workInProgress.deletions = null;
   }
-  
+
   return workInProgress;
 }
 
@@ -263,7 +263,7 @@ class SimpleScheduler {
     this.taskQueue.push({ callback, priority });
     // 按优先级排序
     this.taskQueue.sort((a, b) => a.priority - b.priority);
-    
+
     if (!this.isScheduled) {
       this.isScheduled = true;
       this.schedulePerform();
@@ -280,7 +280,7 @@ class SimpleScheduler {
   private performWork() {
     const startTime = performance.now();
     const frameTime = 5; // 5ms 时间切片
-    
+
     while (this.taskQueue.length > 0) {
       // 检查是否超时
       if (performance.now() - startTime >= frameTime) {
@@ -288,11 +288,11 @@ class SimpleScheduler {
         this.schedulePerform();
         return;
       }
-      
+
       const task = this.taskQueue.shift()!;
       task.callback();
     }
-    
+
     this.isScheduled = false;
   }
 }
@@ -329,18 +329,18 @@ class SimpleScheduler {
 // 简化的渲染流程
 function renderRoot(root: FiberNode) {
   let workInProgress: FiberNode | null = root;
-  
+
   // Render 阶段：可中断
   while (workInProgress !== null) {
     workInProgress = performUnitOfWork(workInProgress);
-    
+
     // 检查是否需要让出（简化版）
     if (shouldYield()) {
       // 保存进度，下次继续
       return;
     }
   }
-  
+
   // Commit 阶段：不可中断
   commitRoot(root);
 }
@@ -354,13 +354,13 @@ function shouldYield(): boolean {
 function commitRoot(root: FiberNode) {
   // Before Mutation
   commitBeforeMutationEffects(root);
-  
+
   // Mutation：执行 DOM 操作
   commitMutationEffects(root);
-  
+
   // 切换 current 指针
   // root.current = root.workInProgress;
-  
+
   // Layout：执行生命周期
   commitLayoutEffects(root);
 }
@@ -462,17 +462,17 @@ const useTransitionExample = `
 function SearchResults() {
   const [query, setQuery] = useState('');
   const [isPending, startTransition] = useTransition();
-  
+
   const handleChange = (e) => {
     // 输入是高优先级，立即更新
     setQuery(e.target.value);
-    
+
     // 搜索结果是低优先级，可以被打断
     startTransition(() => {
       setSearchResults(search(e.target.value));
     });
   };
-  
+
   return (
     <div>
       <input value={query} onChange={handleChange} />
@@ -490,14 +490,14 @@ const useDeferredValueExample = `
 function List({ query }) {
   // query 变化时，deferredQuery 会延迟更新
   const deferredQuery = useDeferredValue(query);
-  
+
   // 使用 deferredQuery 渲染列表
   // 输入时 UI 不会卡顿
   const items = useMemo(
     () => filterItems(deferredQuery),
     [deferredQuery]
   );
-  
+
   return (
     <ul style={{ opacity: query !== deferredQuery ? 0.5 : 1 }}>
       {items.map(item => <li key={item.id}>{item.name}</li>)}
@@ -533,14 +533,14 @@ export {
   beginWork,
   completeWork,
   createWorkInProgress,
-  
+
   // 调度相关
   SimpleScheduler,
-  
+
   // 渲染相关
   renderRoot,
   commitRoot,
-  
+
   // 示例
   useTransitionExample,
   useDeferredValueExample,

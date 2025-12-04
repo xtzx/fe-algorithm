@@ -90,7 +90,7 @@ function reactDiff(
   newChildren: VNode[]
 ) {
   const oldKeyMap = new Map<string | number, { node: VNode; index: number }>();
-  
+
   // 建立旧节点的 key -> index 映射
   oldChildren.forEach((child, index) => {
     if (child.key != null) {
@@ -107,7 +107,7 @@ function reactDiff(
     if (old) {
       // 找到可复用节点
       patch(old.node, newChild);
-      
+
       if (old.index < lastIndex) {
         // 需要移动：将节点移动到前一个新节点之后
         const prevNode = newChildren[newIndex - 1];
@@ -119,7 +119,7 @@ function reactDiff(
         // 不需要移动，更新 lastIndex
         lastIndex = old.index;
       }
-      
+
       oldKeyMap.delete(key!);
     } else {
       // 没找到，创建新节点
