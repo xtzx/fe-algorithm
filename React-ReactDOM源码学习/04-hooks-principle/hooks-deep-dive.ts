@@ -69,7 +69,7 @@ const dispatcherMechanism = `
 function renderWithHooks(current, workInProgress, Component, props, ...) {
   // 1. 设置当前渲染的 Fiber
   currentlyRenderingFiber = workInProgress;
-  
+
   // 2. 重置 Hooks 状态
   workInProgress.memoizedState = null;  // Hooks 链表将重新构建
   workInProgress.updateQueue = null;    // Effect 链表
@@ -251,8 +251,8 @@ function mountStateSimplified<S>(initialState: (() => S) | S): [S, (action: S | 
 
 // basicStateReducer - useState 使用的 reducer
 function basicStateReducer<S>(state: S, action: S | ((prevState: S) => S)): S {
-  return typeof action === 'function' 
-    ? (action as (prevState: S) => S)(state) 
+  return typeof action === 'function'
+    ? (action as (prevState: S) => S)(state)
     : action;
 }
 
@@ -794,11 +794,11 @@ const whyNoConditionalHooks = `
 问题场景:
 function Component({ showExtra }) {
   const [count, setCount] = useState(0);   // Hook1
-  
+
   if (showExtra) {
     const [extra, setExtra] = useState(''); // Hook2（条件调用）
   }
-  
+
   useEffect(() => { ... }, [count]);        // Hook3
 }
 
@@ -922,7 +922,7 @@ A: 因为 Hooks 是链表结构，按调用顺序存储和读取。
 💡 Q3: useState 和 useReducer 有什么关系？
 A: useState 是 useReducer 的语法糖。
    useState 内部调用 useReducer，使用 basicStateReducer：
-   const basicStateReducer = (state, action) => 
+   const basicStateReducer = (state, action) =>
      typeof action === 'function' ? action(state) : action;
 
 💡 Q4: 什么是 eagerState 优化？
@@ -936,7 +936,7 @@ A: 当调用 setState 时，如果更新队列为空：
 A: 执行时机不同：
    - useLayoutEffect：DOM 更新后、浏览器绘制前（同步）
    - useEffect：浏览器绘制后（异步，通过 Scheduler）
-   
+
    使用场景：
    - useLayoutEffect：需要同步读取/修改 DOM
    - useEffect：大多数副作用（数据请求、订阅等）
@@ -957,13 +957,13 @@ A: useRef 返回的是一个普通对象 { current: value }。
 A: 都是用于缓存，但缓存的内容不同：
    - useMemo：缓存计算结果，返回值
    - useCallback：缓存函数引用，返回函数
-   
+
    useCallback(fn, deps) 等价于 useMemo(() => fn, deps)
 
 💡 Q9: 空依赖 [] 和不传依赖有什么区别？
 A: - 空依赖 []：只在 mount 时执行一次
    - 不传依赖：每次渲染都执行
-   
+
    因为 updateEffect 中：
    - deps === null 时不比较，直接标记需要执行
    - deps === [] 时比较结果为 true，不执行
@@ -972,7 +972,7 @@ A: - 空依赖 []：只在 mount 时执行一次
 A: 通过 Dispatcher 机制：
    - mount 阶段：ReactCurrentDispatcher.current = HooksDispatcherOnMount
    - update 阶段：ReactCurrentDispatcher.current = HooksDispatcherOnUpdate
-   
+
    区分条件：current === null || current.memoizedState === null
 `;
 
