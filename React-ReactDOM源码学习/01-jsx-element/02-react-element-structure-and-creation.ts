@@ -369,16 +369,16 @@ function createElement(type, config, children) {
     if (hasValidRef(config)) {
       ref = config.ref;
     }
-    
+
     // 2.2 提取 key（转为字符串）
     if (hasValidKey(config)) {
       key = '' + config.key;
     }
-    
+
     // 2.3 提取 DEV 专用字段
     self = config.__self;
     source = config.__source;
-    
+
     // 2.4 复制其他属性到 props（排除保留字段）
     for (propName in config) {
       if (
@@ -392,7 +392,7 @@ function createElement(type, config, children) {
 
   // ========== Step 3: 处理 children ==========
   const childrenLength = arguments.length - 2;
-  
+
   if (childrenLength === 1) {
     // 单个子元素，直接赋值
     props.children = children;
@@ -507,11 +507,11 @@ JSX 代码:
 
 function ItemList({ items }) {
   const firstItemRef = useRef(null);
-  
+
   return (
     <ul>
       {items.map((item, index) => (
-        <Item 
+        <Item
           key={item.id}
           ref={index === 0 ? firstItemRef : null}
           data={item}
@@ -525,7 +525,7 @@ function ItemList({ items }) {
 编译后（核心部分）:
 ─────────────────────────
 
-items.map((item, index) => 
+items.map((item, index) =>
   _jsx(Item, {
     ref: index === 0 ? firstItemRef : null,
     data: item

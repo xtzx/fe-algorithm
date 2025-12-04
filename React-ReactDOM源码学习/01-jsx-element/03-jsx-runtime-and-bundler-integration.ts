@@ -332,7 +332,7 @@ createElement:
 function createElement(type, config, children) {
   // children 从 arguments[2] 开始
   const childrenLength = arguments.length - 2;
-  
+
   if (childrenLength === 1) {
     props.children = children;
   } else if (childrenLength > 1) {
@@ -445,7 +445,7 @@ const devVsProd = `
    // 检查列表中的 key
    jsxWithValidationStatic → 检查静态子元素的 key
    jsxWithValidationDynamic → 检查动态子元素的 key
-   
+
    // 警告示例：
    "Warning: Each child in a list should have a unique 'key' prop."
 
@@ -462,10 +462,10 @@ const devVsProd = `
    ─────────────────────────
    // jsxDEV 接收 source 和 self 参数
    jsxDEV(type, config, maybeKey, source, self)
-   
+
    // source 包含：
    { fileName: 'App.js', lineNumber: 10, columnNumber: 5 }
-   
+
    // 错误信息可以指向具体位置
 
 4. String Ref 警告
