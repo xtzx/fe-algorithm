@@ -712,7 +712,7 @@ function myIsValidElement(object: any): boolean {
  */
 function myChildrenCount(children: any): number {
   let count = 0;
-  
+
   function countChild(child: any) {
     if (child == null || typeof child === 'boolean') {
       return;
@@ -723,7 +723,7 @@ function myChildrenCount(children: any): number {
       count++;
     }
   }
-  
+
   countChild(children);
   return count;
 }
