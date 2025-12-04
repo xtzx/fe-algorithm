@@ -34,9 +34,9 @@
 /**
  * 📊 关键渲染路径（Critical Rendering Path）
  *
- * HTML → DOM → 
+ * HTML → DOM →
  *              → Render Tree → Layout → Paint
- * CSS → CSSOM → 
+ * CSS → CSSOM →
  *
  * 【阻塞行为】
  * - CSS 阻塞渲染（但不阻塞 DOM 解析）
@@ -164,7 +164,7 @@ const HeavyChart = lazy(() => import('./HeavyChart'));
 
 function Dashboard() {
   const [showChart, setShowChart] = useState(false);
-  
+
   return (
     <div>
       <button onClick={() => setShowChart(true)}>显示图表</button>
@@ -260,7 +260,7 @@ optimization: {
 
 const responsiveImageExample = `
 <!-- srcset：根据屏幕密度/尺寸选择图片 -->
-<img 
+<img
   src="image-800.jpg"
   srcset="
     image-400.jpg 400w,

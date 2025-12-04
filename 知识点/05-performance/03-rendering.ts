@@ -90,7 +90,7 @@
 // 错误示例：布局抖动
 function layoutThrashing() {
   const items = document.querySelectorAll('.item');
-  
+
   // ❌ 每次循环都会强制回流
   items.forEach(item => {
     const width = item.offsetWidth; // 读取触发回流
@@ -101,10 +101,10 @@ function layoutThrashing() {
 // 正确示例：批量读取，批量写入
 function optimizedLayout() {
   const items = document.querySelectorAll('.item');
-  
+
   // ✅ 先批量读取
   const widths = Array.from(items).map(item => item.offsetWidth);
-  
+
   // ✅ 再批量写入
   items.forEach((item, i) => {
     (item as HTMLElement).style.width = widths[i] + 10 + 'px';
@@ -222,17 +222,17 @@ element.addEventListener('animationend', () => {
 function smoothAnimation() {
   const element = document.getElementById('box')!;
   let position = 0;
-  
+
   function animate() {
     position += 2;
     // ✅ 使用 transform 而不是 left
     element.style.transform = `translateX(${position}px)`;
-    
+
     if (position < 500) {
       requestAnimationFrame(animate);
     }
   }
-  
+
   requestAnimationFrame(animate);
 }
 
@@ -251,21 +251,21 @@ function smoothAnimation() {
 function flipAnimation(element: HTMLElement, finalPosition: DOMRect) {
   // 1. First - 记录初始位置
   const first = element.getBoundingClientRect();
-  
+
   // 2. Last - 设置最终位置（这里假设已经设置好）
   // element.classList.add('final');
   const last = finalPosition;
-  
+
   // 3. Invert - 计算差值
   const deltaX = first.left - last.left;
   const deltaY = first.top - last.top;
   const deltaW = first.width / last.width;
   const deltaH = first.height / last.height;
-  
+
   // 应用反向 transform
   element.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(${deltaW}, ${deltaH})`;
   element.style.transformOrigin = 'top left';
-  
+
   // 4. Play - 移除 transform，触发动画
   requestAnimationFrame(() => {
     element.style.transition = 'transform 0.3s ease';
@@ -332,7 +332,7 @@ class VirtualList {
 
     // 监听滚动
     this.container.addEventListener('scroll', () => this.onScroll(content));
-    
+
     // 初始渲染
     this.render(content, 0);
   }

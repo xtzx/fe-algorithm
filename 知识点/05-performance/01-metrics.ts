@@ -287,7 +287,7 @@ function collectWebVitals() {
 // 4.2 采集资源加载时间
 function collectResourceTiming() {
   const resources = performance.getEntriesByType('resource');
-  
+
   resources.forEach(resource => {
     const timing = resource as PerformanceResourceTiming;
     console.log({
@@ -337,7 +337,7 @@ class PerformanceMonitor {
     window.addEventListener('load', () => {
       setTimeout(() => {
         const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-        
+
         this.metrics['dns'] = navigation.domainLookupEnd - navigation.domainLookupStart;
         this.metrics['tcp'] = navigation.connectEnd - navigation.connectStart;
         this.metrics['ttfb'] = navigation.responseStart - navigation.requestStart;
@@ -538,7 +538,7 @@ function sendToAnalytics(metric) {
     delta: metric.delta,
     id: metric.id,
   });
-  
+
   // 使用 sendBeacon 确保数据发送
   navigator.sendBeacon('/analytics', body);
 }

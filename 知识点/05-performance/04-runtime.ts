@@ -57,7 +57,7 @@ function debounce<T extends (...args: any[]) => any>(
   } = {}
 ): T & { cancel: () => void; flush: () => void } {
   const { leading = false, trailing = true, maxWait } = options;
-  
+
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   let lastArgs: any[] | null = null;
   let lastThis: any = null;
@@ -112,7 +112,7 @@ function debounce<T extends (...args: any[]) => any>(
     const remainingWait = maxWait !== undefined
       ? Math.min(timeWaiting, maxWait - timeSinceLastInvoke)
       : timeWaiting;
-    
+
     timeoutId = setTimeout(timerExpired, remainingWait);
   }
 
@@ -180,7 +180,7 @@ function throttle<T extends (...args: any[]) => any>(
   } = {}
 ): T & { cancel: () => void } {
   const { leading = true, trailing = true } = options;
-  
+
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   let lastArgs: any[] | null = null;
   let lastThis: any = null;
@@ -196,12 +196,12 @@ function throttle<T extends (...args: any[]) => any>(
 
   function throttled(this: any, ...args: any[]) {
     const now = Date.now();
-    
+
     // 第一次调用且 leading 为 false
     if (!lastTime && !leading) {
       lastTime = now;
     }
-    
+
     const remaining = wait - (now - lastTime);
     lastArgs = args;
     lastThis = this;
@@ -266,14 +266,14 @@ function processLargeArray<T>(
   onComplete?: () => void
 ) {
   const queue = [...items];
-  
+
   function processChunk(deadline: IdleDeadline) {
     // 在空闲时间内处理尽可能多的任务
     while (queue.length > 0 && deadline.timeRemaining() > 0) {
       const item = queue.shift()!;
       process(item);
     }
-    
+
     if (queue.length > 0) {
       // 还有任务，继续调度
       requestIdleCallback(processChunk);
@@ -282,7 +282,7 @@ function processLargeArray<T>(
       onComplete?.();
     }
   }
-  
+
   requestIdleCallback(processChunk);
 }
 
@@ -296,7 +296,7 @@ async function processWithYield<T>(
     // 处理一批
     const chunk = items.slice(i, i + chunkSize);
     chunk.forEach(process);
-    
+
     // 让出主线程
     // @ts-ignore
     if (typeof scheduler !== 'undefined' && scheduler.yield) {
@@ -326,7 +326,7 @@ function timeSlicing<T>(
 
   function processChunk() {
     const start = performance.now();
-    
+
     while (queue.length > 0) {
       // 检查是否需要让出
       if (performance.now() - start >= yieldInterval) {
@@ -336,13 +336,13 @@ function timeSlicing<T>(
         channel.port2.postMessage(null);
         return;
       }
-      
+
       const item = queue.shift()!;
       process(item);
       processed++;
       onProgress?.(processed, total);
     }
-    
+
     onComplete?.();
   }
 
@@ -381,11 +381,11 @@ class TaskWorker {
 
   constructor(workerScript: string) {
     this.worker = new Worker(workerScript);
-    
+
     this.worker.onmessage = (e) => {
       const { id, result, error } = e.data;
       const task = this.pending.get(id);
-      
+
       if (task) {
         if (error) {
           task.reject(new Error(error));
@@ -415,10 +415,10 @@ const workerScript = `
 // worker.js
 self.onmessage = function(e) {
   const { id, type, data } = e.data;
-  
+
   try {
     let result;
-    
+
     switch (type) {
       case 'sort':
         result = data.slice().sort((a, b) => a - b);
@@ -433,7 +433,7 @@ self.onmessage = function(e) {
       default:
         throw new Error('Unknown task type');
     }
-    
+
     self.postMessage({ id, result });
   } catch (error) {
     self.postMessage({ id, error: error.message });
@@ -624,7 +624,7 @@ const debouncedSearch = debounce(async (query) => {
   // 取消之前的请求
   controller?.abort();
   controller = new AbortController();
-  
+
   try {
     const result = await fetch('/api/search?q=' + query, {
       signal: controller.signal

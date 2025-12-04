@@ -48,14 +48,14 @@ interface PerformanceMetrics {
   domParse?: number;
   domReady?: number;
   loadComplete?: number;
-  
+
   // Core Web Vitals
   fcp?: number;
   lcp?: number;
   fid?: number;
   inp?: number;
   cls?: number;
-  
+
   // 自定义指标
   [key: string]: number | undefined;
 }
@@ -109,11 +109,11 @@ class PerformanceSDK {
     this.collectNavigationTiming();
     this.collectPaintTiming();
     this.collectWebVitals();
-    
+
     if (this.config.enableResource) {
       this.collectResourceTiming();
     }
-    
+
     if (this.config.enableError) {
       this.collectErrors();
     }
@@ -127,7 +127,7 @@ class PerformanceSDK {
   private collectNavigationTiming() {
     const callback = () => {
       const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-      
+
       if (!navigation) return;
 
       this.metrics.dns = navigation.domainLookupEnd - navigation.domainLookupStart;
@@ -233,7 +233,7 @@ class PerformanceSDK {
   private collectResourceTiming() {
     const processResources = () => {
       const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
-      
+
       this.resources = resources.map(r => ({
         name: r.name,
         type: r.initiatorType,
@@ -424,11 +424,11 @@ const alertRules: AlertRule[] = [
 
 function checkAlerts(metrics: PerformanceMetrics): AlertRule[] {
   const triggered: AlertRule[] = [];
-  
+
   for (const rule of alertRules) {
     const value = metrics[rule.metric];
     if (value === undefined) continue;
-    
+
     let shouldAlert = false;
     switch (rule.operator) {
       case '>': shouldAlert = value > rule.threshold; break;
@@ -436,12 +436,12 @@ function checkAlerts(metrics: PerformanceMetrics): AlertRule[] {
       case '>=': shouldAlert = value >= rule.threshold; break;
       case '<=': shouldAlert = value <= rule.threshold; break;
     }
-    
+
     if (shouldAlert) {
       triggered.push(rule);
     }
   }
-  
+
   return triggered;
 }
 
