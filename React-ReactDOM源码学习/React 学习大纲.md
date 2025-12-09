@@ -17,27 +17,6 @@
 
 
 
-
-Phase 0: 架构设计 - 工程化/包设计/核心包
-
-Phase 1: JSX 与 React 元素
-
-Phase 2: Fiber 架构
-
-Phase 3: 渲染流程
-
-Phase 4: Hooks 原理
-
-Phase 5: Diff 算法
-
-Phase 6: 调度机制
-
-Phase 7: 并发特性
-
-Phase 8: 事件系统
-
-
-
 ---
 
 ## Part 1: 工程化架构设计
