@@ -1,0 +1,861 @@
+① 提示词：深入 A - Hooks 深入
+我现在在系统学习 React v18.2.0 源码，这是整体计划中的「深入 A：Hooks 深入（基于 Phase 4）」。
+
+前置：我已经完成 Phase 1-11 的学习，并对以下内容有源码层面的基础理解：
+- JSX & React 元素创建
+- Fiber 架构与渲染流程
+- Scheduler 与并发特性
+- 基础 Hooks 实现（useState/useReducer/useEffect 等）
+- Suspense、事件系统、SSR & Hydration
+
+这一阶段我希望围绕「Hooks 高级能力与细节」做一次深入，特别是：
+
+【整体学习目标】
+从源码角度理解以下 Hooks 的实现思路与使用边界：
+
+- useRef / useImperativeHandle：
+  - ref 在 Fiber 上是如何存储与更新的？
+  - forwardRef + useImperativeHandle 的“实例暴露”机制是如何串起来的？
+- useMemo / useCallback：
+  - 缓存是如何存储在 Hook 链表里的？
+  - 依赖数组比较的逻辑（Object.is / 浅比较？）
+  - 哪些场景下缓存会失效/被丢弃？
+- useLayoutEffect vs useEffect：
+  - 调度阶段与 commit 阶段的执行时机差异。
+  - 在 DOM 更新前/后分别能做什么？源码中是如何区分的？
+- useSyncExternalStore：
+  - 为什么要有这个 Hook（并发渲染下的 tearing 问题背景）？
+  - 订阅外部 store 时如何保证一致性？
+- useId / useInsertionEffect：
+  - useId 如何保证 SSR + CSR 一致的 ID？
+  - useInsertionEffect 为什么“只给 CSS-in-JS 用”？它在 commit 阶段的插入时机如何安排？
+
+【输出形式 / 多文件结构】
+请按多份 markdown 文件组织内容，每个文件聚焦一个子主题。目录建议：
+
+1. 文件一：`12-hooks-advanced/01-useRef-and-imperative-handle.md`
+   - 目标：
+     - 梳理 ref 的类型（字符串 ref、不再推荐的回调 ref、对象 ref、forwardRef）。
+     - 说明 Fiber 上 ref 字段的作用，以及 commit 阶段如何 attach/detach。
+   - 内容要点：
+     - useRef 的 Hook 存储结构（memoizedState 是什么？）
+     - ref.current 何时被赋值 / 更新？
+     - forwardRef 的实现大致流程。
+     - useImperativeHandle 如何把“暴露出去的对象”挂在 ref.current 上。
+   - 源码提示：
+     - `packages/react/src/forwardRef.js`
+     - `packages/react-reconciler/src/ReactFiberHooks.new.js` 中 useRef / useImperativeHandle 的实现。
+     - commit 阶段相关：`ReactFiberCommitWork.new.js` 中关于 ref 的处理逻辑。
+
+2. 文件二：`12-hooks-advanced/02-useMemo-useCallback-internals.md`
+   - 目标：
+     - 理解 useMemo/useCallback 的缓存机制与依赖数组比较。
+   - 内容要点：
+     - Hook 链表的存储形态回顾（memoizedState 链表）。
+     - useMemo/useCallback 在 mount/update 时分别如何读取/写入缓存。
+     - 依赖数组为 undefined / 空数组 / 具体依赖时的不同表现。
+     - 为什么它们只是“缓存建议”，不是绝对保证不重新计算？
+   - 源码提示：
+     - `ReactFiberHooks.new.js` 中 useMemo/useCallback 的分支。
+     - 对比 useState/useReducer 的实现，感受“同一套 Hook 框架下的不同策略”。
+
+3. 文件三：`12-hooks-advanced/03-effect-timing-differences.md`
+   - 目标：
+     - 彻底弄清 useEffect 和 useLayoutEffect 的执行时机与调用栈差异。
+   - 内容要点：
+     - 对比：render 阶段、commit 前/后，分别会处理哪些 effect。
+     - 带有 Hook tag 的 effect 链表如何在 commit 阶段被遍历与执行。
+     - useLayoutEffect 对布局时机、同步执行的影响。
+   - 源码提示：
+     - `ReactFiberCommitWork.new.js` 中 commit 阶段的 effect 处理（passive vs layout）。
+     - `ReactFiberHooks.new.js` 中 useEffect/useLayoutEffect 注册逻辑。
+
+4. 文件四：`12-hooks-advanced/04-useSyncExternalStore.md`
+   - 目标：
+     - 从 tearing 问题出发看 useSyncExternalStore 的设计。
+   - 内容要点：
+     - 问题背景：并发渲染下外部 store（Redux/Zustand 等）可能出现的“读到不一致数据”。
+     - useSyncExternalStore 的两个关键输入：subscribe 与 getSnapshot。
+     - snapshot 与订阅回调如何保证 render 与 commit 间的一致性。
+   - 源码提示：
+     - `packages/use-sync-external-store/src/`
+     - `ReactFiberHooks.new.js` 中对 useSyncExternalStore 的桥接实现。
+
+5. 文件五：`12-hooks-advanced/05-useId-and-useInsertionEffect.md`
+   - 目标：
+     - 理解 SSR+CSR 下一致 ID 的生成方式，以及 CSS-in-JS 的插入时机。
+   - 内容要点：
+     - useId：如何依赖于渲染树的位置生成稳定 ID；为什么在 CSR/SSR 场景下都能保持一致。
+     - useInsertionEffect：注册的 effect 与 layout/effect 的区别；为什么会先于 layout 执行。
+     - 与 CSS-in-JS 库（styled-components/emotion 等）的关系。
+   - 源码提示：
+     - `ReactFiberHooks.new.js` 中 useId/useInsertionEffect。
+     - 可能涉及的 ID 配置/上下文文件。
+
+【源码版本与路径要求】
+- 以 React v18.2.0 为主，优先查看带 `.new` 后缀的实现文件。
+- 路径不必完全精确，但需给出足够信息让我在仓库中搜索定位。
+
+【示例场景要求】
+在讲解中，请至少穿插以下示例：
+
+- 示例 A：forwardRef + useImperativeHandle 的一个小组件：
+  - 父组件通过 ref 调用子组件暴露出的 focus / scroll 等方法。
+  - 从 Fiber/Hook 角度解释：这个 ref 在 render/commit 阶段分别发生了什么。
+- 示例 B：useMemo/useCallback 的缓存命中/失效：
+  - 提供一个简化场景，说明依赖未变时如何复用，依赖变更时如何触发重新计算。
+  - 指出一些常见误用（例如在 render 中创建大对象却误以为 useMemo 一定会缓存住）。
+
+【与其他 Phase 的衔接】
+在最后一节，请帮我总结本阶段与以下几阶段的关系：
+
+- Phase 3 渲染流程：Hooks 是如何在函数组件 render 过程中被顺序调用、挂在 Fiber 上的？
+- Phase 6 Scheduler / Phase 7 并发特性：某些 Hooks（useSyncExternalStore、useId）与并发渲染之间的特殊关系。
+- Phase 8 事件系统：useRef 常被用来配合事件回调，避免闭包陷阱，这在源码中有什么体现（可以偏概念层面）。
+
+【风格与难度】
+- 以中文讲解为主，适度保留英文术语（hook name、Fiber、effect、commit）。
+- 重点在“整体流程+数据结构”而非逐行源码。
+- 可以适当给出伪代码/流程图帮助建立心智模型，但不要贴过长的源码。
+
+
+
+
+
+
+
+② 提示词：深入 B - 并发特性深入（Lane 模型）
+我现在在系统学习 React v18.2.0 源码，这是整体计划中的「深入 B：并发特性深入（基于 Phase 7）」。
+
+前置：我已经了解基础的 Concurrent Mode 概念（useTransition/useDeferredValue 等），并对 Scheduler、Fiber 渲染流程有源码层面的基础理解。
+
+这一阶段我希望围绕「Lane 模型与 Transition 内部实现」做一次系统梳理。
+
+【整体学习目标】
+- 从源码角度理解：
+  - Lane 模型的完整结构：
+    - 31 条 Lane 的划分方式。
+    - 不同 Lane 对应的优先级语义（同步、输入响应、默认、Transition、Idle 等）。
+  - Entanglement（纠缠）：
+    - 为什么某些 Lane 必须一起处理？
+    - Lane 之间的“合并”与“锁定”规则。
+  - Transition 的内部标记机制：
+    - ReactCurrentBatchConfig.transition 是如何参与标记的？
+    - 更新被打上“transition 标记”之后，在调度阶段有何不同？
+  - useDeferredValue 的实现：
+    - 它是如何让某些界面“慢一点更新”，但不阻塞高优先级更新的？
+  - Offscreen API：
+    - 隐藏/预渲染节点的 Fiber 标记。
+    - 状态保持与显示/隐藏之间的关系（如 Transition + Offscreen 的配合）。
+
+【输出形式 / 多文件结构】
+请按多份 markdown 文件组织内容，对应以下文件：
+
+1. 文件一：`13-concurrent-deep-dive/01-lane-model-complete.md`
+   - 内容要点：
+     - Lane 的本质：用 bitmask 表示优先级组合。
+     - 常见 Lane 常量及其语义（SyncLane、DefaultLane、TransitionLane 等）。
+     - 多个 Lane 合并时如何取“最高优先级”。
+   - 源码提示：
+     - `packages/react-reconciler/src/ReactFiberLane.new.js`
+     - 说明几个关键工具函数：如 `mergeLanes`, `getHighestPriorityLane`, `includesSomeLane` 等。
+
+2. 文件二：`13-concurrent-deep-dive/02-entanglement-mechanism.md`
+   - 内容要点：
+     - 什么是 Lane entanglement？
+     - 哪些场景下需要把某些 Lane“纠缠”在一起，避免某个更新单独被处理？
+     - 通过一两个例子说明：例如同一批更新中，有同步输入响应 + transition 时的处理。
+   - 源码提示：
+     - `ReactFiberLane.new.js` 中关于 entangledLanes / entanglements 的定义与操作。
+     - 与调度流程的交互点（在 workLoop 里何时检查这些纠缠信息）。
+
+3. 文件三：`13-concurrent-deep-dive/03-transition-internals.md`
+   - 内容要点：
+     - Transition 更新的标记流程：
+       - ReactCurrentBatchConfig.transition 的作用。
+       - 在 dispatch setState 时，如何判断这是一个 transition 更新？
+     - Transition 更新在调度节点时有什么特殊待遇（例如优先级、可以中断等）。
+   - 源码提示：
+     - `packages/react/src/ReactStartTransition.js`
+     - `ReactFiberWorkLoop.new.js` 中关于 transition 的 lane 选择逻辑。
+     - `ReactFiberHooks.new.js` 中 useTransition 的实现。
+
+4. 文件四：`13-concurrent-deep-dive/04-useDeferredValue-implementation.md`
+   - 内容要点：
+     - useDeferredValue 的核心思路：通过“复制一个 state，但用较低优先级更新它”来实现延迟。
+     - 它与 useTransition 的内部差异与联系。
+     - 在 Fiber 里，这个“延迟值”是如何存储与更新的。
+   - 源码提示：
+     - `ReactFiberHooks.new.js` 中 useDeferredValue 的逻辑。
+     - 与 Lane 选择函数的联动。
+
+5. 文件五：`13-concurrent-deep-dive/05-offscreen-api.md`
+   - 内容要点：
+     - Offscreen Fiber 的工作原理：
+       - 隐藏状态 vs 可见状态。
+       - 状态保持：隐藏时是否仍然执行 effect / 更新？
+     - Transition + Offscreen 如何实现“预渲染/预加载”某些 UI 再切换显示。
+   - 源码提示：
+     - `ReactFiberWorkLoop.new.js` 中和 Offscreen 相关的分支。
+     - `ReactFiberNewContext.new.js` 中可能涉及 Offscreen 的上下文处理（如有）。
+     - 如果有专门的 Offscreen 组件实现文件，也请提示路径。
+
+【示例场景要求】
+请至少提供两个示例场景，辅助理解：
+
+- 示例 A：输入框 + 列表 filter 的场景：
+  - 用户输入是高优先级；列表过滤是 transition 更新。
+  - 从 Lane 的角度解释：输入更新与列表更新分别落在哪些 Lane？如何保证输入不被卡顿？
+- 示例 B：使用 useDeferredValue 的搜索建议：
+  - 输入框实时显示输入值，但搜索结果列表使用 deferredValue。
+  - 从源码角度说明：为什么 deferredValue 的更新可以被延迟，而不会影响输入值的即时渲染。
+
+【与其他 Phase 的衔接】
+- Phase 6 Scheduler：Lane 模型是如何基于 scheduler 构建一套更细粒度的优先级系统的？
+- Phase 7 并发特性：之前从 API 角度理解过的 useTransition/useDeferredValue，在本阶段被“拆开”成 Lane + Hook 逻辑。
+- Phase 10 Suspense：Suspense 边界在并发渲染中与 Lane 的关系，可以做一个简单串联（例如“加载中 UI”可能在不同 Lane 中切换）。
+
+【风格与难度】
+- 用中文讲解，保留关键英文标识（Lane、Transition、entangled、priority 等）。
+- 以“图 + 流程 + 简化示例”为主，不需要对每个 Lane 常量做机械罗列。
+
+
+
+
+
+
+
+③ 提示词：深入 C - 渲染优化深入（Bailout 等）
+我现在在系统学习 React v18.2.0 源码，这是整体计划中的「深入 C：渲染优化深入（基于 Phase 3/5）」。
+
+前置：我已经理解基础渲染流程（beginWork/completeWork）、Diff 算法、Fiber 重用规则等。
+
+这一阶段我希望围绕「什么时候 React 会跳过更新？Context 为什么容易导致重渲染？」做一次系统梳理。
+
+【整体学习目标】
+- Bailout 机制：
+  - 在哪些条件下，Fiber 子树可以被“整棵跳过”？
+  - 节点上保存的 props/memoizedProps/state/memoizedState 如何参与判断？
+- memo / PureComponent：
+  - 浅比较（shallowEqual）的逻辑与局限性。
+  - React.memo 在函数组件上的实现路径。
+- Context 的性能陷阱：
+  - 为什么 Context 变化会“穿透 memo”，导致深层组件重渲染？
+  - 有哪些源码层面的原因（订阅模型是怎样的？）。
+- Profiler API：
+  - 如何在 Fiber 上收集渲染时间、commit 时间等信息？
+- React.Children 工具：
+  - map/forEach/only/toArray 等是如何对 children 进行遍历和处理的？
+
+【输出形式 / 多文件结构】
+请按多份 markdown 文件组织内容，对应以下文件：
+
+1. 文件一：`14-render-optimization/01-bailout-mechanism.md`
+   - 内容要点：
+     - beginWork 中 bailout 的关键判断逻辑。
+     - 对比“更新路径”与“bailout 路径”的执行差异。
+     - 子树完全跳过时，对 effect / layout 有什么影响？
+   - 源码提示：
+     - `packages/react-reconciler/src/ReactFiberBeginWork.new.js` 中 bailout 相关分支。
+     - `bailoutOnAlreadyFinishedWork` 等函数的作用。
+
+2. 文件二：`14-render-optimization/02-memo-and-shallow-equal.md`
+   - 内容要点：
+     - React.memo 的整体结构：包装一个函数组件，添加“比较新旧 props”的逻辑。
+     - 默认比较逻辑 vs 自定义比较函数。
+     - shallowEqual 的具体行为：对象/数组/基本类型如何比较。
+   - 源码提示：
+     - `packages/react/src/ReactMemo.js`
+     - `packages/shared/shallowEqual.js`
+     - 在 beginWork 中如何识别一个 MemoComponent 并决定是否更新。
+
+3. 文件三：`14-render-optimization/03-context-performance-traps.md`
+   - 内容要点：
+     - Context 的订阅模型：哪些 Fiber 会被标记为“受某个 context 影响”？
+     - 当 context value 改变时，React 如何标记要更新的子树？
+     - 为什么仅在“某个子组件上用 React.memo”并不能阻止 Context 驱动的更新？
+   - 源码提示：
+     - `packages/react-reconciler/src/ReactFiberNewContext.new.js`
+     - `ReactFiberBeginWork.new.js` 中与 Context 相关的更新逻辑。
+
+4. 文件四：`14-render-optimization/04-profiler-api-internals.md`
+   - 内容要点：
+     - Profiler 组件在 Fiber 树中的特殊标记。
+     - 如何在 render 与 commit 阶段记录时间戳、计算渲染耗时。
+     - Profiler 回调 onRender 收到的数据是如何组织的。
+   - 源码提示：
+     - `packages/react-reconciler/src/ReactProfilerTimer.new.js`
+     - `ReactFiberCommitWork.new.js` 中 Profiler 相关逻辑。
+
+5. 文件五：`14-render-optimization/05-react-children-utilities.md`
+   - 内容要点：
+     - React.Children.map/forEach/toArray/only 的内部实现。
+     - 它们如何处理单个 child、多个 child、null/undefined 等情况。
+     - 对 key 的处理方式与 Diff 算法的关系。
+   - 源码提示：
+     - `packages/react/src/ReactChildren.js`
+
+【示例场景要求】
+请至少给出两个示例：
+
+- 示例 A：父组件传递 props 给重组件树，配合 React.memo 与 Context：
+  - 分别展示：
+    - 仅 props 更新 + memo 的效果。
+    - Context value 更新时，即便 memo，也会被刷新。
+  - 从源码/Flag 角度解释背后原因。
+- 示例 B：Profiler 包裹一个列表组件：
+  - 展示 onRender 中拿到的参数含义。
+  - 对应到 Fiber 上记录的时间信息（开始时间/结束时间）。
+
+【与其他 Phase 的衔接】
+- Phase 3 渲染流程：bailout 是如何“插入”到 beginWork 的主流程中的。
+- Phase 5 Diff 算法：Children 工具函数与 key 处理，是如何为 Diff 提供数据结构的。
+- Phase 9 Context：在那一阶段理解的是“功能与用法”，本阶段补全“性能视角”。
+
+【风格与难度】
+- 中文讲解为主，强调“条件判断 + 标记位”的大致流程。
+- 不要求逐行跟踪所有分支，而是抓住核心判断和典型 case。
+
+
+
+
+
+
+
+④ 提示词：Phase 12 - React Server Components (RSC)
+我现在在系统学习 React 源码，这是整体计划中的 Phase 12：React Server Components（RSC）。
+
+前置：
+- 已完成 Phase 1-11，包括 SSR & Hydration（流式渲染、注水）的源码理解。
+- 对客户端渲染、Suspense、并发特性已有基础认识。
+- 知道 RSC 是“不是 SSR，但也在服务器运行部分组件”的新能力，但细节不清楚。
+
+这一阶段我希望搞清楚：RSC 与传统 SSR 的区别、核心协议与源码结构。
+
+【整体学习目标】
+- 概念层面：
+  - Server Components 与 SSR 的区别与联系。
+  - "use client" / "use server" 指令的作用与限制。
+- 协议层面：
+  - RSC 的序列化协议：如何把组件树/数据表示成可传输的“引用 + payload”流。
+  - 客户端如何解析这一协议，再通过 React Client 进行渲染。
+- 能力层面：
+  - Server Actions 是如何实现“从客户端调用服务端函数”的？
+  - Next.js App Router 是如何利用 RSC 的？（高层理解即可）
+
+【输出形式 / 多文件结构】
+请按多份 markdown 文件组织内容：
+
+1. 文件一：`15-server-components/01-rsc-overview-vs-ssr.md`
+   - 内容要点：
+     - RSC vs SSR：
+       - SSR：在服务器生成 HTML，再由客户端 hydrate。
+       - RSC：在服务器生成“组件树描述”（非 HTML），由客户端渲染/拼装。
+     - 同构（Universal） vs “部分逻辑只有在 server 运行”的差异。
+     - 优势与限制：如减少 bundle 体积、直接访问 DB/FS 等。
+   - 源码提示（高层）：
+     - `packages/react-server/`
+     - `packages/react-server-dom-webpack/`
+     - `packages/react-client/`
+
+2. 文件二：`15-server-components/02-use-client-use-server-directives.md`
+   - 内容要点：
+     - "use client" 文件指令：
+       - 作用范围：标记某个模块是“必须在客户端执行”的组件。
+       - 如何阻断 server-only 能力。
+     - "use server" 用于 Server Actions 的标记。
+   - 源码/实现提示：
+     - 虽然指令主要由 bundler（如 Webpack、Vite）处理，但可以从 RSC 实现中看到它们在模块边界上的体现。
+
+3. 文件三：`15-server-components/03-rsc-serialization-protocol.md`
+   - 内容要点：
+     - RSC 输出的不是 HTML，而是一种“标记+payload”协议（通常是 JSON-ish 的文本流）。
+     - 如何对组件引用、props、子树进行编码。
+     - 客户端如何解析这一流，并用 React 客户端组件组成最终 UI。
+   - 源码提示：
+     - `react-server-dom-webpack/server` 与 `react-server-dom-webpack/client` 目录下的实现。
+     - 说明几个关键函数名即可（不需要完全深入每一行）。
+
+4. 文件四：`15-server-components/04-server-actions.md`
+   - 内容要点：
+     - Server Actions 的基本使用方式（高层示例即可）。
+     - 在协议层面：客户端如何发起 Action 调用、服务端如何处理并回传 UI 更新。
+   - 源码提示：
+     - RSC 中关于 Actions 的入口点和处理流程。
+
+5. 文件五：`15-server-components/05-nextjs-app-router-integration.md`
+   - 内容要点：
+     - Next.js App Router 与 React RSC 结合的大致架构：
+       - server components tree + client components tree 的拼接。
+       - 路由、数据获取与 RSC 流的关系。
+     - 不必深入 Next.js 源码，只需结合 RSC 的协议与概念做一个高层说明。
+
+【示例场景要求】
+请给出两个层面的示例：
+
+- 示例 A：一个简单的 RSC 场景：
+  - Server Component 读取数据库，返回一段 UI。
+  - 子组件中有 "use client" 的 Client Component。
+  - 从协议角度描述服务器输出了什么，客户端如何恢复组件树。
+- 示例 B：Server Action 的调用流程：
+  - 表单提交触发一个 server action。
+  - 服务器处理后返回新的 RSC payload，客户端更新界面。
+
+【与其他 Phase 的衔接】
+- Phase 11 SSR & Hydration：对比“服务器输出 HTML + 注水” vs “服务器输出组件描述 + 客户端渲染”。
+- Phase 7 并发特性 & Phase 10 Suspense：RSC 流中也会用到 Suspense 来实现渐进内容加载，请做一个高层关联说明。
+
+【风格与难度】
+- 以高层概念与协议示意为主，不要求逐行阅读所有 RSC 实现。
+- 重点是“脑内有一幅 RSC 流程图”：从 Server Components 到 RSC 流，再到客户端渲染。
+
+
+
+
+
+
+
+
+⑤ 提示词：Phase 13 - 自定义 Renderer（HostConfig）
+我现在在系统学习 React v18.2.0 源码，这是整体计划中的 Phase 13：自定义 Renderer（HostConfig 接口）。
+
+前置：
+- 已经理解 Fiber 架构、渲染流程、Scheduler。
+- 知道 ReactDOM 只是 React 的一个“渲染器实现”，也有 React Native / React Three Fiber 等。
+
+这一阶段我想搞清楚：**如何基于 react-reconciler 写一个自己的 renderer**，以及 HostConfig 这层抽象是怎么设计的。
+
+【整体学习目标】
+- 理解 HostConfig 接口：
+  - 各个方法（createInstance、appendChild、commitUpdate 等）在渲染和更新周期中的作用。
+- 理解 ReactDOM / React Native 这些官方 renderer 是如何实现各自的 HostConfig 的。
+- 能够用一个简化版 HostConfig 写出“渲染到自定义终端/console/伪 DOM”的 renderer。
+
+【输出形式 / 多文件结构】
+请按多份 markdown 文件组织内容：
+
+1. 文件一：`16-custom-renderer/01-hostconfig-interface.md`
+   - 内容要点：
+     - HostConfig 的核心职责：让 reconciler 可以不关心具体平台，只依赖一组抽象的操作。
+     - 列出最关键的一些方法，并说明在哪个阶段会被调用：
+       - createInstance / createTextInstance
+       - appendInitialChild / appendChildToContainer
+       - finalizeInitialChildren
+       - prepareUpdate / commitUpdate / commitTextUpdate
+       - removeChild / clearContainer 等。
+   - 源码提示：
+     - `packages/react-reconciler/src/ReactFiberHostConfig.js`
+     - forks：`packages/react-reconciler/src/forks/ReactFiberHostConfig.*.js`
+
+2. 文件二：`16-custom-renderer/02-building-simple-renderer.md`
+   - 内容要点：
+     - 使用 `react-reconciler` 包写一个极简 renderer：
+       - 比如渲染到一个 JS 对象结构、console 输出，或者某种“虚拟终端”。
+     - 说明如何创建 reconciler 实例，如何暴露 render(rootElement, container) 这样的 API。
+   - 要求：
+     - 给出简化版的 HostConfig 示例（不要求完整，只需覆盖基本 mount/update 场景）。
+     - 描述每个方法在执行流程中被调用的时机。
+
+3. 文件三：`16-custom-renderer/03-react-dom-vs-react-native.md`
+   - 内容要点：
+     - 对比 ReactDOM 与 React Native 的 HostConfig：
+       - 不同平台的 createInstance 有何差异。
+       - 事件系统/布局/样式处理上的不同抽象层。
+     - 不要求详细看完整实现，只从接口层面比较“平台差异”。
+   - 源码提示：
+     - `packages/react-dom/src/client/ReactDOMHostConfig.js`
+     - React Native 对应的 HostConfig 文件路径（可以提示大概位置）。
+
+4. 文件四：`16-custom-renderer/04-renderer-agnostic-design.md`
+   - 内容要点：
+     - 总结 React “renderer 无关”的设计理念：
+       - reconciler 与 renderer 的边界在哪里？
+       - 哪些逻辑在核心 reconciler 中，哪些逻辑留给 HostConfig 注入？
+     - 与之前 Phase 2 架构理解呼应：Fiber 树本身并不依赖具体平台。
+
+【示例场景要求】
+请提供一个“终端 Renderer”的简化示例流程：
+
+- render(<App />) 会在终端输出类似：
+  - `<Box>`、`<Text>` 这样的结构。
+- 当 state 更新时，只更新必要部分，而不是重绘所有输出。
+- 用文字描述 React 在这个流程中调用了哪些 HostConfig 方法，以及数据如何流转。
+
+【与其他 Phase 的衔接】
+- Phase 2 Fiber 架构：强调 “Fiber 树 + HostConfig 实现不同平台” 的分层设计。
+- Phase 8 事件系统：指出事件系统也是按平台分别实现的（ReactDOM vs React Native）。
+- Phase 11 SSR：服务端渲染也可以被看作“另一种 renderer”，可做类比。
+
+【风格与难度】
+- 重点是“接口 + 生命周期”而不是“记住所有方法签名”。
+- 希望最后产出一张图：React 核心（reconciler）在中间，两端分别接不同 HostConfig 与平台 API。
+
+
+
+
+
+
+
+
+⑥ 提示词：Phase 14 - React DevTools 原理
+我现在在系统学习 React v18.2.0 源码，这是整体计划中的 Phase 14：React DevTools 原理。
+
+前置：
+- 已了解 Fiber 架构、渲染流程、Profiler 组件等。
+- 日常使用过 React DevTools（查看组件树、props/state、Profiler 视图、Highlight updates 等）。
+
+这一阶段我希望从源码角度搞清楚：
+
+【整体学习目标】
+- DevTools 如何获取 Fiber 树的信息？
+- 全局 hook（`__REACT_DEVTOOLS_GLOBAL_HOOK__`）是如何被注入、如何与不同 renderer 通信？
+- Fiber 树是如何被序列化/打包，再传给 DevTools UI 的？
+- Profiler 数据是如何在 DevTools 中展示的？
+- Highlight Updates 功能大致是如何实现的？
+
+【输出形式 / 多文件结构】
+请按多份 markdown 文件组织内容：
+
+1. 文件一：`17-devtools/01-devtools-overview.md`
+   - 内容要点：
+     - 整体结构：
+       - DevTools UI（Chrome 扩展 / 独立应用）与被调试页面之间的通信通道。
+       - React 应用通过一个全局 hook 暴露内部信息。
+     - 不同 renderer（react-dom/react-native）如何接入 DevTools。
+
+2. 文件二：`17-devtools/02-global-hook-injection.md`
+   - 内容要点：
+     - `__REACT_DEVTOOLS_GLOBAL_HOOK__` 的生命周期：
+       - 浏览器端扩展如何注入这个全局对象。
+       - React 在初始化时如何检测并注册到这个 hook。
+     - 注册过程：renderer 给 DevTools 提供了哪些能力（如 onCommitFiberRoot 回调）。
+   - 源码提示：
+     - `packages/react-devtools-shared/src/backend/renderer.js`
+     - `packages/react-reconciler/src/ReactFiberDevToolsHook.new.js`
+
+3. 文件三：`17-devtools/03-fiber-tree-serialization.md`
+   - 内容要点：
+     - Fiber 树如何转换为 DevTools 的“虚拟组件树”数据：
+       - 需要剔除哪些内部字段、保留哪些对调试有意义的信息（displayName、props、state 等）。
+       - key、type 等如何处理。
+     - 数据序列化/传输的过程（只需描述大致格式与流程，不必细究每个字段）。
+   - 源码提示：
+     - `packages/react-devtools-shared/` 下与 “backend”/“renderer” 相关的文件。
+
+4. 文件四：`17-devtools/04-profiler-data-collection.md`
+   - 内容要点：
+     - DevTools 如何接收来自 renderer 的 Profiler 数据：
+       - 每次 commit 记录哪些时间信息、组件标识。
+       - DevTools UI 如何根据这些数据绘制 Profiler chart。
+   - 源码提示：
+     - `ReactProfilerTimer.new.js` 与 DevTools 之间的接口。
+     - DevTools shared 包中与 Profiler 面板相关的逻辑。
+
+5. 文件五：`17-devtools/05-highlight-updates.md`
+   - 内容要点：
+     - Highlight updates（高亮更新组件边框）的实现思路：
+       - DevTools 如何知道哪些 DOM 节点在 commit 中更新了？
+       - 如何在页面上画出 overlay / 边框？
+     - 只需高层理解：从 Fiber 更新 → DevTools 收到信息 → DOM 上高亮。
+
+【示例场景要求】
+请给出一个从“用户操作 → DevTools 展示”的完整链路示例：
+
+- 用户点击按钮，触发一个 state 更新。
+- React 执行渲染、commit。
+- DevTools 通过 global hook 得到 commit 信息：
+  - 更新了哪个 Fiber root？
+  - 哪些组件发生了变化？
+- DevTools UI 更新：
+  - 组件树面板刷新对应节点的 props/state。
+  - 如果开启 Profiler/Highlight updates，则相应显示变化。
+
+【与其他 Phase 的衔接】
+- Phase 3 渲染流程、Phase 14 渲染优化：DevTools 实际上就是“监听 Fiber 渲染”的一个外部观察者。
+- Phase 15 性能优化：理解 DevTools 的 Profiler 工作原理有助于更合理地解读性能数据。
+- Phase 13 自定义 Renderer：说明自定义 renderer 如何选择是否支持 DevTools。
+
+【风格与难度】
+- 以“架构图 + 数据流”为主，不要求读完 DevTools 所有代码。
+- 重点是：我能说清楚 DevTools 是通过什么接口了解 React 应用内发生了什么。
+
+
+
+
+
+
+
+
+⑦ 提示词：Phase 15 - React 性能优化原理
+我现在在系统学习 React v18.2.0 源码，这是整体计划中的 Phase 15：React 性能优化原理。
+
+前置：
+- 已经理解 Fiber、Diff、渲染优化（bailout/memo）、Hooks、Suspense、Concurrent 特性。
+- 有一定实战经验，知道一些常见性能技巧（memo、useMemo、虚拟列表等）。
+
+这一阶段希望“把零散的性能技巧，和源码原理建立连接”。
+
+【整体学习目标】
+- 从源码角度理解：
+  - React.memo 的实现与 shallowEqual 的边界。
+  - useMemo / useCallback 的缓存失效场景（之前“深入 A”会讲实现，这里偏“性能策略”）。
+  - Context 带来的重渲染问题（如何从源码层面解释）。
+  - Suspense 如何帮助避免“瀑布流请求”。
+  - 并发特性（Lane/Transition）如何提高“感知性能”。
+- 结合几个实战场景（大列表、表单、动画）做完整分析。
+
+【输出形式 / 多文件结构】
+请按多份 markdown 文件组织内容：
+
+1. 文件一：`18-performance/01-memo-shallow-equal.md`
+   - 内容要点：
+     - React.memo 内部浅比较逻辑回顾。
+     - 典型误区：深层对象/函数频繁创建导致 memo 失效。
+     - 如何根据源码行为设计“合理的 props 结构”。
+   - 源码提示：
+     - `ReactMemo.js`
+     - `shared/shallowEqual.js`
+
+2. 文件二：`18-performance/02-cache-invalidation-scenarios.md`
+   - 内容要点：
+     - useMemo/useCallback 缓存失效的典型场景：
+       - 依赖数组不稳定 / 写错。
+       - 外部闭包捕获了频繁变化的值。
+     - 从 Hook 链表与依赖数组比较逻辑角度解释这些现象。
+   - 源码提示：
+     - `ReactFiberHooks.new.js` 中 useMemo/useCallback 部分。
+
+3. 文件三：`18-performance/03-context-rerender-problem.md`
+   - 内容要点：
+     - 当 Context value 更新时，React 如何向下游标记需要更新的消费者。
+     - 为什么 Context 容易造成“全树重渲染”。
+     - 常见的拆分/优化思路（可结合源码机制解释）。
+   - 源码提示：
+     - `ReactFiberNewContext.new.js`
+     - `ReactFiberBeginWork.new.js` 中相关逻辑。
+
+4. 文件四：`18-performance/04-suspense-waterfall-optimization.md`
+   - 内容要点：
+     - 瀑布流请求问题：组件 A 等待数据 → 渲染组件 B → B 再发请求……导致串行。
+     - Suspense 与并发渲染/数据 fetching 的协作如何减少瀑布现象。
+     - 从源码角度：在遇到 Suspense 边界时，React 如何处理“未就绪的部分”和 fallback。
+   - 与 Phase 10/12/11 有一定重叠，这里以性能视角重新梳理。
+
+5. 文件五：`18-performance/05-concurrent-perceived-performance.md`
+   - 内容要点：
+     - “感知性能” vs “真实渲染时间”。
+     - Concurrent 特性如何优先渲染高优先级任务（例如用户输入）并推迟低优先级任务。
+     - 用 Lane 模型解释某些常见优化模式（如 useTransition）。
+   - 源码提示：
+     - `ReactFiberLane.new.js`
+     - `ReactFiberWorkLoop.new.js`
+
+6. 文件六：`18-performance/06-practical-optimization-cases.md`
+   - 内容要点：
+     - 大列表优化：
+       - 虚拟滚动（不必实现源码，只需从 React 渲染视角解释为什么能省很多工作）。
+       - memo + stable key 的作用。
+     - 表单性能优化：
+       - 受控/非受控的区别。
+       - 如何减少大量输入控件的重渲染。
+     - 动画性能：
+       - useLayoutEffect + requestAnimationFrame 的典型用法。
+       - React 渲染与浏览器合成线程的关系（高层说明即可）。
+
+【示例场景要求】
+请给出至少 3 个具体案例，每个案例：
+- 先用“业务代码层面”描述问题与优化方案。
+- 再用“源码/机制层面”解释为什么这种方案有效。
+
+【与其他 Phase 的衔接】
+- 深入 A Hooks、深入 C 渲染优化：这里是对前面 Hook 细节与 bailout 机制的“性能视角整合”。
+- Phase 7 并发特性、Phase 10 Suspense：从用户体验与感知性能角度再回顾一遍。
+
+【风格与难度】
+- 偏实践，偏“解释现象”。不用死抠所有源码细节。
+- 多用“如果你写出这段代码，React 在内部会做 XX”这种描述。
+
+
+
+
+
+
+
+
+⑧ 提示词：Phase 16 - 状态管理库整合原理
+我现在在系统学习 React v18.2.0 源码，这是整体计划中的 Phase 16：状态管理库整合原理。
+
+前置：
+- 熟悉 Redux / Zustand / Jotai 等常见状态管理库的基本用法。
+- 已经在“深入 A”和“Phase 15 性能优化”中了解过 useSyncExternalStore 与 Context 性能问题。
+
+这一阶段，我希望从 React 官方提供的接口出发，理解第三方状态库如何与 React 配合，尤其是在并发渲染场景下如何避免 tearing。
+
+【整体学习目标】
+- useSyncExternalStore 的设计动机：
+  - tearing 问题是什么？为什么 React 18 需要一个“官方订阅模式”接口？
+- Redux / Zustand / Jotai 等如何基于 useSyncExternalStore 或类似模式接入 React。
+- 并发渲染下的一致性问题（tearing）如何在协议层面解决。
+- Proxy-based 状态管理（MobX/Valtio）与 React 的结合方式。
+- Signals 类模式与 React 的对比（高层概念）。
+
+【输出形式 / 多文件结构】
+请按多份 markdown 文件组织内容：
+
+1. 文件一：`19-state-management/01-useSyncExternalStore-design.md`
+   - 内容要点：
+     - 从 tearing 问题讲起：并发渲染时，render 阶段读取的 store 与 commit 阶段不一致会导致的 UI 错乱。
+     - useSyncExternalStore 提供的三个核心点：
+       - getSnapshot
+       - subscribe
+       - server snapshot 支持（SSR）。
+     - 源码层面如何调用这些回调，保证一致性。
+   - 源码提示：
+     - `packages/use-sync-external-store/src/`
+     - `ReactFiberHooks.new.js` 中 useSyncExternalStore 的桥接实现。
+
+2. 文件二：`19-state-management/02-redux-zustand-integration.md`
+   - 内容要点：
+     - 以 Redux 为例：
+       - 介绍 React-Redux v8 之后如何基于 useSyncExternalStore 实现状态订阅。
+     - 以 Zustand 为例：
+       - 它是如何封装一个 selector + subscribe 模式的 Hook 的。
+     - 不必深入所有库源码，但要把“共同模式”提炼出来。
+   - 可以给出一些伪代码示意。
+
+3. 文件三：`19-state-management/03-tearing-problem.md`
+   - 内容要点：
+     - 更系统地解释 tearing：
+       - 同一时间屏幕上不同组件读到了不同版本的 state。
+       - 在并发渲染/中断渲染下容易出现。
+     - 通过一个简化示例说明老的“自定义 subscribe”模式为何会出问题。
+     - useSyncExternalStore 如何在 render/commit 间约束这些行为。
+
+4. 文件四：`19-state-management/04-proxy-based-state.md`
+   - 内容要点：
+     - Proxy-based 状态库（MobX/Valtio 等）的基本理念：
+       - 通过 Proxy 拦截读取/写入，收集依赖并做细粒度更新。
+     - 这些库在 React 中如何触发重新渲染：
+       - 是通过自定义 Hook，还是通过某种 subscribe？
+     - 从 React 的角度，关键还是“如何订阅变化并触发 setState”。
+   - 仅需高层概念，不必深挖第三方库源码。
+
+5. 文件五：`19-state-management/05-signals-vs-react.md`
+   - 内容要点：
+     - Signals（如 SolidJS/Qwik/Vue 的一些实现）模式简要介绍。
+     - 与 React 的差异：
+       - Signals 做的是“细粒度依赖跟踪”。
+       - React 目前还是“组件级渲染”，通过 Hook/Context/memo 进行优化。
+     - 从源码层面比较两种模式的优缺点（概念向，不需要具体实现）。
+
+【示例场景要求】
+请至少给出两个示例：
+
+- 示例 A：一个 useSyncExternalStore 实现的简单计数器 store：
+  - 展示 getSnapshot + subscribe 的实际写法。
+  - 解释 React 在渲染/更新过程中会如何调用这些函数。
+- 示例 B：tearing 问题的简单演示（可以是伪代码/思维实验）：
+  - 描述在并发模式下如果用错误的订阅方式，可能会出现什么 UI 问题。
+  - 对比用 useSyncExternalStore 时的行为。
+
+【与其他 Phase 的衔接】
+- 深入 A Hooks：在那一阶段了解 useSyncExternalStore 的内部实现，这里更多聚焦“如何用它设计状态库”。
+- Phase 7 并发特性：tearing 本质上是并发渲染与外部可变状态的冲突。
+- Phase 15 性能优化：状态管理策略直接影响渲染性能和更新粒度。
+
+【风格与难度】
+- 概念说明 + 少量伪代码，避免陷入具体库的复杂实现。
+- 核心是理解“React 提供了什么接口，让生态状态库能够在并发渲染下安全运行”。
+
+
+
+
+
+
+
+
+
+⑨ 提示词：Phase 17 - React 19 新特性预览
+我现在在系统学习 React 源码，目前主版本是 v18.2.0，但我也希望了解 React 19（以及相关 RFC / 实验分支）中的一些新特性。这是整体计划中的 Phase 17：React 19 新特性预览。
+
+前置：
+- 已经理解 React 18 的并发特性、Suspense、Hooks、SSR 等。
+- 对 actions / use / React Compiler 等新特性有一定“听说”，但没有系统整理。
+
+这一阶段我希望以“前瞻 + 概念 + 大致实现方向”为主（不要求很深入源码）。
+
+【整体学习目标】
+- React Compiler（原 React Forget）：
+  - 自动 memo 的目标与基本思路。
+  - 对现有手动 useMemo/useCallback 的影响（从理念层面理解）。
+- Actions：
+  - 特别是在表单场景中的新范式。
+  - 与 Server Actions / RSC 的关系。
+- useFormStatus / useFormState：
+  - 在表单提交中的状态收集与反馈。
+- useOptimistic：
+  - 乐观更新的核心思路与使用场景。
+- use() Hook：
+  - Promise 解包（以及与 Suspense 的关系）。
+- Document Metadata：
+  - 内置处理 `<title>` / `<meta>` 等文档信息的能力。
+
+【输出形式 / 多文件结构】
+请按多份 markdown 文件组织内容，偏“概念+API+高层实现”。
+
+1. 文件一：`20-react19/01-react-compiler-auto-memo.md`
+   - 内容要点：
+     - React Compiler 的目标：自动推理出哪些组件/子树可以稳定重用，减少手写 memo/useMemo/useCallback。
+     - 高层实现思路（静态分析组件代码，构建依赖图）。
+     - 对开发者的影响：写法上的约束、兼容性考虑。
+
+2. 文件二：`20-react19/02-actions-form-handling.md`
+   - 内容要点：
+     - Actions 的概念：把“表单提交 + 副作用 + 状态更新”以一种更声明式的方式表达。
+     - 与 RSC / Server Actions 的关系：比如表单直接提交到 server action。
+     - 高层的请求/响应流程（可以结合 Next.js 的实践说明）。
+
+3. 文件三：`20-react19/03-useFormStatus-useFormState.md`
+   - 内容要点：
+     - 这两个 Hook 提供的能力：在组件树中方便地访问表单提交状态（pending、success、error 等）。
+     - 与 Actions 的配合使用。
+     - 粗略说明在内部如何通过上下文/状态传递这些信息（不要求精确源码）。
+
+4. 文件四：`20-react19/04-useOptimistic.md`
+   - 内容要点：
+     - 乐观更新的常见模式（先更新 UI，再回滚/确认）。
+     - useOptimistic 提供的状态管理模式。
+     - 与并发渲染/Suspense 的关系（高层说明）。
+
+5. 文件五：`20-react19/05-use-hook-promise.md`
+   - 内容要点：
+     - use() Hook 解包 Promise 的能力。
+     - 与 Suspense 的关系：未 resolve 的 Promise 会触发 Suspense 边界。
+     - 可能的使用限制与注意点。
+
+6. 文件六：`20-react19/06-document-metadata.md`
+   - 内容要点：
+     - 内置 Document Metadata 支持的目标：更好地管理 `<title>`/`<meta>` 等。
+     - 与现有的 react-helmet/next/head 等生态方案对比。
+     - 高层说明它在渲染流程中的插入点（不必深入源码）。
+
+【示例场景要求】
+请结合 2-3 个典型应用场景：
+
+- 示例 A：表单 + Actions + useFormStatus + useOptimistic：
+  - 用户提交表单，立即看到本地乐观更新，同时从服务器得到最终状态。
+  - 说明这整套机制如何配合（从使用到内部大致流程）。
+
+- 示例 B：use() + Suspense + 数据请求：
+  - 一个组件中直接用 use() 读取异步数据。
+  - 说明它与现在的“自定义 Hook + Suspense”模式的差异。
+
+【与其他 Phase 的衔接】
+- Phase 12 RSC：Actions 和 use 很多会与 RSC/Server Components 场景结合。
+- Phase 15 性能优化：React Compiler 目标是减少手动优化负担，可以从“源码 + 编译器”协作角度对比一下现在的写法。
+- 深入 A Hooks：use/useOptimistic/useFormStatus 等都可以视作“新一代 Hook 能力”，与现有 Hook 框架一脉相承。
+
+【风格与难度】
+- 这是一个“前瞻性”阶段：
+  - 不要求完全基于 v18.2.0 的源码，而是允许引用 RFC / 实验实现。
+  - 重点是理解设计目标和大致方向，为以后阅读正式实现打基础。
