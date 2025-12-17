@@ -1,0 +1,158 @@
+# ============================================
+# Docker Compose 配置
+# 启动: docker-compose up -d
+# 停止: docker-compose down
+# ============================================
+
+version: '3.8'
+
+services:
+  # ========================================
+  # Nginx - 反向代理 & 静态资源服务
+  # ========================================
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    restart: unless-stopped
+
+    # 端口映射
+    ports:
+      - "80:80"
+      - "443:443"
+
+    # 配置文件和静态资源挂载
+    volumes:
+      # Nginx 配置
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/site.conf:/etc/nginx/conf.d/default.conf:ro
+      # 前端静态资源（生产环境）
+      - ./frontend-dist:/usr/share/nginx/html:ro
+      # SSL 证书（如需要）
+      # - ./certs:/etc/nginx/certs:ro
+      # 日志
+      - nginx-logs:/var/log/nginx
+
+    # 依赖 API 服务
+    depends_on:
+      api:
+        condition: service_healthy
+
+    # 网络
+    networks:
+      - app-network
+
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ========================================
+  # Node.js API 服务
+  # ========================================
+  api:
+    # 从 Dockerfile 构建
+    build:
+      context: ../node-app
+      dockerfile: Dockerfile
+
+    # 或使用预构建镜像
+    # image: ghcr.io/your-org/your-app:latest
+
+    container_name: api
+    restart: unless-stopped
+
+    # 环境变量
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+    # 从文件读取环境变量（敏感信息）
+    env_file:
+      - .env
+
+    # 端口映射（开发调试用，生产环境可注释）
+    ports:
+      - "3000:3000"
+
+    # 依赖 Redis
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    # 网络
+    networks:
+      - app-network
+
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    # 资源限制（可选）
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+  # ========================================
+  # Redis - 缓存 & 会话存储
+  # ========================================
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+
+    # 端口映射（开发调试用，生产环境可注释）
+    ports:
+      - "6379:6379"
+
+    # 持久化数据
+    volumes:
+      - redis-data:/data
+
+    # 启动命令：开启 AOF 持久化
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+    # 网络
+    networks:
+      - app-network
+
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+# ============================================
+# 网络配置
+# ============================================
+networks:
+  app-network:
+    driver: bridge
+
+# ============================================
+# 数据卷配置
+# ============================================
+volumes:
+  # Redis 数据持久化
+  redis-data:
+    driver: local
+
+  # Nginx 日志
+  nginx-logs:
+    driver: local
+

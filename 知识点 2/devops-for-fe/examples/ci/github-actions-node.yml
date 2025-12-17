@@ -1,0 +1,264 @@
+# ============================================
+# GitHub Actions CI/CD Pipeline
+# 文件位置: .github/workflows/ci.yml
+# ============================================
+
+name: CI/CD Pipeline
+
+# ============================================
+# 触发条件
+# ============================================
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+# ============================================
+# 环境变量
+# ============================================
+env:
+  NODE_VERSION: '18'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+# ============================================
+# 并发控制：同一分支只运行一个 workflow
+# ============================================
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ========================================
+  # Job 1: 代码检查
+  # ========================================
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      # 检出代码
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 设置 Node.js 环境（自动缓存 npm）
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      # 安装依赖
+      - name: Install dependencies
+        run: npm ci
+
+      # ESLint 检查
+      - name: Run ESLint
+        run: npm run lint
+
+      # TypeScript 类型检查
+      - name: Type check
+        run: npm run type-check
+
+  # ========================================
+  # Job 2: 测试
+  # ========================================
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    # 服务容器（测试需要的依赖）
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # 运行单元测试
+      - name: Run tests
+        run: npm run test -- --coverage
+        env:
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+
+      # 上传测试覆盖率报告
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        if: always()
+        with:
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false
+
+  # ========================================
+  # Job 3: 构建
+  # ========================================
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint, test]  # 依赖 lint 和 test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # 构建项目
+      - name: Build
+        run: npm run build
+        env:
+          # 注入构建时环境变量（Vite/Next.js）
+          VITE_API_URL: ${{ vars.API_URL }}
+          VITE_APP_VERSION: ${{ github.sha }}
+
+      # 上传构建产物
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: dist/
+          retention-days: 7
+
+  # ========================================
+  # Job 4: 构建 Docker 镜像
+  # ========================================
+  docker:
+    name: Docker Build & Push
+    runs-on: ubuntu-latest
+    needs: build
+
+    # 只在 push 到 main 分支时执行
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    # 权限配置
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 下载构建产物
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: dist/
+
+      # 设置 Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 登录 Container Registry
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 生成镜像标签和标签
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+
+      # 构建并推送镜像
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # 使用 GitHub Actions 缓存加速构建
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ========================================
+  # Job 5: 部署到生产环境
+  # ========================================
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: docker
+
+    # 只在 push 到 main 分支时执行
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    # 使用 production 环境（可配置保护规则和 secrets）
+    environment:
+      name: production
+      url: https://your-domain.com
+
+    steps:
+      # 部署到服务器
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            # 进入应用目录
+            cd /opt/app
+
+            # 拉取最新镜像
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+            # 更新服务
+            docker-compose up -d --force-recreate
+
+            # 清理旧镜像
+            docker image prune -f
+
+            # 验证部署
+            sleep 10
+            curl -f http://localhost/health || exit 1
+
+      # 部署通知（可选）
+      - name: Notify on success
+        if: success()
+        run: |
+          echo "✅ 部署成功！"
+          # 可以添加 Slack/钉钉通知
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ 部署失败！"
+          # 可以添加告警通知
+
