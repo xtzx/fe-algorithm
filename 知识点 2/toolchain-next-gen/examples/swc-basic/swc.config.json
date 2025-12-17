@@ -1,0 +1,109 @@
+{
+  // JSON Schema 支持 IDE 智能提示
+  "$schema": "https://json.schemastore.org/swcrc",
+
+  // JavaScript/TypeScript 编译器配置
+  "jsc": {
+    // ============================================
+    // 解析器配置 (Parser)
+    // ============================================
+    "parser": {
+      // 语法类型: "ecmascript" (纯 JS) 或 "typescript" (TS/TSX)
+      "syntax": "typescript",
+
+      // 是否支持 TSX 语法
+      "tsx": true,
+
+      // 是否支持装饰器语法 (@decorator)
+      "decorators": true,
+
+      // 是否支持动态 import()
+      "dynamicImport": true
+    },
+
+    // ============================================
+    // 转换配置 (Transform)
+    // ============================================
+    "transform": {
+      // React 转换配置
+      "react": {
+        // JSX 运行时: "classic" (React.createElement) 或 "automatic" (React 17+)
+        "runtime": "automatic",
+
+        // JSX 导入源 (配合 automatic 使用)
+        "importSource": "react",
+
+        // 是否在开发模式添加调试信息
+        "development": false,
+
+        // 是否刷新 (配合 React Fast Refresh)
+        "refresh": false
+      },
+
+      // 装饰器相关
+      "legacyDecorator": true,      // 使用传统装饰器语法
+      "decoratorMetadata": true     // 生成装饰器元数据 (TypeORM 等需要)
+    },
+
+    // ============================================
+    // 编译目标
+    // ============================================
+    // 可选: "es3" | "es5" | "es2015" | "es2016" | ... | "es2022" | "esnext"
+    "target": "es2020",
+
+    // 是否保留 class 名称 (调试、反射需要)
+    "keepClassNames": true,
+
+    // 是否使用外部 helper 函数 (减少重复代码)
+    // 需要安装 @swc/helpers
+    "externalHelpers": false,
+
+    // ============================================
+    // 实验性功能
+    // ============================================
+    "experimental": {
+      // 插件配置 (Wasm 插件)
+      "plugins": []
+    }
+  },
+
+  // ============================================
+  // 模块系统配置
+  // ============================================
+  "module": {
+    // 模块类型: "es6" | "commonjs" | "amd" | "umd" | "systemjs"
+    "type": "es6",
+
+    // 是否启用严格模式
+    "strict": true,
+
+    // 是否禁用 interop (默认会添加 __esModule 标记)
+    "noInterop": false
+  },
+
+  // ============================================
+  // 压缩配置
+  // ============================================
+  // 设为 true 启用默认压缩，或传入对象进行详细配置
+  "minify": false,
+
+  // ============================================
+  // Source Map
+  // ============================================
+  // true | false | "inline"
+  "sourceMaps": true,
+
+  // Source Map 的源文件根路径
+  "sourceRoot": "./src",
+
+  // ============================================
+  // 文件排除
+  // ============================================
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
+}
+

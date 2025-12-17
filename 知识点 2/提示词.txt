@@ -1,0 +1,345 @@
+
+
+
+
+
+
+
+
+
+Step B：Rust / Wasm 工具链 & 新一代构建工具（SWC / Turbopack / Rolldown）
+
+```text
+你现在是「前端工程化领域的专家，熟悉 Webpack / Vite / SWC / Turbopack / Rolldown / Esbuild 等工具的架构与演进」，
+要为一位「7-8 年经验的资深前端工程师，准备面试 + 想跟上工具链新趋势」设计学习资料。
+
+【主题】
+
+Rust / Wasm 工具链 与 新一代打包/编译工具：
+重点理解 SWC / Turbopack / Rolldown 等工具的架构优势，
+不要求深入 Rust 源码实现，但要懂其**设计理念、架构模式、与旧一代工具对比**。
+
+【必须覆盖的知识点】
+
+1）背景 & 演进
+   - 简要回顾：Webpack → Rollup → Parcel → Esbuild → Vite → SWC/Turbopack/Rolldown 的演进时间线
+   - 旧工具（Webpack）在性能和架构上的痛点：
+     - 单线程 / JS 实现 / 插件生态复杂度
+   - 新工具共同特点：
+     - Rust / Go / Zig 等系统语言实现
+     - 多线程 / 增量编译 / 按需构建 / 强类型 AST
+
+2）SWC
+   - 定位：TypeScript/JS/JSX 的编译器 & 打包器
+   - 架构概念：
+     - 前端：Parser → AST → Transform（插件） → Codegen
+     - 兼容 Babel 的部分配置（如 .swcrc 中如何配置）
+   - 和 Babel 的差异：
+     - AST 模型不同、插件开发语言不同（Rust vs JS）、性能对比
+   - 典型应用场景：
+     - 在 Next.js / Vite 中作为编译器使用
+     - 替代 Babel 做 TS/JS/JSX 转译
+
+3）Turbopack
+   - Turborepo / Turbopack 的整体愿景（monorepo + 超快打包）
+   - Turbopack 架构特点：
+     - 基于「任务图 / 依赖图」的增量构建
+     - 对文件系统访问的缓存与重用
+     - 模块级缓存 / chunk 图的思路
+   - 与 Webpack 对比：
+     - 为什么号称「下一代 Webpack」
+     - 在 HMR、cold start、增量构建上的优势
+
+4）Rolldown
+   - Rolldown 的定位：面向 Vite/Rollup 生态的下一代打包器
+   - 与 Rollup 的关系：
+     - API/插件兼容（尽量兼容 Rollup 插件）
+     - 使用 Rust 实现，以获得更佳性能
+   - 在构建阶段的优势：tree-shaking、多入口构建等
+
+5）Wasm & Rust 在前端工具中的角色
+   - 为什么前端工具越来越多用 Rust / Wasm：
+     - 安全、性能、生态
+   - JS 与 Rust/Wasm 的交互模型（简单概念，不用太深入）
+   - 典型例子：在 Node.js 中通过 Wasm 调用高性能核心逻辑
+
+6）工程视角对比 & 面试话术
+   - 面试官可能会问：
+     - 「你怎么看待 Babel 与 SWC 的区别？」
+     - 「为什么新工具大多用 Rust 实现？」
+     - 「如何为团队选择构建工具？」
+   - 从工程视角回答这些问题的框架：
+     - 生态、性能、维护成本、团队熟悉度、兼容性
+
+【输出形式要求：多文件、多格式】
+
+请以「一个工具链学习项目」的形式输出内容，先给出项目结构，例如：
+
+/toolchain-next-gen/
+├── README.md
+├── docs/
+│   ├── 01-history-and-evolution.md
+│   ├── 02-swc-architecture.md
+│   ├── 03-turbopack-architecture.md
+│   ├── 04-rolldown-and-rollup-compat.md
+│   ├── 05-rust-and-wasm-in-fe-tools.md
+│   ├── 06-interview-qa-and-talking-points.md
+├── cheatsheets/
+│   ├── swc-vs-babel.txt
+│   ├── bundler-comparison-matrix.md
+├── examples/
+│   ├── swc-basic/
+│   │   ├── swc.config.json
+│   │   └── transform-demo.ts
+│   ├── turbopack-config-snippets/
+│   │   └── next-turbopack.config.ts
+│   └── rolldown-config-snippets/
+│       └── rolldown.config.ts
+
+要求：
+1. 按上述或类似结构输出目录树，可适当增加文件，但不得减少核心文档。
+2. 然后逐个输出每个文件的内容，用代码块标明文件路径（md / txt / ts 等）。
+3. 多个 `.md` 文档要：
+   - 有大纲
+   - 有对比表格（例如 Babel vs SWC，Webpack vs Turbopack 等）
+   - 有「面试问题 & 答案示例」小节
+4. `examples` 下的 `.ts` / 配置文件：
+   - 模拟真实使用场景（例如：用 SWC 转译 TS 的示例代码）
+   - 加上注释说明每个配置项 / 函数的意义
+5. 重点不是写 Rust 代码，而是让读者「理解工具的架构与优势」，并且能在面试中清晰讲解。
+
+请先输出项目结构，然后依次输出每个文件的完整内容。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Step C：[DevOps] Docker、Nginx、CI/CD 实战
+
+你现在是「DevOps + 前端架构综合背景的技术负责人」，
+要为一个「7-8 年经验的资深前端工程师（正在准备晋级 / 跳槽面试）」写一套 DevOps 入门到实战的资料。
+
+【主题】
+
+DevOps for 前端/Node 工程师：
+Docker 容器化、Nginx 核心配置、CI/CD Pipeline 设计与落地。
+
+【需要覆盖的知识点（不得遗漏）】
+
+1）Docker 基础与实践
+   - 核心概念：
+     - 镜像（Image）、容器（Container）、仓库（Registry）
+     - 与虚拟机的区别
+   - Dockerfile：
+     - 常用指令：FROM、RUN、COPY、ADD、WORKDIR、EXPOSE、CMD、ENTRYPOINT、ENV、VOLUME
+     - 为 Node.js 项目写一个多阶段构建 Dockerfile 示例：
+       - 第一阶段：构建（安装依赖 + 打包）
+       - 第二阶段：运行（使用更精简的基础镜像，如 alpine）
+   - docker-compose：
+     - 描述多个服务（web / api / redis / db）协同启动
+     - 常用字段：services、volumes、depends_on、environment、ports、networks
+   - 实战案例：
+     - 用 Docker 启动一个前端静态资源服务 + 一个 Node BFF 服务 + 一个 Redis
+
+2）Nginx 核心配置
+   - 反向代理：
+     - `proxy_pass`、`location`、`upstream` 的基本用法
+     - 常见代理头部设置（`X-Forwarded-For` 等）
+   - 负载均衡：
+     - upstream 多节点配置
+     - 负载均衡策略（round-robin / ip_hash / least_conn）
+   - 静态资源服务：
+     - 配置前端 SPA/SSR 应用的静态文件目录
+     - `try_files` 的用法（SPA fallback）
+   - 缓存配置：
+     - `expires` / `cache-control` / `etag` 基本配置
+     - 针对静态资源与接口的不同策略
+   - HTTPS（简略）：证书配置位置 `ssl_certificate` 等简单说明
+
+3）CI/CD Pipeline
+   - CI/CD 基本流程：
+     - CI：lint、test、build
+     - CD：deploy 到测试环境 / 预发布 / 生产环境
+   - 以 GitHub Actions（或 GitLab CI）为例：
+     - 一个典型 pipeline 的 YAML 示例：
+       - 步骤：checkout → 安装依赖 → 运行测试 → 构建 → 构建 Docker 镜像 → 推送到 registry → 远程部署
+   - 前端项目的特殊点：
+     - 缓存 node_modules 的优化策略
+     - 多环境配置 / 环境变量注入（如 VITE_ / NEXT_PUBLIC_）
+     - 版本号与发布日志管理（简单提及）
+
+4）整个链路串起来的「端到端流程」
+   - 从本地开发 → 提交 PR → CI → 构建 Docker 镜像 → 推送 → 部署到服务器 → 由 Nginx 做入口
+   - 清晰画出（文字形式）这一链路中每个环节的职责
+
+【输出形式要求：多文件、多格式】
+
+请构建一个名为 `/devops-for-fe/` 的学习项目，结构类似：
+
+/devops-for-fe/
+├── README.md
+├── docs/
+│   ├── 01-docker-basics.md
+│   ├── 02-dockerfile-node-example.md
+│   ├── 03-docker-compose-node-redis-nginx.md
+│   ├── 04-nginx-core-config.md
+│   ├── 05-ci-cd-pipeline-with-github-actions.md
+│   ├── 06-end-to-end-flow-and-interview.md
+├── examples/
+│   ├── node-app/
+│   │   ├── package.json
+│   │   ├── src/server.ts
+│   │   └── Dockerfile
+│   ├── nginx/
+│   │   ├── nginx.conf
+│   │   └── site.conf
+│   ├── docker-compose/
+│   │   └── docker-compose.yml
+│   └── ci/
+│       └── github-actions-node.yml
+└── scripts/
+    ├── build-and-run.sh
+    └── deploy-with-docker.sh
+
+要求：
+1. 先输出完整目录结构，然后依次输出每个文件的内容。
+2. docs 下每个 .md 文档：
+   - 要有简介、详细内容、小结
+   - 包含「常见错误 & 排查方式」小节
+   - 包含「面试官可能怎么问，你怎么答」小节
+3. examples 下的文件：
+   - `server.ts`：实现一个极简 Node HTTP 服务或 Express/Koa 服务（任选）
+   - `Dockerfile`：多阶段构建，附详细注释
+   - `nginx.conf` / `site.conf`：包含反向代理 + 静态资源 + 简单缓存配置
+   - `docker-compose.yml`：启动 Node + Nginx + Redis 的示例
+   - `github-actions-node.yml`：包含安装依赖、运行测试、构建、构建&推镜像等步骤
+4. scripts 下的 shell 脚本：
+   - 用于本地构建和运行容器的简单脚本
+   - 每个脚本中添加注释说明用途和关键命令
+
+请从项目结构开始，然后按文件输出完整内容。
+
+
+
+
+
+
+
+
+
+
+
+
+
+Step D：[工具] 手写 Webpack/Vite 插件 & Babel 插件（AST 实战）
+
+你现在是「前端工程化专家，熟悉 Webpack/Vite 插件体系和 Babel AST 操作」，
+要为一位「7-8 年资深前端工程师」设计一个「AST & 插件开发实战」项目，帮助他准备高级面试。
+
+【主题】
+
+手写一个简单但完整的：
+
+1）Webpack 插件 或 Vite 插件（可以两个都写，或至少一个比较完整）
+2）Babel 插件（基于 AST 的代码转换）
+
+以此帮助理解：
+- 插件钩子（plugin hooks）
+- AST 遍历与修改
+- 构建阶段的能力边界
+
+【需要覆盖的内容】
+
+1）AST 基础概念
+   - 抽象语法树是什么，为什么构建工具要用 AST
+   - 常见 AST 规范：ESTree / Babel AST 的简单说明
+   - 简单示例：一段 JS → AST 结构大致长什么样（用文字/树状结构展示）
+
+2）Babel 插件
+   - Babel 的工作流：parse → transform → generate
+   - 插件结构：
+     - `export default function ({ types: t }) { return { visitor: { ... } } }`
+   - 实战插件示例（至少 1-2 个）：
+     - 示例 1：自动给某个函数调用注入日志（如 `track('event')`）
+     - 示例 2：把自定义语法（如某个装饰器）转换为标准 JS
+   - 使用方式：
+     - `.babelrc` / `babel.config.js` 配置示例
+     - 使用 @babel/cli 或 Node API 运行转换脚本
+   - 常用 AST 操作：
+     - 访问节点、判断节点类型、创建新节点、替换/删除节点
+
+3）Webpack 插件（或 Vite 插件）
+   - Webpack 插件：
+     - Tapable 的钩子机制概览
+     - 简单自定义插件示例：
+       - 在编译完成后输出构建信息
+       - 分析打包产物体积并输出报告（简化版）
+   - 或 Vite 插件：
+     - Vite 插件的钩子：`config`, `transform`, `load`, `handleHotUpdate` 等
+     - 举例：编写一个 Vite 插件，在构建时替换某些环境变量，或为特定文件加上 banner 注释
+
+4）如何组合「Babel 插件 + 构建工具插件」
+   - 举一个简单场景：
+     - 在 Vite 中使用自定义 Babel 插件，实现某种语法糖
+   - 讨论：什么逻辑应该放到 Babel 插件层，什么逻辑放到打包器插件层
+
+5）面试维度
+   - 面试官可能会问：
+     - 「你写过构建工具插件吗？」
+     - 「你了解 AST 吗？怎么做一个简单的代码 transform？」
+   - 给出几组问答模板，帮助候选人表达「理解程度」和「实践经验」。
+
+【输出形式要求：多文件、多格式】
+
+请构建一个名为 `/ast-and-plugins-lab/` 的小项目，结构类似：
+
+/ast-and-plugins-lab/
+├── README.md
+├── docs/
+│   ├── 01-ast-basics.md
+│   ├── 02-babel-plugin-tutorial.md
+│   ├── 03-webpack-vite-plugin-tutorial.md
+│   ├── 04-interview-qa-and-talking-points.md
+├── babel-plugins/
+│   ├── log-inject-plugin.js
+│   ├── custom-decorator-transform.js
+│   └── examples/
+│       ├── input-sample.js
+│       └── output-sample.js
+├── webpack-plugins/
+│   ├── simple-build-info-plugin.js
+│   └── bundle-size-report-plugin.js
+├── vite-plugins/
+│   ├── banner-inject-plugin.ts
+│   └── env-replace-plugin.ts
+└── scripts/
+    ├── run-babel-transform.sh
+    └── run-webpack-with-plugin.sh
+
+要求：
+1. 先输出完整目录结构，然后依次输出每个文件内容。
+2. docs 下的文档：
+   - 用通俗语言解释 AST 与插件系统
+   - 至少包含一个「手把手」章节：从 0 写出一个简单 Babel 插件
+3. `babel-plugins` 下：
+   - `log-inject-plugin.js`：为所有 `track()` 调用添加额外参数（如当前文件名）
+   - `custom-decorator-transform.js`：将某个简单装饰器语法转成等价 JS（可以简化版）
+   - `examples/input-sample.js` & `output-sample.js`：展示转换前后对比
+4. `webpack-plugins` / `vite-plugins` 下：
+   - 插件文件要能体现「如何注册钩子、如何获取构建信息、如何改写部分输出」
+   - 尽量添加说明性注释，方便阅读
+5. `scripts` 下：
+   - 用 Node / shell 命令展示如何运行 Babel 转换 / Webpack 构建
+   - 添加注释说明执行方式
+
+请从项目结构开始，然后按文件输出完整内容。
+
