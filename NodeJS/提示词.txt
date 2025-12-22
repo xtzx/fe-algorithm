@@ -1,462 +1,38 @@
 
+================================================================================
+                        Node.js / BFF 高级面试学习提示词
+================================================================================
 
+本文件包含 12 个独立的提示词单元，每个可单独执行生成对应内容。
+使用方式：复制对应的提示词到 AI 对话中执行。
 
-Step A1 提示词：Node.js 核心运行时 & I/O（Buffer / Stream）
+目标读者：7-8 年资深前端工程师，准备 Node.js / BFF 方向面试
+内容需要非常详尽，学习完成后能够涵盖全部面试点和加分的实践点
 
-你现在是一个「有 10+ 年经验的 Node.js 技术专家 & 架构师 & 资深面试官」，
-要为一位「有 7-8 年经验的资深前端工程师，正在准备大厂 Node.js / BFF 面试」设计一套系统学习资料。
+目录：
+├── N1: Node.js 基础与异步编程模型
+├── N2: 核心运行时 & I/O（Buffer / Stream）
+├── N3: 并发模型 & 性能稳定性（Cluster / 多进程 / 内存）
+├── N4: BFF 架构设计 & 中间层实践
+├── N5: 数据层协作（Redis / MySQL / MongoDB）
+├── N6: ORM 与数据库操作（Prisma / TypeORM）
+├── N7: 日志系统与可观测性（Pino / Winston）
+├── N8: 测试 & 服务质量保障
+├── N9: 安全实践 & 配置管理
+├── N10: 实时通信 & 异步任务处理（WebSocket / 队列）
+├── N11: API 文档与工程规范（Swagger / OpenAPI）
+└── N12: 基础设施协作（Nginx / Docker / K8s）& 面试总结
 
-【本次子步骤主题】
+================================================================================
 
-Step A1：Node.js 核心运行时 & I/O 能力
-重点深入以下内容（每一项都必须覆盖）：
-
-1）Node.js 运行时基础
-   - Node.js 基于 V8 + libuv 的大致架构图（文字说明即可）
-   - 事件循环（event loop）与任务队列的概念：
-     - macro task / micro task 的基本区别（不需要浏览器级别细抠）
-     - setTimeout / Promise / process.nextTick 在 Node 中的大致执行顺序
-   - 同步 vs 异步 I/O 的区别 & 为什么 Node 适合 I/O 密集
-
-2）Buffer 深入理解
-   - Buffer 的内存结构：堆外内存（C++ 侧）+ JS 对象引用
-   - Buffer 创建方式：
-     - Buffer.alloc / Buffer.from / Buffer.concat
-     - 为何不推荐 `new Buffer()`
-   - 编码与解码：
-     - UTF-8、base64 等常用编码举例
-     - Buffer 与字符串互转的性能/坑（中文字符、多字节）
-   - 实战示例：
-     - 读取二进制文件（图片、视频等）并写入到新文件
-     - 简单的 Buffer 切片/拼接示例
-
-3）Stream（流）体系
-   - Node 中四种流类型：
-     - Readable / Writable / Duplex / Transform
-     - 举例每种常见使用场景
-   - 背压（backpressure）概念：
-     - 什么是背压？为什么会出现？
-     - Readable 与 Writable 如何通过 `pause` / `resume` / `drain` 信号协作
-   - pipe & pipeline：
-     - `readable.pipe(writable)` 基本用法
-     - `stream.pipeline` 的错误处理优势
-   - 实战示例：
-     - 使用 stream 按行读取大文件并逐行处理
-     - 实现一个简单的 Transform 流，对文本进行转换（例如全大写）
-
-4）文件系统 & HTTP I/O
-   - fs 模块同步 vs 异步 API 的使用建议
-   - 基于 http/https 模块：
-     - 实现一个极简 HTTP Server
-     - 在响应中使用 Stream 处理大文件（而不是一次性 readFile）
-
-【输出形式要求：多文件、多格式】
-
-请你以「一个完整学习项目」的形式输出内容，目录类似：
-
-/node-core-io/
-├── README.md
-├── docs/
-│   ├── 01-runtime-overview-and-event-loop.md
-│   ├── 02-buffer-deep-dive.md
-│   ├── 03-stream-and-backpressure.md
-│   ├── 04-fs-and-http-io.md
-│   └── 05-interview-questions-and-checklist.md
-├── examples/
-│   ├── buffer/
-│   │   ├── read-binary-file.ts
-│   │   ├── buffer-slice-and-concat.ts
-│   │   └── string-encoding-demo.ts
-│   ├── stream/
-│   │   ├── line-by-line-reader.ts
-│   │   ├── transform-uppercase-stream.ts
-│   │   └── pipeline-with-error-handling.ts
-│   ├── fs-http/
-│   │   ├── simple-http-server.ts
-│   │   └── stream-file-response.ts
-│   └── playground-notes.txt
-└── scripts/
-    ├── run-buffer-demos.sh
-    ├── run-stream-demos.sh
-    └── run-http-server.sh
-
-要求：
-
-1. 先输出完整目录结构（tree 形式）。
-2. 然后为每个文件输出完整内容，用代码块标记路径，例如：
-
-   ```md
-   // README.md
-   （内容）
-
-// docs/02-buffer-deep-dive.md
-（内容）
-
-// examples/stream/transform-uppercase-stream.ts
-（TypeScript 示例代码）
-
-	3.	docs 下每个 .md：
-	•	要有目录（小标题）
-	•	要有「概念解释」+「代码示例」+「常见坑」+「面试官可能问什么 & 如何回答」
-	•	至少留 1-2 个「思考题/小练习」
-	4.	examples 下的 .ts：
-	•	使用 TypeScript，包含必要类型标注
-	•	尽量可运行：如通过 ts-node 或编译后运行
-	•	包含注释，解释关键点（例如：哪里体现了背压、哪里体现了 Buffer 堆外内存的使用等）
-	5.	scripts 下的 .sh：
-	•	提供运行示例的命令（如 ts-node）
-	•	用注释说明每个脚本用途
-
-请从输出项目结构开始，然后依次给出每个文件的完整内容。
-
-
-
-
-
-
-
-
-
-Step A2 提示词：Node.js 并发模型 & 性能稳定性（Cluster / 多进程 / 内存）
+【N1】Node.js 基础与异步编程模型
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ```text
-你现在是「Node.js 服务端性能与稳定性方向的专家 & 架构师」，
-要为一位「7-8 年资深前端工程师（负责过线上服务）」设计一个系统化的学习项目。
-
-【本次子步骤主题】
-
-Step A2：Node.js 并发模型 & 性能稳定性
-重点覆盖：
-
-1）并发模型与多核利用
-   - 为什么 Node.js 是单线程 JS + 多线程 I/O 的模型（简述）
-   - CPU 密集任务 vs I/O 密集任务 在 Node 中的处理差异
-   - child_process：
-     - spawn / exec / execFile / fork 的区别和使用场景
-   - worker_threads：
-     - 与 child_process 的区别
-     - 适用 CPU 密集场景，数据在线程间传递方式（postMessage 等）
-
-2）Cluster 模块
-   - cluster 的基本概念：主进程 + worker 进程
-   - 使用 cluster 模块或 pm2 等工具利用多核
-   - 简单负载均衡机制（如 round-robin）说明
-   - 示例：
-     - 一个基于 cluster 的多进程 HTTP 服务
-     - 模拟 worker 异常退出 & 自动重启
-
-3）内存管理与泄漏排查
-   - V8 堆内存结构：新生代 / 老生代（简单概念）
-   - Node 常见内存泄漏场景：
-     - 全局缓存 / 单例里一直增长的数组
-     - 未移除的事件监听器
-     - 闭包导致的意外持有引用
-   - 工具与流程：
-     - `process.memoryUsage()` 观测内存
-     - 使用 `--inspect` / `--inspect-brk` 连接 Chrome DevTools
-     - Heap Snapshot 的采集与比较（简要步骤）
-   - 示例：
-     - 写一个小的「有内存泄漏的服务」+ 对应的「修复版本」
-     - 附一份 `leak-analysis-notes.txt`，描述怀疑→验证→定位→修复的过程
-
-4）性能 Profiling 与压测入门
-   - CPU profile 的基本流程（如使用 `node --prof` 或 DevTools）
-   - 常见性能问题：
-     - 阻塞事件循环的同步操作（如大 JSON.parse、密集计算）
-   - 简单压测示例：
-     - 使用 `autocannon` / `wrk`（可只描述命令，不需要真实执行）
-
-【输出形式要求：多文件、多格式】
-
-请构建一个项目，例如：
-
-/node-concurrency-and-stability/
-├── README.md
-├── docs/
-│   ├── 01-node-concurrency-model.md
-│   ├── 02-child-process-and-worker-threads.md
-│   ├── 03-cluster-and-multi-core-scaling.md
-│   ├── 04-memory-management-and-leak-debug.md
-│   ├── 05-profiling-and-load-testing-basics.md
-│   └── 06-interview-questions-and-checklist.md
-├── examples/
-│   ├── cluster-http-server/
-│   │   ├── cluster-server.ts
-│   │   └── single-thread-server.ts
-│   ├── child-process/
-│   │   ├── spawn-child.ts
-│   │   └── worker-thread-example.ts
-│   ├── memory-leak/
-│   │   ├── leak-server.ts
-│   │   ├── leak-fixed-server.ts
-│   │   └── leak-analysis-notes.txt
-│   └── profiling/
-│       └── cpu-blocking-example.ts
-└── scripts/
-    ├── run-cluster.sh
-    ├── run-leak-demo.sh
-    └── profile-cpu.sh
-
-要求：
-
-1. 先输出完整目录树。
-2. 为每个文件输出完整内容，用代码块标路径。
-3. docs 下每篇 .md：
-   - 有清晰小标题
-   - 有概念解释 + 对应 examples 文件的引用
-   - 至少包含一节「线上排查实战思路」
-   - 至少包含一节「面试官怎么问 / 如何回答」
-
-4. examples 下：
-   - 所有 .ts 使用 TypeScript，包含基本类型
-   - cluster 示例中要有基础 master/worker 逻辑注释
-   - memory leak 示例要容易看出泄漏点（如不断向数组 push 而不清理）
-
-5. scripts 下：
-   - 使用 bash（假设 Linux/macOS 环境）
-   - 注释中说明如何通过这些脚本观察 cluster 效果 / 内存变化 / CPU profile
-
-请从项目结构开始，然后依次输出每个文件的完整内容。
-
-
-
-
-
-
-
-
-
-
-
-
-Step A3 提示词：BFF 架构设计 & 中间层实践
-
-你现在是「在大厂长期负责 BFF / API Gateway / 中台服务」的资深架构师 & 面试官，
-要为一位「7-8 年资深前端工程师，已经在写 Node 服务，希望系统补齐 BFF 架构能力」设计学习资料。
-
-【本次子步骤主题】
-
-Step A3：Node.js BFF 架构设计 & 中间层实践
-
-必须覆盖：
-
-1）BFF 的角色与边界
-   - BFF（Backend For Frontend）的概念与优势
-   - BFF 与：
-     - 纯前端（SPA）、
-     - 传统后端 REST 服务、
-     - API Gateway、
-     - 微服务
-     之间的职责边界
-   - 常见 BFF 职责：
-     - 接口聚合 / 降维
-     - 用户上下文处理（多端、AB 实验）
-     - 粘合不同后端服务的数据形态
-
-2）BFF 常见架构选型
-   - Express / Koa / NestJS 对比：
-     - 编程模型（中间件 vs 装饰器）
-     - 类型支持、可维护性、适用项目规模
-   - 目录结构设计（controllers / services / repositories / middlewares / utils）
-
-3）横切关注点（Cross-cutting Concerns）
-   - 鉴权与认证：
-     - JWT / Session / Cookie 的差异与 BFF 常见选型
-     - 如何在中间件中统一解析用户身份
-   - 错误处理：
-     - 全局错误处理中间件模式
-     - 错误码规范（业务码 vs HTTP 状态码）
-   - 日志与链路追踪：
-     - 访问日志（access log）结构
-     - 错误日志（error log）结构
-     - traceId / requestId 在 BFF 中的贯穿
-
-4）API 设计与数据聚合
-   - REST 风格 API 的常见约定：路径设计、分页、排序、过滤
-   - BFF 做数据聚合的两种典型模式：
-     - 合并多个后端接口 → 一个前端接口
-     - 为不同终端（Web/APP）提供不同裁剪的视图
-   - 防御性编程：
-     - 后端返回异常/慢时的降级策略
-     - 重试 / 超时控制 / 熔断 简要提及
-
-5）BFF 安全与限流（入门级）
-   - 常见安全问题：XSS / CSRF / SQL 注入（虽非 BFF 独有，但 BFF 处在关键位置）
-   - 签名校验、接口签名 / 时效（简单说明）
-   - 简单的 IP 限流 / 用户级限流示例（可使用内存 Map/Redis 简化版）
-
-【输出形式要求：多文件、多格式】
-
-构建一个：
-
-/node-bff-architecture/
-├── README.md
-├── docs/
-│   ├── 01-what-is-bff-and-when-to-use.md
-│   ├── 02-framework-choice-and-project-structure.md
-│   ├── 03-auth-error-handling-logging.md
-│   ├── 04-api-design-and-data-aggregation.md
-│   ├── 05-security-and-rate-limit-basics.md
-│   └── 06-interview-scenarios-and-talking-points.md
-├── examples/
-│   ├── app/
-│   │   ├── app.ts              # 入口
-│   │   ├── routes/
-│   │   │   ├── user-routes.ts
-│   │   │   └── product-routes.ts
-│   │   ├── middlewares/
-│   │   │   ├── auth-middleware.ts
-│   │   │   ├── error-handler.ts
-│   │   │   └── request-logger.ts
-│   │   ├── services/
-│   │   │   ├── user-service.ts
-│   │   │   └── product-service.ts
-│   │   └── utils/
-│   │       ├── http-client.ts
-│   │       └── trace-id.ts
-│   └── rate-limit/
-│       └── simple-rate-limiter.ts
-└── config/
-    ├── default.json
-    └── production.json
-
-要求：
-
-1. 先输出完整目录树。
-2. 为每个文件输出完整内容。
-3. docs 下：
-   - 要有落地视角：以「真实业务」为例解释 BFF 决策（比如电商、内容 feed）。
-   - 每篇文档有一节「面试官会怎么追问」+ 推荐回答框架。
-
-4. examples/app：
-   - 选择 Express 或 Koa 或 Nest 中一种（推荐 Express 或 Koa，代码更轻）。
-   - 所有代码使用 TypeScript，`app.ts` 中展示：
-     - 中间件注册顺序（日志 → traceId → auth → 路由 → 错误处理）
-   - `http-client.ts` 模拟调用后端服务（用 `axios` 或 `node-fetch`，可以假装有真实 API）。
-
-5. config 下：
-   - 用 JSON 模拟多环境配置（如后端服务地址、日志等级等），并在 `app.ts` 中使用。
-
-请从项目结构开始，然后依次输出每个文件的完整内容。
-
-
-
-
-
-
-
-
-
-
-Step A4 提示词：BFF 的数据层 & 基础设施协作（Redis / MySQL / Mongo / Nginx / Docker / K8s 视图）
-
-你现在是「全栈架构 & 平台基础设施」方向的负责人，
-要为一位「7-8 年资深前端工程师，正在从 BFF 向全栈/架构升级」设计学习资料。
-
-【本次子步骤主题】
-
-Step A4：BFF 的数据层 & 基础设施协作视图
-重点从「BFF 视角」理解 Redis/MySQL/Mongo 以及与 Nginx/Docker/K8s 的协作。
-
-必须覆盖：
-
-1）Redis 作为缓存层的策略
-   - 常用数据结构（string/hash/list/set/zset）及 BFF 常用场景：
-     - 用户 session 缓存、接口缓存、排行榜等
-   - 缓存策略：
-     - Cache Aside（旁路缓存）
-     - Read-Through / Write-Through（概念知道即可）
-   - 常见问题：
-     - 缓存穿透（解决：布隆过滤器 / 缓存空对象）
-     - 缓存击穿（解决：热点 Key 互斥锁）
-     - 缓存雪崩（解决：随机过期时间、分片失效）
-   - 示例代码：
-     - BFF 接口读取 Redis → miss 再查 DB → 写回缓存 的完整流程（TypeScript）
-
-2）MySQL / Mongo 的基础设计（面向 BFF）
-   - MySQL（关系型）：
-     - 简单的表设计示例（用户表 / 订单表）
-     - 主键、索引的简单讲解（不需要深入 B+ 树）
-     - 查询模式与 BFF 需求：分页、筛选、排序
-   - MongoDB（文档型）：
-     - 适用场景：灵活 schema、文档型数据、日志/埋点/配置
-     - 简单的文档结构示例
-   - 在 BFF 中如何封装数据访问层（Repository 层的简单例子）
-
-3）基础设施协作视图（Node BFF 如何接入 Nginx / Docker / K8s）
-   - Nginx：
-     - 反向代理到多个 BFF 实例（upstream）
-     - 基于路径/域名做路由：`/api` → BFF、`/` → 静态资源
-   - Docker：
-     - 将 BFF 打包为 Docker 镜像的简要流程
-     - 一个极简 Node BFF Dockerfile（可单阶段，Step C 会有更深入多阶段，这里做概念级）
-   - K8s 概念视图：
-     - Pod / Deployment / Service / Ingress 的角色
-     - BFF 在 K8s 中的路径：Ingress(Nginx) → Service → Pod(Node BFF)
-     - 不需要写完整 yaml，但要画出文字流程图，最好在文档里用 ASCII 图说明
-
-【输出形式要求：多文件、多格式】
-
-构建项目：
-
-/bff-data-and-infra/
-├── README.md
-├── docs/
-│   ├── 01-redis-cache-strategies-for-bff.md
-│   ├── 02-mysql-and-mongo-basics-from-bff-view.md
-│   ├── 03-bff-and-nginx-docker-k8s-architecture.md
-│   └── 04-interview-cases-and-design-questions.md
-├── examples/
-│   ├── redis-cache/
-│   │   ├── redis-client.ts
-│   │   └── cache-aside-example.ts
-│   ├── data-access/
-│   │   ├── mysql-repository.ts
-│   │   └── mongo-repository.ts
-│   └── infra/
-│       ├── simple-bff-dockerfile
-│       └── nginx-upstream-example.conf
-└── diagrams/
-    └── bff-in-k8s-architecture.txt   # 用 ASCII 图画 BFF 在 K8s 中的位置
-
-要求：
-
-1. 先输出完整目录树。
-2. docs 下：
-   - 每篇 .md 要有：概念、实战示例、常见坑、面试问题。
-   - `03-bff-and-nginx-docker-k8s-architecture.md` 中：
-     - 用文字 + ASCII 图描述：
-       - 浏览器 → Nginx(Ingress) → Node BFF Pod → 后端服务 / Redis / DB 的调用链
-
-3. examples 下：
-   - 所有 .ts 使用 TypeScript。
-   - `redis-client.ts` 使用常见 Redis 客户端（可以假设使用 `ioredis`，不必安装但写出示例代码）。
-   - `cache-aside-example.ts` 展示典型 Cache Aside 流程。
-   - `mysql-repository.ts` / `mongo-repository.ts` 使用伪代码或常见 ORM（如 TypeORM / Mongoose 的简化调用），重点在「BFF 通过 Repository 层访问数据」的结构。
-   - `simple-bff-dockerfile` 使用 Dockerfile 语法（FROM node:XX、COPY、RUN、CMD），附注释。
-
-4. diagrams 下：
-   - `bff-in-k8s-architecture.txt` 使用纯文本画一个「客户端 → Ingress → Service → Pod(BFF) → DB/Redis」的结构图。
-
-请从项目结构开始，然后依次输出每个文件的完整内容。
-
-
-
-
-
-
-
-
-
-
-
-
-Node.js 基础与异步编程模型 & 生态
-
 你现在是「Node.js 方向的高级讲师 & 架构师」，
 要为一位「7-8 年资深前端工程师」补齐 Node.js 基础与异步编程模型，面向中高级面试。
 
-【本次子步骤主题】Node.js 基础与异步编程模型 & 生态
+【本次主题】N1：Node.js 基础与异步编程模型
 
 必须覆盖以下内容（不要漏）：
 
@@ -466,39 +42,55 @@ Node.js 基础与异步编程模型 & 生态
      - require / module.exports / exports
      - import / export 的基本语法
      - package.json 中 `"type": "module"` 的影响
+     - 两者混用的常见问题与解决方案
    - Node.js 常用内置模块概览：
-     - path / fs / http / crypto / events / os / process（简要说明使用场景）
+     - path / fs / http / crypto / events / os / process（每个模块的核心 API 和使用场景）
 
 2）异步编程模型全景
    - Callbacks：
      - error-first callback 约定（(err, result) => {}）
      - 回调地狱的样子 & 为何要避免
    - Promise：
-     - Promise 状态、then/catch/finally
-     - Promise.all / allSettled / race / any 的使用场景
+     - Promise 状态（pending/fulfilled/rejected）、then/catch/finally
+     - Promise.all / allSettled / race / any 的使用场景与差异
+     - 手写简单 Promise 的核心思路（面试高频）
    - async/await：
      - 语法糖本质，如何封装一个异步函数
      - try/catch 的错误捕获范围
+     - 并行执行 vs 串行执行（Promise.all vs for-await）
    - EventEmitter：
-     - 发布-订阅模式
+     - 发布-订阅模式原理
+     - on / once / emit / removeListener API
      - 典型场景：日志、事件总线、内部异步通知
+     - 内存泄漏风险（监听器过多警告）
 
 3）错误处理模式
    - 同步错误 vs 异步错误：
      - throw / try-catch
      - Promise rejection / async 函数的错误
    - Node 风格 error-first callback 中的错误传递
-   - 在 Express/Koa 中处理 async 处理函数错误的常见方式（不展开 BFF 架构，只看模式）
+   - 在 Express/Koa 中处理 async 处理函数错误的常见方式
    - 未捕获异常：
      - process.on('uncaughtException') / process.on('unhandledRejection')
      - 为什么不建议在这里吞掉错误，而是做兜底上报后退出进程
+     - 优雅退出（Graceful Shutdown）的基本思路
 
 4）Node.js 包管理与项目结构
-   - npm / yarn / pnpm 基本概念，package.json 中常见字段：
-     - name / version / scripts / dependencies / devDependencies / engines 等
+   - npm / yarn / pnpm 对比：
+     - 安装速度、磁盘占用、幽灵依赖问题
+   - package.json 中常见字段详解：
+     - name / version / main / module / exports / scripts / dependencies / devDependencies / peerDependencies / engines
    - scripts 常用命令：
      - dev / build / start / test / lint 等
    - 简单的项目结构规范建议（src / test / scripts / config 等）
+   - monorepo 简介（pnpm workspace / turborepo）
+
+5）面试高频问题（至少 5 个问题 + 加分回答）
+   - Node.js 事件循环和浏览器有什么区别？
+   - Promise.all 和 Promise.allSettled 的区别？
+   - 如何处理 Node 中的未捕获异常？
+   - CommonJS 和 ES Module 有什么区别？
+   - 如何优雅地退出一个 Node 服务？
 
 【输出形式要求：多文件、多格式】
 
@@ -513,6 +105,9 @@ Node.js 基础与异步编程模型 & 生态
 │   ├── 04-package-json-and-project-structure.md
 │   └── 05-interview-questions-and-exercises.md
 ├── examples/
+│   ├── modules/
+│   │   ├── commonjs-example.cjs
+│   │   └── esm-example.mjs
 │   ├── callbacks/
 │   │   ├── callback-style-api.ts
 │   │   └── callback-hell-and-refactor.ts
@@ -523,8 +118,9 @@ Node.js 基础与异步编程模型 & 生态
 │   ├── event-emitter/
 │   │   ├── simple-event-bus.ts
 │   │   └── event-emitter-use-case.ts
-│   └── project-structure/
-│       └── sample-package-json.json
+│   └── error-handling/
+│       ├── graceful-shutdown.ts
+│       └── uncaught-exception-handler.ts
 └── scripts/
     ├── run-callback-examples.sh
     ├── run-promise-examples.sh
@@ -542,179 +138,902 @@ Node.js 基础与异步编程模型 & 生态
    - 所有 .ts 都使用 TypeScript，包含类型。
    - callback-hell-and-refactor.ts 中，要先写一个 callback 地狱版，再给出 Promise/async-await 重构版本。
    - event-emitter-use-case.ts 中举一个具体场景（如：简单日志系统 / 事件总线）。
+   - graceful-shutdown.ts 展示如何优雅退出服务
 
 4. scripts 下：
-   - 使用 bash，假定用 ts-node 运行示例（可以在脚本中注释说明需要安装 ts-node）。
+   - 使用 bash，假定用 ts-node 运行示例。
    - 每个脚本说明用途。
 
 请从项目结构开始，然后依次输出每个文件的完整内容。
+```
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+【N2】核心运行时 & I/O（Buffer / Stream）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+```text
+你现在是一个「有 10+ 年经验的 Node.js 技术专家 & 架构师 & 资深面试官」，
+要为一位「有 7-8 年经验的资深前端工程师，正在准备大厂 Node.js / BFF 面试」设计一套系统学习资料。
 
+【本次主题】N2：Node.js 核心运行时 & I/O 能力
 
+重点深入以下内容（每一项都必须覆盖）：
 
+1）Node.js 运行时基础
+   - Node.js 基于 V8 + libuv 的架构图（文字 + ASCII 图说明）
+   - V8 的角色：JS 代码编译执行
+   - libuv 的角色：事件循环、异步 I/O、线程池
+   - 事件循环（event loop）各阶段详解：
+     - timers → pending callbacks → idle/prepare → poll → check → close callbacks
+     - setImmediate vs setTimeout(fn, 0) 的执行顺序
+     - process.nextTick 的优先级
+   - 同步 vs 异步 I/O 的区别 & 为什么 Node 适合 I/O 密集
 
+2）Buffer 深入理解
+   - Buffer 的内存结构：堆外内存（C++ 侧）+ JS 对象引用
+   - Buffer 创建方式：
+     - Buffer.alloc / Buffer.allocUnsafe / Buffer.from / Buffer.concat
+     - 为何不推荐 `new Buffer()`（安全问题）
+   - 编码与解码：
+     - UTF-8、base64、hex 等常用编码
+     - Buffer 与字符串互转的性能/坑（中文字符、多字节截断）
+   - Buffer 池（Buffer Pool）机制
+   - 实战示例：
+     - 读取二进制文件（图片、视频等）并写入到新文件
+     - 简单的 Buffer 切片/拼接示例
+     - Base64 编解码示例
 
+3）Stream（流）体系
+   - Node 中四种流类型：
+     - Readable / Writable / Duplex / Transform
+     - 每种流的常见使用场景
+   - 流的两种模式：flowing vs paused
+   - 背压（backpressure）概念：
+     - 什么是背压？为什么会出现？
+     - Readable 与 Writable 如何通过 `pause` / `resume` / `drain` 信号协作
+     - highWaterMark 的作用
+   - pipe & pipeline：
+     - `readable.pipe(writable)` 基本用法
+     - `stream.pipeline` 的错误处理优势
+     - 为什么推荐用 pipeline 替代 pipe
+   - 实战示例：
+     - 使用 stream 按行读取大文件并逐行处理
+     - 实现一个简单的 Transform 流，对文本进行转换（例如全大写）
+     - 使用 pipeline 处理文件复制
 
+4）文件系统 & HTTP I/O
+   - fs 模块同步 vs 异步 API 的使用建议
+   - fs/promises API（推荐）
+   - 基于 http/https 模块：
+     - 实现一个极简 HTTP Server
+     - 在响应中使用 Stream 处理大文件（而不是一次性 readFile）
+   - 文件监听：fs.watch / fs.watchFile 的区别
 
-Node.js 测试 & 服务质量保障
+5）面试高频问题（至少 5 个问题 + 加分回答）
+   - Node.js 事件循环有几个阶段？
+   - 什么是背压？如何解决？
+   - Buffer 和 String 有什么区别？
+   - 为什么大文件要用 Stream？
+   - setImmediate 和 setTimeout(fn, 0) 哪个先执行？
 
+【输出形式要求：多文件、多格式】
+
+请以「一个完整学习项目」的形式输出内容：
+
+/node-core-io/
+├── README.md
+├── docs/
+│   ├── 01-runtime-overview-and-event-loop.md
+│   ├── 02-buffer-deep-dive.md
+│   ├── 03-stream-and-backpressure.md
+│   ├── 04-fs-and-http-io.md
+│   └── 05-interview-questions-and-checklist.md
+├── examples/
+│   ├── event-loop/
+│   │   ├── event-loop-phases.ts
+│   │   └── nextTick-vs-setImmediate.ts
+│   ├── buffer/
+│   │   ├── read-binary-file.ts
+│   │   ├── buffer-slice-and-concat.ts
+│   │   ├── string-encoding-demo.ts
+│   │   └── base64-example.ts
+│   ├── stream/
+│   │   ├── line-by-line-reader.ts
+│   │   ├── transform-uppercase-stream.ts
+│   │   ├── pipeline-with-error-handling.ts
+│   │   └── backpressure-demo.ts
+│   └── fs-http/
+│       ├── simple-http-server.ts
+│       └── stream-file-response.ts
+└── scripts/
+    ├── run-event-loop-demos.sh
+    ├── run-buffer-demos.sh
+    ├── run-stream-demos.sh
+    └── run-http-server.sh
+
+要求：
+
+1. 先输出完整目录结构（tree 形式）。
+2. 然后为每个文件输出完整内容，用代码块标记路径。
+3. docs 下每个 .md：
+   - 要有目录（小标题）
+   - 要有「概念解释」+「代码示例」+「常见坑」+「面试官可能问什么 & 如何回答」
+   - 至少留 1-2 个「思考题/小练习」
+4. examples 下的 .ts：
+   - 使用 TypeScript，包含必要类型标注
+   - 尽量可运行：如通过 ts-node 或编译后运行
+   - 包含注释，解释关键点
+5. scripts 下的 .sh：
+   - 提供运行示例的命令
+   - 用注释说明每个脚本用途
+
+请从输出项目结构开始，然后依次给出每个文件的完整内容。
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【N3】并发模型 & 性能稳定性（Cluster / 多进程 / 内存）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+```text
+你现在是「Node.js 服务端性能与稳定性方向的专家 & 架构师」，
+要为一位「7-8 年资深前端工程师（负责过线上服务）」设计一个系统化的学习项目。
+
+【本次主题】N3：Node.js 并发模型 & 性能稳定性
+
+重点覆盖：
+
+1）并发模型与多核利用
+   - 为什么 Node.js 是单线程 JS + 多线程 I/O 的模型
+   - 单线程的优势与局限
+   - CPU 密集任务 vs I/O 密集任务在 Node 中的处理差异
+   - child_process：
+     - spawn / exec / execFile / fork 的区别和使用场景
+     - 进程间通信（IPC）
+   - worker_threads：
+     - 与 child_process 的区别
+     - 适用 CPU 密集场景
+     - 数据在线程间传递方式（postMessage / SharedArrayBuffer / Atomics）
+     - 线程池模式
+
+2）Cluster 模块
+   - cluster 的基本概念：主进程 + worker 进程
+   - 使用 cluster 模块利用多核
+   - 负载均衡机制（round-robin vs 操作系统调度）
+   - 进程间状态共享的挑战（为什么需要 Redis）
+   - PM2 进程管理：
+     - pm2 start / stop / restart / reload
+     - 集群模式、日志管理、监控
+   - 示例：
+     - 一个基于 cluster 的多进程 HTTP 服务
+     - 模拟 worker 异常退出 & 自动重启
+
+3）内存管理与泄漏排查
+   - V8 堆内存结构：新生代 / 老生代
+   - 垃圾回收机制：Scavenge / Mark-Sweep / Mark-Compact
+   - Node 常见内存泄漏场景：
+     - 全局缓存 / 单例里一直增长的数组
+     - 未移除的事件监听器
+     - 闭包导致的意外持有引用
+     - 定时器未清理
+   - 工具与流程：
+     - `process.memoryUsage()` 观测内存
+     - 使用 `--inspect` / `--inspect-brk` 连接 Chrome DevTools
+     - Heap Snapshot 的采集与比较
+     - Allocation Timeline 分析
+   - 示例：
+     - 写一个「有内存泄漏的服务」+ 对应的「修复版本」
+     - 附一份 `leak-analysis-notes.txt`，描述怀疑→验证→定位→修复的过程
+
+4）性能 Profiling 与压测入门
+   - CPU profile 的基本流程：
+     - `node --prof` 生成 v8.log
+     - `node --prof-process` 解析
+     - Chrome DevTools CPU Profiler
+   - 常见性能问题：
+     - 阻塞事件循环的同步操作（如大 JSON.parse、密集计算）
+     - 过度的 await 串行
+   - 压测工具：
+     - autocannon / wrk / ab 的基本用法
+     - 如何解读 QPS、延迟、错误率
+   - 性能优化常见手段：
+     - 异步化、缓存、减少序列化
+
+5）面试高频问题（至少 5 个问题 + 加分回答）
+   - Node.js 是单线程吗？那它怎么利用多核 CPU？
+   - child_process 和 worker_threads 有什么区别？
+   - 如何排查 Node 内存泄漏？
+   - 你们服务的 QPS 是多少？怎么压测的？
+   - PM2 的 cluster 模式原理是什么？
+
+【输出形式要求：多文件、多格式】
+
+/node-concurrency-and-stability/
+├── README.md
+├── docs/
+│   ├── 01-node-concurrency-model.md
+│   ├── 02-child-process-and-worker-threads.md
+│   ├── 03-cluster-and-multi-core-scaling.md
+│   ├── 04-memory-management-and-leak-debug.md
+│   ├── 05-profiling-and-load-testing-basics.md
+│   └── 06-interview-questions-and-checklist.md
+├── examples/
+│   ├── cluster/
+│   │   ├── cluster-server.ts
+│   │   ├── single-thread-server.ts
+│   │   └── worker-restart.ts
+│   ├── child-process/
+│   │   ├── spawn-example.ts
+│   │   ├── fork-example.ts
+│   │   └── ipc-communication.ts
+│   ├── worker-threads/
+│   │   ├── worker-thread-example.ts
+│   │   ├── shared-array-buffer.ts
+│   │   └── thread-pool.ts
+│   ├── memory-leak/
+│   │   ├── leak-server.ts
+│   │   ├── leak-fixed-server.ts
+│   │   └── leak-analysis-notes.txt
+│   └── profiling/
+│       ├── cpu-blocking-example.ts
+│       └── profiling-guide.md
+├── scripts/
+│   ├── run-cluster.sh
+│   ├── run-worker-threads.sh
+│   ├── run-leak-demo.sh
+│   ├── profile-cpu.sh
+│   └── load-test.sh
+└── config/
+    └── pm2.config.js
+
+要求：
+
+1. 先输出完整目录树。
+2. 为每个文件输出完整内容，用代码块标路径。
+3. docs 下每篇 .md：
+   - 有清晰小标题
+   - 有概念解释 + 对应 examples 文件的引用
+   - 至少包含一节「线上排查实战思路」
+   - 至少包含一节「面试官怎么问 / 如何回答」
+4. examples 下：
+   - 所有 .ts 使用 TypeScript，包含基本类型
+   - cluster 示例中要有基础 master/worker 逻辑注释
+   - memory leak 示例要容易看出泄漏点
+5. scripts 下：
+   - 使用 bash（Linux/macOS 环境）
+   - 注释说明如何通过这些脚本观察效果
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【N4】BFF 架构设计 & 中间层实践
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+```text
+你现在是「在大厂长期负责 BFF / API Gateway / 中台服务」的资深架构师 & 面试官，
+要为一位「7-8 年资深前端工程师，已经在写 Node 服务，希望系统补齐 BFF 架构能力」设计学习资料。
+
+【本次主题】N4：Node.js BFF 架构设计 & 中间层实践
+
+必须覆盖：
+
+1）BFF 的角色与边界
+   - BFF（Backend For Frontend）的概念与优势
+   - BFF 与以下角色的职责边界：
+     - 纯前端（SPA）
+     - 传统后端 REST 服务
+     - API Gateway
+     - 微服务
+   - 为什么需要 BFF？解决了什么问题？
+   - BFF 的常见职责：
+     - 接口聚合 / 数据裁剪
+     - 用户上下文处理（多端适配、AB 实验）
+     - 粘合不同后端服务的数据形态
+     - 协议转换（GraphQL → REST、gRPC → REST）
+   - BFF 的反模式（什么不应该在 BFF 做）
+
+2）BFF 常见架构选型
+   - Express / Koa / Fastify / NestJS 对比：
+     - 编程模型（中间件 vs 装饰器）
+     - 性能对比
+     - 类型支持、可维护性
+     - 适用项目规模
+   - 目录结构设计：
+     - controllers / services / repositories / middlewares / utils
+     - 分层架构的意义
+
+3）横切关注点（Cross-cutting Concerns）
+   - 鉴权与认证：
+     - JWT / Session / Cookie 的差异与 BFF 常见选型
+     - 如何在中间件中统一解析用户身份
+     - 权限校验的层级
+   - 错误处理：
+     - 全局错误处理中间件模式
+     - 错误码规范（业务码 vs HTTP 状态码）
+     - 错误响应格式统一
+   - 日志与链路追踪：
+     - 访问日志（access log）结构
+     - 错误日志（error log）结构
+     - traceId / requestId 在 BFF 中的贯穿
+     - 与 OpenTelemetry 的集成（简述）
+
+4）API 设计与数据聚合
+   - REST 风格 API 的常见约定：
+     - 路径设计、HTTP 方法语义
+     - 分页、排序、过滤、字段选择
+   - BFF 做数据聚合的两种典型模式：
+     - 合并多个后端接口 → 一个前端接口
+     - 为不同终端（Web/APP/小程序）提供不同裁剪的视图
+   - 防御性编程：
+     - 后端返回异常/慢时的降级策略
+     - 重试 / 超时控制 / 熔断（简要提及）
+     - 默认值与兜底数据
+
+5）BFF 安全与限流（入门级）
+   - 常见安全问题：XSS / CSRF / 注入
+   - 签名校验、接口签名 / 时效
+   - 简单的 IP 限流 / 用户级限流示例
+
+6）面试高频问题（至少 5 个问题 + 加分回答）
+   - 什么是 BFF？为什么需要 BFF？
+   - BFF 和 API Gateway 有什么区别？
+   - 你们的 BFF 做了哪些事情？
+   - BFF 如何处理多个后端服务的聚合？
+   - 如何保证 BFF 的稳定性？
+
+【输出形式要求：多文件、多格式】
+
+/node-bff-architecture/
+├── README.md
+├── docs/
+│   ├── 01-what-is-bff-and-when-to-use.md
+│   ├── 02-framework-choice-and-project-structure.md
+│   ├── 03-auth-error-handling-logging.md
+│   ├── 04-api-design-and-data-aggregation.md
+│   ├── 05-security-and-rate-limit-basics.md
+│   └── 06-interview-scenarios-and-talking-points.md
+├── examples/
+│   ├── app/
+│   │   ├── app.ts              # 入口
+│   │   ├── routes/
+│   │   │   ├── user-routes.ts
+│   │   │   └── product-routes.ts
+│   │   ├── controllers/
+│   │   │   ├── user-controller.ts
+│   │   │   └── product-controller.ts
+│   │   ├── services/
+│   │   │   ├── user-service.ts
+│   │   │   └── product-service.ts
+│   │   ├── middlewares/
+│   │   │   ├── auth-middleware.ts
+│   │   │   ├── error-handler.ts
+│   │   │   ├── request-logger.ts
+│   │   │   └── trace-id.ts
+│   │   └── utils/
+│   │       ├── http-client.ts
+│   │       └── response-helper.ts
+│   └── rate-limit/
+│       └── simple-rate-limiter.ts
+├── config/
+│   ├── default.json
+│   └── production.json
+└── scripts/
+    └── start-bff.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. 为每个文件输出完整内容。
+3. docs 下：
+   - 要有落地视角：以「真实业务」为例解释 BFF 决策（比如电商、内容 feed）。
+   - 每篇文档有一节「面试官会怎么追问」+ 推荐回答框架。
+4. examples/app：
+   - 使用 Express + TypeScript。
+   - `app.ts` 中展示中间件注册顺序（日志 → traceId → auth → 路由 → 错误处理）
+   - `http-client.ts` 模拟调用后端服务
+5. config 下：
+   - 用 JSON 模拟多环境配置
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【N5】数据层协作（Redis / MySQL / MongoDB）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+```text
+你现在是「全栈架构 & 数据层设计」方向的专家，
+要为一位「7-8 年资深前端工程师，正在从 BFF 向全栈升级」设计学习资料。
+
+【本次主题】N5：BFF 的数据层协作（Redis / MySQL / MongoDB）
+
+从「BFF 视角」理解数据存储，不需要 DBA 级别深度，但要能应对面试和日常开发。
+
+必须覆盖：
+
+1）Redis 作为缓存层
+   - 常用数据结构及 BFF 场景：
+     - String：接口缓存、计数器
+     - Hash：用户 Session、对象缓存
+     - List：消息队列（简单场景）
+     - Set：去重、标签
+     - ZSet：排行榜、延迟队列
+   - 缓存策略：
+     - Cache Aside（旁路缓存）：读时查缓存，miss 查 DB，写回缓存
+     - Read-Through / Write-Through / Write-Behind（概念）
+   - 常见问题及解决方案：
+     - 缓存穿透：查不存在的数据 → 布隆过滤器 / 缓存空对象
+     - 缓存击穿：热点 Key 过期 → 互斥锁 / 永不过期
+     - 缓存雪崩：大量 Key 同时过期 → 随机过期时间
+   - Redis 连接池与客户端选择（ioredis）
+
+2）MySQL（关系型数据库）
+   - 基础概念：
+     - 表、行、列、主键、外键
+     - 索引的作用与类型（B+ 树，不需要深入原理）
+     - 事务与 ACID（简述）
+   - BFF 常用查询模式：
+     - 分页（LIMIT/OFFSET vs 游标分页）
+     - 筛选与排序
+     - 联表查询（JOIN，简单场景）
+   - 连接池管理
+   - 简单表设计示例（用户表、订单表）
+
+3）MongoDB（文档型数据库）
+   - 适用场景：
+     - 灵活 schema
+     - 文档型数据（日志、埋点、配置）
+     - 快速迭代的业务
+   - 基础概念：
+     - Database / Collection / Document
+     - ObjectId
+   - 常用操作：find / insertOne / updateOne / deleteOne
+   - 索引基础
+   - 与 MySQL 的选型对比
+
+4）在 BFF 中封装数据访问层
+   - Repository 模式
+   - 为什么不在 Controller 直接操作数据库
+   - 示例：UserRepository 封装
+
+5）面试高频问题（至少 5 个问题 + 加分回答）
+   - 缓存穿透、击穿、雪崩分别是什么？怎么解决？
+   - Redis 有哪些数据结构？你用过哪些？
+   - MySQL 和 MongoDB 怎么选？
+   - 什么是 Cache Aside 模式？
+   - 如何设计一个缓存策略？
+
+【输出形式要求：多文件、多格式】
+
+/bff-data-layer/
+├── README.md
+├── docs/
+│   ├── 01-redis-cache-strategies.md
+│   ├── 02-mysql-basics-for-bff.md
+│   ├── 03-mongodb-basics-for-bff.md
+│   ├── 04-data-access-layer-design.md
+│   └── 05-interview-questions.md
+├── examples/
+│   ├── redis/
+│   │   ├── redis-client.ts
+│   │   ├── cache-aside-example.ts
+│   │   ├── cache-with-lock.ts
+│   │   └── redis-data-structures.ts
+│   ├── mysql/
+│   │   ├── mysql-connection.ts
+│   │   ├── user-repository.ts
+│   │   └── pagination-example.ts
+│   ├── mongodb/
+│   │   ├── mongo-connection.ts
+│   │   └── document-operations.ts
+│   └── repository/
+│       └── base-repository.ts
+└── scripts/
+    ├── run-redis-examples.sh
+    └── run-db-examples.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. docs 下每篇 .md 要有：概念、实战示例、常见坑、面试问题。
+3. examples 下：
+   - 使用 TypeScript
+   - redis-client.ts 使用 ioredis（示例代码）
+   - cache-aside-example.ts 展示典型 Cache Aside 流程
+   - mysql 和 mongodb 示例使用常见 ORM/客户端的简化调用
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【N6】ORM 与数据库操作（Prisma / TypeORM）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+```text
+你现在是「Node.js 数据库操作与 ORM 方向的专家」，
+要为一位「7-8 年资深前端工程师」设计 ORM 使用的系统学习资料。
+
+【本次主题】N6：ORM 与数据库操作（Prisma / TypeORM）
+
+必须覆盖：
+
+1）为什么需要 ORM
+   - 原生 SQL 的问题：SQL 注入风险、类型不安全、维护困难
+   - ORM 的优势：类型安全、迁移管理、查询构建器
+   - ORM 的劣势：性能开销、复杂查询困难、学习成本
+   - 何时用 ORM，何时用原生 SQL
+
+2）Prisma 深度教程
+   - Prisma 架构：Prisma Client / Prisma Migrate / Prisma Studio
+   - schema.prisma 语法详解：
+     - 数据源配置（datasource）
+     - 模型定义（model）
+     - 字段类型与修饰符
+     - 关系定义（一对一、一对多、多对多）
+     - 枚举（enum）
+   - 迁移管理：
+     - prisma migrate dev / deploy / reset
+     - 迁移文件管理
+   - CRUD 操作：
+     - findMany / findUnique / create / update / delete
+     - 条件查询：where / orderBy / skip / take
+     - 关联查询：include / select
+   - 事务处理：$transaction
+   - 最佳实践与常见问题
+
+3）TypeORM 概述
+   - 装饰器风格的 Entity 定义
+   - 与 Prisma 的对比：
+     - 设计理念差异（Database First vs Code First）
+     - 类型安全程度
+     - 迁移管理
+     - 学习曲线
+   - 基础使用示例
+
+4）数据库迁移最佳实践
+   - 迁移的意义：版本化数据库结构
+   - 向前兼容的迁移原则
+   - 生产环境迁移注意事项
+
+5）面试高频问题（至少 5 个问题 + 加分回答）
+   - 你用过什么 ORM？为什么选它？
+   - Prisma 和 TypeORM 有什么区别？
+   - ORM 的优缺点是什么？
+   - 如何处理数据库迁移？
+   - 什么情况下你会用原生 SQL？
+
+【输出形式要求：多文件、多格式】
+
+/node-orm-deep-dive/
+├── README.md
+├── docs/
+│   ├── 01-why-orm-and-when-to-use.md
+│   ├── 02-prisma-complete-guide.md
+│   ├── 03-typeorm-overview.md
+│   ├── 04-migration-best-practices.md
+│   └── 05-interview-questions.md
+├── examples/
+│   ├── prisma/
+│   │   ├── schema.prisma
+│   │   ├── prisma-client.ts
+│   │   ├── crud-operations.ts
+│   │   ├── relations-example.ts
+│   │   └── transaction-example.ts
+│   └── typeorm/
+│       ├── user.entity.ts
+│       ├── data-source.ts
+│       └── typeorm-crud.ts
+├── scripts/
+│   ├── setup-prisma.sh
+│   └── run-examples.sh
+└── comparison/
+    └── prisma-vs-typeorm.md
+
+要求：
+
+1. 先输出完整目录树。
+2. docs 下：
+   - Prisma 指南要详尽，涵盖日常开发所需
+   - TypeORM 作为对比简述
+3. examples：
+   - Prisma 示例要完整可运行
+   - 展示关联查询和事务
+4. comparison：
+   - 详细对比表格
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【N7】日志系统与可观测性（Pino / Winston）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+```text
+你现在是「Node.js 可观测性与运维方向的专家」，
+要为一位「7-8 年资深前端工程师」设计日志系统的学习资料。
+
+【本次主题】N7：日志系统与可观测性（Pino / Winston）
+
+必须覆盖：
+
+1）为什么日志系统很重要
+   - 线上问题排查的核心依据
+   - 日志 vs console.log：生产环境的差异
+   - 日志的三大作用：调试、监控、审计
+
+2）日志设计原则
+   - 日志级别：trace / debug / info / warn / error / fatal
+     - 每个级别的使用场景
+     - 生产环境 vs 开发环境的级别设置
+   - 结构化日志：
+     - JSON 格式的优势
+     - 必要字段：timestamp、level、message、traceId、userId
+   - 日志规范：
+     - 该记什么、不该记什么（敏感信息）
+     - 日志量控制
+
+3）Pino 深度教程
+   - Pino 的设计理念：极致性能
+   - 基础配置：level、transport、formatters
+   - 子 Logger（child logger）
+   - 与 Express/Fastify 集成（pino-http）
+   - 日志轮转与输出目标
+
+4）Winston 概述
+   - Transport 系统：Console、File、HTTP
+   - 格式化器：combine、timestamp、printf
+   - 与 Pino 的对比
+
+5）请求级日志与链路追踪
+   - requestId / traceId 的生成与传递
+   - AsyncLocalStorage 实现请求上下文
+   - 与上下游服务的 traceId 透传
+
+6）日志收集与分析
+   - ELK Stack（Elasticsearch + Logstash + Kibana）简介
+   - 云服务方案（AWS CloudWatch、阿里云 SLS）
+   - 日志告警基础
+
+7）面试高频问题（至少 5 个问题 + 加分回答）
+   - 你们线上日志是怎么做的？
+   - Pino 和 Winston 有什么区别？为什么选 Pino？
+   - 什么是结构化日志？
+   - 如何实现请求级别的日志追踪？
+   - 日志量太大怎么处理？
+
+【输出形式要求：多文件、多格式】
+
+/node-logging-and-observability/
+├── README.md
+├── docs/
+│   ├── 01-why-logging-matters.md
+│   ├── 02-logging-design-principles.md
+│   ├── 03-pino-complete-guide.md
+│   ├── 04-winston-overview.md
+│   ├── 05-request-tracing.md
+│   └── 06-interview-questions.md
+├── examples/
+│   ├── pino/
+│   │   ├── basic-pino.ts
+│   │   ├── pino-with-express.ts
+│   │   ├── child-logger.ts
+│   │   └── pino-transport.ts
+│   ├── winston/
+│   │   ├── basic-winston.ts
+│   │   └── winston-with-express.ts
+│   └── tracing/
+│       ├── async-local-storage.ts
+│       ├── request-context.ts
+│       └── trace-middleware.ts
+├── scripts/
+│   └── run-logging-examples.sh
+└── config/
+    └── logging-config.ts
+
+要求：
+
+1. 先输出完整目录树。
+2. docs 下：
+   - Pino 指南要详尽
+   - 包含 AsyncLocalStorage 实现请求追踪的完整示例
+3. examples：
+   - 使用 TypeScript
+   - 展示实际的 Express 集成
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【N8】测试 & 服务质量保障
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+```text
 你现在是「后端测试 & 质量保障方向的专家」，
-要为一位「7-8 年资深前端工程师，准备转向 Node/BFF 架构」设计一套 Node.js 测试与质量体系的学习项目。
+要为一位「7-8 年资深前端工程师，准备转向 Node/BFF 架构」设计一套测试体系的学习项目。
 
-【本次子步骤主题】Node.js 测试 & 服务质量保障
+【本次主题】N8：Node.js 测试 & 服务质量保障
 
 必须覆盖：
 
 1）测试金字塔与 Node 服务的测试类型
-   - 单元测试（Unit Test）
-   - 集成测试（Integration Test）
-   - 端到端测试（E2E）
-   - 契约测试（Contract Test）概念（简要）
+   - 单元测试（Unit Test）：函数级别，mock 外部依赖
+   - 集成测试（Integration Test）：模块协作，可能涉及真实 DB
+   - 端到端测试（E2E）：完整请求链路
+   - 契约测试（Contract Test）：服务间接口约定
    - 在 BFF / Node 服务中的常见划分方式
 
-2）Jest / Vitest 基础
+2）Jest / Vitest 详解
    - 测试文件命名约定（*.test.ts / *.spec.ts）
-   - describe / it / test / beforeEach / afterEach 的用法
-   - 断言语法（expect）
-   - mock:
-     - jest.fn / jest.mock
+   - describe / it / test / beforeEach / afterEach / beforeAll / afterAll
+   - 断言语法（expect）常用匹配器
+   - Mock：
+     - jest.fn / jest.mock / jest.spyOn
      - 对 HTTP 客户端（axios等）进行 mock
+     - 对数据库模块进行 mock
+   - 异步测试：async/await、done callback
 
 3）针对 HTTP 接口的测试
-   - 使用 supertest（或类似库）对 Express/Koa 的路由做集成测试：
+   - 使用 supertest 对 Express/Koa 的路由做集成测试：
      - 启动一个 app 实例，不真正监听端口
-     - 对 /health 等接口做断言
-   - 测试中如何注入假数据或 mock 出依赖服务
+     - 对 /health、/api/users 等接口做断言
+   - 测试中如何注入假数据或 mock 依赖服务
+   - 测试不同 HTTP 状态码的场景
 
-4）数据库 & Redis 交互测试策略
-   - 使用内存数据库（如 sqlite / mongodb-memory-server）的思路（可以只概念）
-   - 使用 test containers（如 docker 容器）的思路（简要提及）
-   - 如何隔离测试数据：
-     - 每个测试前清理表 / 使用事务回滚
+4）数据库 & Redis 测试策略
+   - 使用内存数据库（sqlite / mongodb-memory-server）
+   - 使用 testcontainers（Docker 容器）
+   - 测试数据隔离：每个测试前清理 / 事务回滚
 
-5）服务质量 & CI 初步
+5）代码覆盖率
+   - 覆盖率指标：行覆盖、分支覆盖、函数覆盖
+   - 如何设置覆盖率阈值
+   - 覆盖率报告生成
+
+6）服务质量 & CI
    - lint（ESLint）+ 格式化（Prettier）
    - TypeScript 类型检查
-   - 在 CI 中跑测试 & 覆盖率报告（coverage）
-   - 如何为一个 Node/BFF 服务定义「最基本的质量红线」：测试必须通过、覆盖率大致水平等
+   - 在 CI 中跑测试 & 覆盖率
+   - 质量红线设置
+
+7）面试高频问题（至少 5 个问题 + 加分回答）
+   - 你们服务的测试覆盖率是多少？
+   - 单元测试和集成测试的区别？
+   - 如何 mock 外部依赖？
+   - 如何测试数据库相关的代码？
+   - 你们的 CI 流程是怎样的？
 
 【输出形式要求：多文件、多格式】
-
-项目结构类似：
 
 /node-testing-and-quality/
 ├── README.md
 ├── docs/
-│   ├── 01-testing-pyramid-for-node-services.md
-│   ├── 02-jest-vitest-basics.md
-│   ├── 03-http-api-testing-with-supertest.md
-│   ├── 04-db-and-redis-testing-strategies.md
-│   ├── 05-ci-integration-and-coverage.md
-│   └── 06-interview-angles-and-best-practices.md
+│   ├── 01-testing-pyramid-for-node.md
+│   ├── 02-jest-vitest-deep-dive.md
+│   ├── 03-http-api-testing.md
+│   ├── 04-db-and-redis-testing.md
+│   ├── 05-coverage-and-ci.md
+│   └── 06-interview-questions.md
 ├── src/
-│   ├── app.ts            # 简单 Express/Koa 应用
+│   ├── app.ts
 │   ├── services/
+│   │   ├── user-service.ts
 │   │   └── math-service.ts
 │   └── routes/
-│       └── health-route.ts
+│       ├── health-route.ts
+│       └── user-route.ts
 ├── tests/
 │   ├── unit/
-│   │   └── math-service.test.ts
+│   │   ├── math-service.test.ts
+│   │   └── user-service.test.ts
 │   ├── integration/
-│   │   └── health-route.test.ts
+│   │   ├── health-route.test.ts
+│   │   └── user-route.test.ts
 │   └── helpers/
-│       └── test-server.ts
-└── config/
-    ├── jest.config.cjs
-    └── sample-ci-config.yml    # 示例 CI 配置（GitHub Actions 或 GitLab CI）
+│       ├── test-server.ts
+│       └── mock-helpers.ts
+├── config/
+│   ├── jest.config.ts
+│   └── sample-ci.yml
+└── scripts/
+    ├── run-tests.sh
+    └── run-coverage.sh
 
 要求：
 
 1. 先输出目录树。
-2. docs 下：
-   - 每篇文档要说明「为什么需要这类测试」「在 Node 服务里具体长什么样」。
-   - 至少有一节「面试中如何回答测试相关问题」，包含示例回答。
-
-3. src/：
-   - TypeScript 实现一个极简服务（如 GET /health 返回 {status: 'ok'}）。
-   - math-service.ts 用来做 demo 单元测试。
-
-4. tests/：
-   - Jest 或 Vitest 任选其一，但要写可运行的配置（jest.config.cjs）。
-   - math-service.test.ts：演示单元测试和 mock。
-   - health-route.test.ts：使用 supertest 测 HTTP 接口。
-   - test-server.ts：封装创建 app 实例的逻辑。
-
-5. config/sample-ci-config.yml：
-   - 描述「安装依赖 → 运行 lint → 运行测试 → 查看覆盖率报告」的步骤（伪配置即可）。
+2. docs 下每篇文档说明「为什么需要这类测试」「在 Node 服务里具体长什么样」。
+3. src/ 实现一个极简服务做 demo。
+4. tests/ 包含完整的单元测试和集成测试示例。
+5. jest.config.ts 是可用的配置。
 
 请从项目结构开始，然后依次输出每个文件的完整内容。
+```
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+【N9】安全实践 & 配置管理
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-
-
-
-
-
-Node.js 安全实践 & 配置管理最佳实践
-
+```text
 你现在是「安全方向 + Node.js 后端经验丰富的架构师」，
 要为一位「7-8 年资深前端工程师」设计一套 Node/BFF 安全与配置管理的学习资料。
 
-【本次子步骤主题】Node.js 安全实践 & 配置管理最佳实践
+【本次主题】N9：Node.js 安全实践 & 配置管理最佳实践
 
 必须覆盖：
 
 1）Web & API 常见安全问题（从 BFF 视角）
-   - OWASP Top 10 中与 BFF/Node 最相关的部分：
-     - 注入（SQL 注入、NoSQL 注入）
-     - 认证和会话管理问题
+   - OWASP Top 10 相关：
+     - 注入（SQL 注入、NoSQL 注入、命令注入）
+     - 认证和会话管理漏洞
      - 敏感数据暴露
-     - XSS / CSRF（虽然更偏前端，但 BFF 需要配置相应防护）
-   - Node/BFF 中典型导致漏洞的错误模式：
+     - XSS / CSRF
+     - 不安全的直接对象引用
+   - Node/BFF 中典型导致漏洞的错误模式
 
 2）输入校验 & 数据清洗
-   - 使用 joi / zod / class-validator 等库做参数校验：
+   - 使用 Zod / Joi / class-validator 做参数校验：
      - 请求 Body / Query / Params 校验
-   - 防止 NoSQL 注入 / JSON 注入的基本思路
+   - 防止注入的基本思路
+   - 输入校验中间件封装
 
 3）HTTP 安全头 & Helmet
    - 使用 helmet 中间件：
-     - 常用头部：Content-Security-Policy、X-Frame-Options、X-Content-Type-Options、Strict-Transport-Security 等
-   - CORS 配置：
-     - 允许域、方法、凭证配置的原则
+     - Content-Security-Policy
+     - X-Frame-Options
+     - X-Content-Type-Options
+     - Strict-Transport-Security
+     - X-XSS-Protection
+   - CORS 配置原则
 
 4）认证与授权安全
    - JWT 安全注意事项：
-     - 签名算法选择（HS256 / RS256）
-     - Token 有效期与刷新机制（Refresh Token 简述）
-     - 在 Node/BFF 中校验 Token 的示例
-   - Session / Cookie：
-     - HttpOnly / Secure / SameSite 的作用
-     - BFF 如何安全地设置 cookie
+     - 签名算法选择（HS256 / RS256 / ES256）
+     - Token 有效期与刷新机制
+     - JWT 存储位置（Cookie vs LocalStorage vs Memory）
+   - Session / Cookie 安全：
+     - HttpOnly / Secure / SameSite
+     - Cookie 签名
+   - 权限控制模式（RBAC / ABAC）
 
 5）配置 & Secrets 管理
-   - 不要把 secrets commit 到代码库（.env / secrets manager）
-   - 配置分层：
-     - config/default / config/production / 环境变量覆盖
-   - 在 Docker/K8s 中注入环境变量的简单说明（与 Step A4 / C 呼应）
+   - 不要把 secrets commit 到代码库
+   - .env 文件与 dotenv
+   - 配置分层：default / development / production
+   - 环境变量校验（使用 Zod 校验环境变量）
+   - Secrets Manager（AWS / GCP / Vault）简述
+   - 在 Docker/K8s 中注入配置
+
+6）依赖安全
+   - npm audit / yarn audit
+   - 依赖更新策略
+   - 锁文件的重要性
+
+7）面试高频问题（至少 5 个问题 + 加分回答）
+   - 你们是怎么防止 SQL 注入的？
+   - JWT 和 Session 有什么区别？怎么选？
+   - 如何安全地管理配置和 Secrets？
+   - 你们服务做了哪些安全措施？
+   - CORS 是什么？怎么配置？
 
 【输出形式要求：多文件、多格式】
-
-项目结构：
 
 /node-security-and-config/
 ├── README.md
 ├── docs/
-│   ├── 01-common-web-security-risks-for-bff.md
-│   ├── 02-input-validation-and-sanitization.md
-│   ├── 03-http-security-headers-and-cors.md
-│   ├── 04-authentication-authorization-security.md
-│   ├── 05-config-and-secrets-management.md
-│   └── 06-security-interview-scenarios.md
+│   ├── 01-common-security-risks.md
+│   ├── 02-input-validation.md
+│   ├── 03-http-security-headers.md
+│   ├── 04-auth-security.md
+│   ├── 05-config-and-secrets.md
+│   └── 06-interview-questions.md
 ├── examples/
 │   ├── app/
 │   │   ├── app.ts
@@ -726,120 +1045,344 @@ Node.js 安全实践 & 配置管理最佳实践
 │   │   └── routes/
 │   │       ├── public-route.ts
 │   │       └── protected-route.ts
+│   ├── validation/
+│   │   ├── user-schema.ts
+│   │   └── env-schema.ts
 │   └── config/
-│       ├── default.json
-│       ├── production.json
-│       └── sample-env.example
-└── scripts/
-    └── start-secure-app.sh
+│       ├── index.ts
+│       ├── default.ts
+│       └── production.ts
+├── scripts/
+│   └── start-secure-app.sh
+└── templates/
+    └── .env.example
 
 要求：
 
 1. 先给目录树。
-2. docs 下：
-   - 对每类安全问题给出「简短攻击例子 + 缓解措施」。
-   - 为面试准备「如果面试官问你 Node 服务安全，你如何从几个维度展开？」的示例回答。
-
-3. examples/app：
-   - 使用 TypeScript + Express/Koa 构建一个示例服务。
-   - validate-request.ts 使用某个常见校验库（如 joi/zod）做示例。
-   - security-headers.ts 使用 helmet（或者手写若干 header 设置）。
-
-4. config：
-   - default.json / production.json 中包含 apiBaseUrl、jwtSecret（占位）、logLevel 等字段。
-   - sample-env.example 展示如何声明环境变量（如 DB_URL、REDIS_URL 等）。
-
-5. scripts：
-   - start-secure-app.sh 展示如何以指定 NODE_ENV / 加载 .env 启动服务（伪命令即可）。
+2. docs 下对每类安全问题给出「攻击例子 + 缓解措施」。
+3. examples/app 使用 TypeScript + Express 构建示例服务。
+4. validation 展示 Zod 校验示例。
 
 请从项目结构开始，然后依次输出每个文件的完整内容。
+```
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+【N10】实时通信 & 异步任务处理（WebSocket / 队列）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-
-
-
-
-Node.js 实时通信 & 异步任务处理（WebSocket / 队列）
-
+```text
 你现在是「对实时系统 & 消息队列很熟的 Node.js 架构师」，
-要为一位「7-8 年资深前端工程师」设计一个 Node 方向的高阶能力模块。
+要为一位「7-8 年资深前端工程师」设计实时通信和异步任务的学习资料。
 
-【本次子步骤主题】Node.js 实时通信 & 异步任务处理
+【本次主题】N10：Node.js 实时通信 & 异步任务处理
 
 必须覆盖：
 
-1）实时通信概念
-   - 长轮询 / SSE（Server-Sent Events）/ WebSocket 的对比：
-     - 连接模型、方向性（单向/双向）、浏览器支持
-   - WebSocket 在 Node 中的实现方式：
+1）实时通信技术对比
+   - 短轮询（Short Polling）：实现简单，开销大
+   - 长轮询（Long Polling）：减少请求次数
+   - SSE（Server-Sent Events）：服务端推送，单向
+   - WebSocket：全双工，实时性好
+   - 对比表格：连接模型、方向性、浏览器支持、适用场景
+
+2）WebSocket 详解
+   - WebSocket 协议基础：握手、帧格式
+   - Node 中的实现：
      - 原生 ws 模块
-     - socket.io 提供的额外能力（房间、命名空间、自动重连等）
+     - socket.io 的额外能力（房间、命名空间、自动重连、降级）
+   - 连接管理：
+     - 心跳检测（ping/pong）
+     - 断线重连
+   - 扩展性考虑：多实例下的广播（Redis Pub/Sub）
 
-2）Node WebSocket 示例
-   - 使用 ws 或 socket.io 实现：
-     - 一个简单的聊天室 demo
-     - 简单的心跳检测（ping/pong）逻辑
-   - 简要讨论：在 BFF 中何时适合加 WebSocket，何时更推荐 SSE 或轮询
+3）SSE 实现
+   - 基本原理与 API
+   - 与 WebSocket 的选择
 
-3）异步任务 / 消息队列
-   - 为什么需要任务队列：
-     - 请求链路中不适合同步执行的耗时任务（发邮件、生成报表、推送通知等）
-   - 使用 Redis 队列（如 Bull/BullMQ）的基本模型：
-     - producer / consumer 概念
-     - Job 数据结构
-   - 示例：
-     - BFF 接口入队一个「发送通知」任务
-     - 独立 worker 进程消费任务并执行（打印/log 即可）
+4）消息队列基础
+   - 为什么需要消息队列：
+     - 解耦
+     - 削峰填谷
+     - 异步处理
+   - 常见队列类型：
+     - Redis 队列（简单场景）
+     - RabbitMQ / Kafka（企业级）
+   - 使用 Bull/BullMQ 的 Redis 队列：
+     - Producer / Consumer 模式
+     - Job 生命周期
+     - 延迟任务、重试、死信
 
-4）简单的可靠性 & 重试
-   - 基于队列内置重试机制（delay / attempts 等）
-   - 幂等性基本概念（防止重复执行的简单方法）
+5）实战：异步任务处理
+   - 场景：发邮件、生成报表、推送通知
+   - BFF 入队 → Worker 消费
+   - 幂等性设计
 
-5）高层架构视图
-   - 将「同步 HTTP 请求处理」与「异步任务处理」做职责分离
-   - 使用 ASCII 图画出：
-     - client → BFF → queue → worker → 第三方服务
+6）架构视图
+   - 同步 HTTP 流 vs 异步任务流（ASCII 图）
+
+7）面试高频问题（至少 5 个问题 + 加分回答）
+   - WebSocket 和 SSE 有什么区别？
+   - 你们用过消息队列吗？什么场景？
+   - 如何保证消息不丢失？
+   - 什么是幂等性？
+   - 多实例下 WebSocket 怎么广播？
 
 【输出形式要求：多文件、多格式】
-
-项目结构：
 
 /node-realtime-and-jobs/
 ├── README.md
 ├── docs/
-│   ├── 01-realtime-patterns-long-polling-sse-websocket.md
-│   ├── 02-websocket-with-node-and-socketio.md
-│   ├── 03-job-queues-and-redis-with-bull.md
-│   ├── 04-reliability-and-retries.md
-│   └── 05-architecture-and-interview-topics.md
+│   ├── 01-realtime-patterns.md
+│   ├── 02-websocket-deep-dive.md
+│   ├── 03-sse-implementation.md
+│   ├── 04-message-queue-basics.md
+│   ├── 05-async-job-processing.md
+│   └── 06-interview-questions.md
 ├── examples/
-│   ├── websocket-chat/
-│   │   ├── server.ts
-│   │   └── client.html
-│   └── jobs-with-queue/
+│   ├── websocket/
+│   │   ├── ws-server.ts
+│   │   ├── socketio-server.ts
+│   │   ├── client.html
+│   │   └── heartbeat.ts
+│   ├── sse/
+│   │   ├── sse-server.ts
+│   │   └── sse-client.html
+│   └── queue/
 │       ├── queue-setup.ts
 │       ├── producer.ts
 │       ├── worker.ts
 │       └── job-types.ts
-└── diagrams/
-    └── sync-vs-async-flow.txt
+├── diagrams/
+│   └── sync-vs-async-flow.txt
+└── scripts/
+    ├── run-websocket-server.sh
+    └── run-queue-demo.sh
 
 要求：
 
 1. 先输出目录树。
-2. docs 下：
-   - 清楚对比三种实时方式（轮询 / SSE / WebSocket），给出优缺点表格。
-   - 说明「BFF + 队列 + worker」在真实业务中的用法。
-   - 提供几条面试问答示例：如何描述你设计的异步任务系统。
-
-3. examples：
-   - websocket-chat/server.ts 使用 TypeScript（可用 ws 或 socket.io）。
-   - client.html 用原生 HTML+JS，连接 WebSocket 服务器收发消息。
-   - jobs-with-queue 使用 TypeScript，假设使用 Bull 或 BullMQ（可写伪代码，重点放在 flow 上）。
-
-4. diagrams/sync-vs-async-flow.txt：
-   - 使用 ASCII 图画出同步 HTTP 流 vs 异步任务流。
+2. docs 下清楚对比各种实时方式，给出优缺点表格。
+3. examples 使用 TypeScript，WebSocket 示例包含心跳检测。
+4. diagrams 使用 ASCII 图画同步 vs 异步流。
 
 请从项目结构开始，然后依次输出每个文件的完整内容。
+```
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【N11】API 文档与工程规范（Swagger / OpenAPI）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+```text
+你现在是「Node.js API 设计与工程规范方向的专家」，
+要为一位「7-8 年资深前端工程师」设计 API 文档与工程规范的学习资料。
+
+【本次主题】N11：API 文档与工程规范（Swagger / OpenAPI）
+
+必须覆盖：
+
+1）为什么 API 文档很重要
+   - 前后端协作效率
+   - 文档即契约
+   - 自动化测试、Mock、代码生成
+
+2）OpenAPI 规范详解
+   - OpenAPI 3.0 规范结构：
+     - openapi / info / servers
+     - paths：接口定义
+     - components：可复用组件（schemas、parameters、responses）
+   - 数据类型：string、number、boolean、array、object
+   - 请求参数：path、query、header、cookie、body
+   - 响应定义：status code、content type、schema
+   - 完整示例
+
+3）Swagger 工具链
+   - Swagger UI：文档可视化
+   - Swagger Editor：在线编辑
+   - swagger-jsdoc：从 JSDoc 注释生成
+   - @nestjs/swagger：NestJS 装饰器
+
+4）在 Express 项目中集成
+   - swagger-ui-express + swagger-jsdoc
+   - JSDoc 注释语法
+   - 完整集成示例
+
+5）API 设计规范
+   - RESTful 设计原则：
+     - 资源命名
+     - HTTP 方法语义
+     - 状态码使用
+   - 分页、排序、过滤、字段选择
+   - 版本管理策略（URL / Header）
+   - 错误响应格式规范
+
+6）代码生成
+   - 从 OpenAPI 生成 TypeScript 类型
+   - 生成客户端 SDK
+   - 生成 Mock 服务
+
+7）面试高频问题（至少 5 个问题 + 加分回答）
+   - 你们的 API 文档是怎么管理的？
+   - OpenAPI 规范了解吗？
+   - RESTful API 设计有哪些原则？
+   - 如何做 API 版本管理？
+   - 前后端如何基于 API 文档协作？
+
+【输出形式要求：多文件、多格式】
+
+/node-api-docs-and-standards/
+├── README.md
+├── docs/
+│   ├── 01-why-api-docs-matter.md
+│   ├── 02-openapi-specification.md
+│   ├── 03-swagger-toolchain.md
+│   ├── 04-express-integration.md
+│   ├── 05-api-design-principles.md
+│   └── 06-interview-questions.md
+├── examples/
+│   ├── app/
+│   │   ├── app.ts
+│   │   ├── swagger.ts
+│   │   └── routes/
+│   │       ├── user-routes.ts
+│   │       └── product-routes.ts
+│   ├── openapi/
+│   │   └── api-spec.yaml
+│   └── code-gen/
+│       └── generate-types.ts
+├── templates/
+│   └── openapi-template.yaml
+└── scripts/
+    └── start-with-swagger.sh
+
+要求：
+
+1. 先输出目录树。
+2. docs 下包含 OpenAPI 规范的详细讲解。
+3. examples/app 展示完整的 Express + Swagger 集成。
+4. examples/openapi 包含完整的 API 规范示例。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【N12】基础设施协作（Nginx / Docker / K8s）& 面试总结
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+```text
+你现在是「全栈架构 & 平台基础设施」方向的专家和资深面试官，
+要为一位「7-8 年资深前端工程师，正在从 BFF 向全栈/架构升级」设计基础设施与面试总结资料。
+
+【本次主题】N12：基础设施协作（Nginx / Docker / K8s）& 面试总结
+
+必须覆盖：
+
+1）Nginx 与 Node BFF 协作
+   - 反向代理配置：
+     - upstream 负载均衡
+     - 基于路径/域名的路由
+   - 常用配置：
+     - 静态资源服务
+     - gzip 压缩
+     - 缓存控制
+     - WebSocket 代理
+   - 与 Node 服务的典型部署架构
+
+2）Docker 容器化
+   - Node BFF Dockerfile 最佳实践：
+     - 多阶段构建
+     - 镜像体积优化
+     - 非 root 用户
+     - 健康检查
+   - docker-compose 本地开发环境
+
+3）Kubernetes 概念视图
+   - K8s 核心概念：Pod / Deployment / Service / Ingress
+   - Node BFF 在 K8s 中的路径：
+     - Ingress(Nginx) → Service → Pod(Node BFF)
+   - HPA 自动扩缩容
+   - ConfigMap / Secret 配置注入
+   - 不需要写完整 yaml，但要画出文字架构图
+
+4）完整部署架构图
+   - 浏览器 → CDN → Nginx/Ingress → Node BFF → 后端服务 / Redis / DB
+   - 用 ASCII 图展示
+
+5）Node.js / BFF 面试高频问题汇总（20+ 个问题）
+   按分类整理：
+   - 基础与运行时（5 个）
+   - 异步与并发（5 个）
+   - BFF 架构（5 个）
+   - 数据层与缓存（5 个）
+   - 安全与质量（5 个）
+   - 基础设施（3 个）
+
+   每个问题包含：
+   - 问题本身
+   - 标准答案
+   - 加分回答
+
+6）面试回答框架
+   - STAR 法则应用于技术问题
+   - 如何展示架构能力
+   - 如何展示线上经验
+
+【输出形式要求：多文件、多格式】
+
+/node-infra-and-interview/
+├── README.md
+├── docs/
+│   ├── 01-nginx-and-node-bff.md
+│   ├── 02-docker-for-node.md
+│   ├── 03-kubernetes-concepts.md
+│   ├── 04-deployment-architecture.md
+│   └── 05-interview-mega-collection.md
+├── examples/
+│   ├── nginx/
+│   │   ├── nginx.conf
+│   │   └── upstream.conf
+│   ├── docker/
+│   │   ├── Dockerfile
+│   │   ├── docker-compose.yml
+│   │   └── .dockerignore
+│   └── k8s/
+│       ├── deployment.yaml
+│       ├── service.yaml
+│       └── ingress.yaml
+├── diagrams/
+│   ├── bff-deployment-architecture.txt
+│   └── k8s-request-flow.txt
+└── cheatsheets/
+    ├── docker-commands.md
+    ├── kubectl-commands.md
+    └── interview-quick-answers.md
+
+要求：
+
+1. 先输出目录树。
+2. docs 下每篇要有：概念、配置示例、常见坑、面试问答。
+3. 05-interview-mega-collection.md 要包含 20+ 个高频问题和答案。
+4. examples 下配置文件要完整可用。
+5. diagrams 使用 ASCII 图画架构。
+6. cheatsheets 提供快速参考。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+                              使用指南
+================================================================================
+
+1. 每个提示词单独使用，复制到 AI 对话中执行
+2. 按编号顺序执行（N1 → N12），确保知识连贯
+3. 生成后检查内容是否符合预期，可要求补充
+4. 学习顺序建议：
+   - 先学基础：N1、N2、N3
+   - 再学 BFF：N4、N5、N6
+   - 然后工程：N7、N8、N9
+   - 最后高级：N10、N11、N12
+
+================================================================================
