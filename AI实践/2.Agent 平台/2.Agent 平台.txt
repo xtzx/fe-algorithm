@@ -1,0 +1,223 @@
+
+这条路的核心是：让多个团队/多个 Agent 都能用同一套"可靠的运行时"，而不是每个项目手搓一套。
+
+⸻
+
+2.1 你具体会做哪些事
+
+A. 工具协议与工具注册中心（Tool Registry）
+
+你会做一个"工具接入标准"：
+	•	工具元信息：name/desc/风险等级/owner
+	•	参数 schema：JSON schema（必填/枚举/范围）
+	•	输出 schema：规范输出，便于下游消费
+	•	工具执行器：统一超时、重试、错误码、日志
+	•	工具模拟（mock）：评测/开发环境可替代真实工具
+
+交付物：
+	•	tool_registry（配置/SDK）
+	•	tool_executor（统一执行框架）
+
+⸻
+
+B. 权限与审计（治理核心）
+
+你会把 Agent 能做的事"关进笼子"：
+	•	最小权限：按用户/角色/租户决定能用哪些工具、能访问哪些数据
+	•	工具分级：只读工具默认可用；写操作工具必须二次确认/HITL
+	•	审计日志：谁触发了哪次工具调用、参数是什么、结果是什么、影响了什么资源
+
+⸻
+
+C. 沙箱（高风险工具必备）
+
+对"可执行"的工具要隔离：
+	•	SQL：只允许 SELECT、限制表、限制行数、强制超时
+	•	代码执行：容器隔离、资源限制、网络白名单
+	•	浏览器操作：只能访问白名单域名，禁下载敏感文件
+
+⸻
+
+D. 工作流编排（从 prompt 串联 → 状态机/图）
+
+你会把 Agent 从"聊天"变成"可控流程"：
+	•	节点：plan / retrieve / tool / reflect / finalize
+	•	条件跳转：工具失败/证据不足/预算不足 → 走不同路径
+	•	预算控制：token budget、tool budget、time budget
+	•	防循环：最大步数、重复动作检测
+
+⸻
+
+E. 可靠性策略（让系统"可用"）
+	•	schema 校验失败 → 让模型重试（带错误信息）
+	•	工具失败 → 备用工具/降级回答/追问
+	•	不确定 → 请求澄清而不是乱编
+	•	写操作 → 人工确认（HITL）
+
+⸻
+
+F. MCP 协议与标准化（新增 - 业界标准）
+
+MCP（Model Context Protocol）是 Anthropic 推出的开放标准，正在成为 Agent 工具调用的事实标准（Cursor、Claude Desktop 等已采用）。
+
+你会做：
+	•	理解 MCP 核心概念：
+		•	Resources：可读取的数据源（文件、数据库、API）
+		•	Tools：可执行的操作（函数调用）
+		•	Prompts：可复用的提示词模板
+		•	Sampling：让 Server 请求 LLM 生成
+	•	实现 MCP Server：
+		•	用 TypeScript SDK 实现自定义 MCP Server
+		•	暴露工具给任何 MCP Client（如 Claude Desktop、Cursor）
+	•	实现 MCP Client：
+		•	在你的 Agent Runtime 中集成 MCP Client
+		•	动态发现和调用外部 MCP Server 提供的工具
+
+交付物：
+	•	一个自定义 MCP Server（如知识库检索）
+	•	Agent Runtime 支持 MCP 工具发现与调用
+
+⸻
+
+G. 前端体验层（新增 - 前端独特优势）
+
+这是前端工程师的独占领域，也是让 Agent 产品"能用"变成"好用"的关键。
+
+你会做：
+	•	对话界面设计：
+		•	流式渲染（SSE/WebSocket）：打字机效果、Markdown 实时解析
+		•	消息状态：thinking/tool_calling/streaming/done/error
+		•	中断与重试：用户可随时停止生成
+	•	工具调用可视化：
+		•	实时展示 Agent 正在调用哪个工具、参数是什么
+		•	工具执行状态：pending → running → success/failed
+		•	折叠/展开工具调用详情
+	•	引用与溯源：
+		•	RAG 场景：高亮引用来源、点击跳转原文
+		•	工具结果：展示数据表格、图表
+	•	Trace 可视化（调试面板）：
+		•	请求全链路时间线
+		•	每个 span 的耗时、输入输出
+		•	失败节点高亮
+	•	可视化编排器（进阶）：
+		•	拖拽式 Agent 工作流构建
+		•	节点：LLM / Tool / Condition / Loop
+		•	类似 n8n / LangGraph Studio
+
+交付物：
+	•	React 对话组件库（流式渲染、工具调用展示）
+	•	Trace 可视化面板
+	•	（进阶）可视化编排器原型
+
+⸻
+
+2.2 需要哪些能力（非常详细）
+
+协议与抽象能力（平台的核心）
+	•	JSON schema / zod 校验
+	•	接口稳定性：版本化（tool v1/v2）、向后兼容
+	•	幂等与重试：request_id、幂等键、防重复副作用
+	•	MCP 协议理解与实现
+
+安全与合规能力
+	•	访问控制（RBAC/ABAC 基础概念）
+	•	审计与留痕：trace + audit log 的关联
+	•	Prompt 注入防护（尤其 RAG）：
+		•	文档内容不得覆盖系统指令
+		•	工具参数必须走结构化解析+校验，不能"从文档复制"
+	•	敏感信息治理：脱敏、最小化存储、数据保留周期
+
+工程能力
+	•	状态机/图编排思维（不一定要用某框架，但要会建模）
+	•	插件化架构：工具像插件一样接入
+	•	运行时稳定性：超时、隔离、资源限制
+
+前端体验能力（新增）
+	•	流式数据处理：SSE/WebSocket、流式 Markdown 解析
+	•	复杂状态管理：多消息并发、乐观更新、错误恢复
+	•	可视化：时间线、流程图、数据表格/图表
+	•	交互设计：中断/重试/编辑重发等 UX 模式
+
+产品/团队协作能力
+	•	对业务团队输出"接入规范"和"自助化"
+	•	让平台不成为瓶颈：提供模板、SDK、示例
+
+⸻
+
+2.3 技术选型参考（新增）
+
+核心运行时
+	•	自研（推荐先自研理解原理）：从零构建 Agent Runtime
+	•	LangGraph（Python）：状态机式 Agent 编排，适合复杂流程
+	•	CrewAI（Python）：多 Agent 协作框架
+	•	Vercel AI SDK（TypeScript）：流式 UI + 工具调用，前端友好
+
+MCP 相关
+	•	@modelcontextprotocol/sdk：官方 TypeScript SDK
+	•	MCP Inspector：调试工具
+
+前端组件
+	•	react-markdown + remark-gfm：Markdown 渲染
+	•	@tanstack/react-query：请求状态管理
+	•	zustand / jotai：轻量状态管理
+	•	reactflow：可视化编排
+
+向量存储（RAG 场景）
+	•	Chroma（本地开发）
+	•	Pinecone / Weaviate / Qdrant（生产环境）
+
+⸻
+
+2.4 学习注意事项
+	•	先做 1~2 个高价值工具场景（知识库检索、SQL 查询），再泛化平台
+	•	默认只读，写操作必须确认：否则平台一出事故就没信任
+	•	schema + 校验是根：不要寄希望于模型"自觉填对参数"
+	•	别一开始追求多 Agent：单 Agent + 多工具 + 稳定闭环更重要
+	•	前端体验要尽早做：能看到效果会大大提升学习动力
+
+⸻
+
+2.5 实践注意事项（上线坑）
+	•	权限没做好：越权访问是致命事故
+	•	工具失败不分类：你无法统计"失败主要来自哪里"
+	•	无幂等：重试导致重复写操作
+	•	工作流无预算：无限 loop 烧 token 和成本
+	•	沙箱隔离不严：代码/SQL agent 可能读到不该读的数据
+	•	流式渲染不处理中断：用户停止后后端还在跑，浪费 token
+	•	Markdown 解析不处理不完整片段：流式场景下会闪烁
+
+⸻
+
+2.6 工作原理
+
+核心像一个"受控运行时（Agent Runtime）"：
+
+用户请求 → 进入 runtime（带 user/role/tenant）
+→ runtime 选择工作流（图/状态机）
+→ 每一步要么调用 LLM、要么调用工具
+→ 工具调用必须通过 registry + 权限校验 + schema 校验 + 沙箱
+→ 全部过程写审计 + trace
+→ 失败则按策略回退或请求人工确认
+→ 前端实时展示每一步状态（thinking/tool_calling/streaming）
+
+⸻
+
+2.7 进阶方向（选修）
+
+多 Agent 协作
+	•	场景：复杂任务拆分给多个专业 Agent（规划者、执行者、审核者）
+	•	模式：
+		•	Supervisor：一个主 Agent 调度多个子 Agent
+		•	Peer-to-Peer：Agent 之间直接通信
+		•	Hierarchical：多层级结构
+	•	挑战：消息传递、状态同步、死锁检测
+	•	框架参考：CrewAI、AutoGen、LangGraph
+
+Agent 记忆系统
+	•	短期记忆：当前会话上下文
+	•	长期记忆：跨会话的用户偏好、历史摘要
+	•	工作记忆：当前任务的中间结果
+
+⸻
+
+你在这里的稀缺性是"把 Agent 变成可治理的系统 + 做出极致体验的前端"。

@@ -1,0 +1,2351 @@
+下面是一条针对 7 年前端经验工程师，从 0 开始落地 评估 + 观测（Observability + Evaluation）的完整路线图。
+
+技术栈：TypeScript/Node.js + React
+项目关系：与 Agent 平台方向共用同一个项目（agent-platform）
+核心定位：
+	•	Agent 平台：Trace 面板侧重于调试单次请求
+	•	评估观测：侧重于聚合分析、趋势、对比版本
+
+我拆成 12 个步骤，每一步都有：目标 / 要做什么 / 原理讲解 / 需要补的知识点 / 文件结构 / 交付物。
+
+⸻
+
+Step 0：定义"评估观测"的范围（1 天）
+
+目标
+搞清楚：你要观测什么、评估什么、迭代靠什么驱动。
+
+需要做什么
+	•	写一页纸的"范围说明"：
+	•	观测：我要能看到一次请求从入口→检索→模型→工具→输出的链路和耗时
+	•	评估：我要能离线跑回归集，对比版本好坏
+	•	迭代：线上 badcase 自动进库，变成回归集
+	•	定义指标列表：
+		•	性能指标：TTFT、p95 延迟、阶段耗时
+		•	质量指标：成功率、引用命中率、工具成功率
+		•	成本指标：tokens_in/out、每请求成本
+
+原理讲解
+	•	Trace vs Metrics vs Logs 的区别：
+		•	Trace：一次请求的完整链路，用于定位问题
+		•	Metrics：可聚合的数值，用于看趋势和告警
+		•	Logs：详细的事件记录，用于排查
+	•	LLM 场景特有指标：
+		•	TTFT（Time To First Token）：用户感知的响应速度
+		•	tokens：直接关联成本
+		•	tool_success_rate：Agent 可靠性的核心指标
+
+需要补的知识点
+	•	可观测性三支柱（Traces、Metrics、Logs）
+	•	LLM 应用的典型指标
+
+文件结构
+```
+agent-platform/
+├── docs/
+│   ├── PLATFORM_SPEC.md          # Agent 平台规范（已有）
+│   └── OBSERVABILITY_SPEC.md     # 观测规范（新增）
+├── packages/
+│   ├── observability/            # 观测模块（新增）
+│   │   ├── src/
+│   │   │   ├── tracer/           # Trace 实现
+│   │   │   ├── metrics/          # Metrics 实现
+│   │   │   └── index.ts
+│   │   └── package.json
+│   ├── eval/                     # 评测模块（新增）
+│   │   ├── src/
+│   │   │   ├── runner/           # 评测运行器
+│   │   │   ├── scorer/           # 评分器
+│   │   │   └── index.ts
+│   │   ├── datasets/             # 回归集
+│   │   └── package.json
+│   └── ...
+└── ...
+```
+
+交付物
+	•	OBSERVABILITY_SPEC.md（术语 + 指标列表 + span 列表）
+
+⸻
+
+Step 1：与 Agent 平台项目集成（1 天）
+
+目标
+在已有的 Agent 平台项目中添加观测模块的位置。
+
+需要做什么
+	•	创建 packages/observability 目录
+	•	创建 packages/eval 目录
+	•	配置 package.json 和 tsconfig.json
+	•	在 apps/web 中添加观测相关页面路由
+
+原理讲解
+	•	为什么放在同一个项目：
+		•	观测是 Agent 平台的"眼睛"，必须紧密集成
+		•	共用类型定义，避免重复
+		•	同一个前端应用，统一入口
+	•	Monorepo 的好处：
+		•	包之间可以直接引用
+		•	统一版本管理
+		•	一次 CI 全部测试
+
+需要补的知识点
+	•	Monorepo 配置（pnpm workspace / Turborepo）
+	•	TypeScript project references
+
+关键代码示例
+```json
+// packages/observability/package.json
+{
+  "name": "@agent-platform/observability",
+  "version": "0.0.1",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@agent-platform/shared": "workspace:*"
+  }
+}
+```
+
+```json
+// packages/eval/package.json
+{
+  "name": "@agent-platform/eval",
+  "version": "0.0.1",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "eval": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@agent-platform/shared": "workspace:*",
+    "@agent-platform/runtime": "workspace:*"
+  }
+}
+```
+
+交付物
+	•	项目结构更新
+	•	新 package 可以正常 build
+
+⸻
+
+Step 2：定义 Trace/Span 数据模型（1-2 天）
+
+目标
+你有一份明确的 JSON 结构：每个 span 要写哪些字段，怎么串起来。
+
+需要做什么
+	•	定义 span 列表（建议固定）：
+	•	request（入口）
+	•	retrieval
+	•	rerank（可选）
+	•	prompt_build
+	•	llm_generate
+	•	tool_call（可选）
+	•	postprocess
+	•	定义公共字段：
+	•	request_id、trace_id、span_id、parent_span_id、timestamp
+	•	duration_ms、status、error_code
+	•	model_name、prompt_version
+	•	tokens_in/out、cost_estimate
+	•	retrieval_k、doc_ids（脱敏或只存 id）
+
+原理讲解
+	•	链路追踪的父子关系：
+		•	一个 trace 包含多个 span
+		•	span 之间通过 parent_span_id 形成树形结构
+		•	根 span 没有 parent
+	•	为什么要版本字段：
+		•	模型版本：gpt-4o vs gpt-4o-mini 效果不同
+		•	prompt 版本：prompt 改动是最常见的变更
+		•	索引版本：RAG 的向量索引更新会影响检索结果
+		•	不版本化 = 无法回溯问题
+
+需要补的知识点
+	•	OpenTelemetry Span 规范（参考）
+	•	分布式追踪基本概念
+
+关键代码示例
+```typescript
+// packages/shared/src/trace-types.ts
+export type SpanStatus = 'running' | 'success' | 'error';
+
+export type SpanType =
+  | 'request'
+  | 'retrieval'
+  | 'rerank'
+  | 'prompt_build'
+  | 'llm_generate'
+  | 'tool_call'
+  | 'postprocess';
+
+export interface Span {
+  // 标识
+  traceId: string;
+  spanId: string;
+  parentSpanId?: string;
+  requestId: string;
+
+  // 基本信息
+  name: string;
+  type: SpanType;
+  startTime: number;      // Unix timestamp ms
+  endTime?: number;
+  durationMs?: number;
+  status: SpanStatus;
+
+  // 错误信息
+  errorCode?: string;
+  errorMessage?: string;
+
+  // 版本信息
+  modelName?: string;
+  modelVersion?: string;
+  promptVersion?: string;
+  indexVersion?: string;
+
+  // LLM 特有
+  tokensIn?: number;
+  tokensOut?: number;
+  costEstimate?: number;  // 美分
+  ttftMs?: number;        // Time To First Token
+
+  // 检索特有
+  retrievalK?: number;
+  docIds?: string[];
+
+  // 工具特有
+  toolName?: string;
+  toolArgs?: Record<string, unknown>;  // 脱敏后
+
+  // 自定义属性
+  attributes?: Record<string, unknown>;
+}
+
+export interface Trace {
+  traceId: string;
+  requestId: string;
+  userId?: string;
+  sessionId?: string;
+  startTime: number;
+  endTime?: number;
+  spans: Span[];
+}
+```
+
+```typescript
+// packages/shared/src/metrics-types.ts
+export interface RequestMetrics {
+  requestId: string;
+  timestamp: number;
+
+  // 性能
+  totalDurationMs: number;
+  ttftMs?: number;
+  retrievalDurationMs?: number;
+  llmDurationMs?: number;
+
+  // 质量
+  success: boolean;
+  errorCode?: string;
+  toolCallCount: number;
+  toolSuccessCount: number;
+
+  // 成本
+  tokensIn: number;
+  tokensOut: number;
+  costCents: number;
+
+  // 分类
+  modelName: string;
+  promptVersion: string;
+}
+```
+
+文件结构
+```
+packages/shared/
+├── src/
+│   ├── trace-types.ts            # Trace/Span 类型
+│   ├── metrics-types.ts          # Metrics 类型
+│   ├── tool-types.ts             # 工具类型（已有）
+│   ├── error-codes.ts            # 错误码（已有）
+│   └── index.ts
+```
+
+交付物
+	•	trace-types.ts + metrics-types.ts
+	•	TRACE_SCHEMA.md（字段说明文档）
+
+⸻
+
+Step 3：实现 Tracer 模块（3-5 天）
+
+目标
+每次请求都能落地 trace（先写本地 JSONL 文件），并能看到耗时拆分。
+
+需要做什么
+	•	实现 Tracer 类：
+		•	startSpan(name, type, parentSpanId?) → Span
+		•	endSpan(span, status, attributes?) → void
+		•	getTrace() → Trace
+	•	实现 TraceWriter：
+		•	写入 JSONL 文件
+		•	支持配置输出目录
+	•	在 Agent Runtime 中集成：
+		•	入口生成 trace_id/request_id
+		•	每个阶段调用 startSpan/endSpan
+
+原理讲解
+	•	为什么用 JSONL：
+		•	JSON Lines：每行一个 JSON 对象
+		•	追加写入，不怕并发冲突
+		•	方便后续流式读取和处理
+	•	Context 传播：
+		•	trace_id 和 span_id 需要在整个请求链路中传递
+		•	Node.js 可以用 AsyncLocalStorage 实现
+	•	TTFT 的测量：
+		•	流式响应场景，记录第一个 chunk 返回的时间
+		•	TTFT = 第一个 chunk 时间 - 请求开始时间
+
+需要补的知识点
+	•	Node.js AsyncLocalStorage（请求上下文传递）
+	•	文件追加写入（fs.appendFile / fs.createWriteStream）
+	•	JSONL 格式
+
+关键代码示例
+```typescript
+// packages/observability/src/tracer/tracer.ts
+import { AsyncLocalStorage } from 'async_hooks';
+import { Span, Trace, SpanType, SpanStatus } from '@agent-platform/shared';
+
+interface TraceContext {
+  traceId: string;
+  requestId: string;
+  spans: Span[];
+  currentSpanId?: string;
+}
+
+const traceStorage = new AsyncLocalStorage<TraceContext>();
+
+export function generateId(): string {
+  return crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+}
+
+export function startTrace(requestId: string): TraceContext {
+  const context: TraceContext = {
+    traceId: generateId(),
+    requestId,
+    spans: [],
+  };
+  return context;
+}
+
+export function runWithTrace<T>(
+  context: TraceContext,
+  fn: () => T
+): T {
+  return traceStorage.run(context, fn);
+}
+
+export function startSpan(
+  name: string,
+  type: SpanType,
+  attributes?: Record<string, unknown>
+): Span {
+  const context = traceStorage.getStore();
+  if (!context) {
+    throw new Error('No trace context found. Did you call runWithTrace?');
+  }
+
+  const span: Span = {
+    traceId: context.traceId,
+    spanId: generateId(),
+    parentSpanId: context.currentSpanId,
+    requestId: context.requestId,
+    name,
+    type,
+    startTime: Date.now(),
+    status: 'running',
+    attributes,
+  };
+
+  context.spans.push(span);
+  context.currentSpanId = span.spanId;
+
+  return span;
+}
+
+export function endSpan(
+  span: Span,
+  status: SpanStatus,
+  attributes?: Record<string, unknown>
+): void {
+  const context = traceStorage.getStore();
+  if (!context) return;
+
+  span.endTime = Date.now();
+  span.durationMs = span.endTime - span.startTime;
+  span.status = status;
+
+  if (attributes) {
+    span.attributes = { ...span.attributes, ...attributes };
+  }
+
+  // 恢复父 span 为当前 span
+  context.currentSpanId = span.parentSpanId;
+}
+
+export function getCurrentTrace(): Trace | undefined {
+  const context = traceStorage.getStore();
+  if (!context) return undefined;
+
+  return {
+    traceId: context.traceId,
+    requestId: context.requestId,
+    startTime: Math.min(...context.spans.map(s => s.startTime)),
+    endTime: Math.max(...context.spans.map(s => s.endTime ?? Date.now())),
+    spans: context.spans,
+  };
+}
+```
+
+```typescript
+// packages/observability/src/tracer/writer.ts
+import fs from 'fs';
+import path from 'path';
+import { Trace } from '@agent-platform/shared';
+
+export class TraceWriter {
+  private outputDir: string;
+  private stream: fs.WriteStream | null = null;
+  private currentDate: string = '';
+
+  constructor(outputDir: string = './artifacts/traces') {
+    this.outputDir = outputDir;
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+
+  private getFilePath(): string {
+    const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    return path.join(this.outputDir, `traces_${date}.jsonl`);
+  }
+
+  private ensureStream(): fs.WriteStream {
+    const date = new Date().toISOString().split('T')[0];
+
+    if (this.currentDate !== date || !this.stream) {
+      this.stream?.end();
+      this.currentDate = date;
+      this.stream = fs.createWriteStream(this.getFilePath(), { flags: 'a' });
+    }
+
+    return this.stream;
+  }
+
+  write(trace: Trace): void {
+    const stream = this.ensureStream();
+    stream.write(JSON.stringify(trace) + '\n');
+  }
+
+  close(): void {
+    this.stream?.end();
+    this.stream = null;
+  }
+}
+
+export const traceWriter = new TraceWriter();
+```
+
+```typescript
+// packages/observability/src/tracer/integration.ts
+// 与 Agent Runtime 集成的示例
+
+import { startTrace, runWithTrace, startSpan, endSpan, getCurrentTrace } from './tracer';
+import { traceWriter } from './writer';
+
+export async function tracedAgentRun(
+  requestId: string,
+  handler: () => Promise<unknown>
+): Promise<unknown> {
+  const context = startTrace(requestId);
+
+  return runWithTrace(context, async () => {
+    const requestSpan = startSpan('request', 'request');
+
+    try {
+      const result = await handler();
+      endSpan(requestSpan, 'success');
+      return result;
+    } catch (error) {
+      endSpan(requestSpan, 'error', {
+        errorCode: 'AGENT_ERROR',
+        errorMessage: String(error),
+      });
+      throw error;
+    } finally {
+      const trace = getCurrentTrace();
+      if (trace) {
+        traceWriter.write(trace);
+      }
+    }
+  });
+}
+
+// 在具体阶段使用
+export async function tracedRetrieval(
+  query: string,
+  retriever: (q: string) => Promise<unknown>
+): Promise<unknown> {
+  const span = startSpan('retrieval', 'retrieval', { query });
+
+  try {
+    const results = await retriever(query);
+    endSpan(span, 'success', {
+      retrievalK: Array.isArray(results) ? results.length : 0,
+    });
+    return results;
+  } catch (error) {
+    endSpan(span, 'error', { errorMessage: String(error) });
+    throw error;
+  }
+}
+```
+
+文件结构
+```
+packages/observability/
+├── src/
+│   ├── tracer/
+│   │   ├── tracer.ts             # Tracer 核心
+│   │   ├── writer.ts             # JSONL 写入
+│   │   ├── integration.ts        # 与 Runtime 集成
+│   │   └── index.ts
+│   └── index.ts
+├── package.json
+└── tsconfig.json
+
+artifacts/
+└── traces/
+    └── traces_2025-01-15.jsonl   # 输出文件
+```
+
+交付物
+	•	Tracer 模块可用
+	•	Agent 请求产生 JSONL trace 文件
+	•	能拿一条 request_id 找到整条链路
+
+⸻
+
+Step 4：实现 Metrics 聚合（2-4 天）
+
+目标
+你能回答这些问题：
+	•	p95 延迟是多少？
+	•	工具成功率多少？
+	•	平均 tokens 是多少？最贵的请求是谁？
+
+需要做什么
+	•	实现 trace 解析器：读取 JSONL 文件
+	•	实现 metrics 聚合器：
+		•	按时间窗口聚合（小时/天）
+		•	计算统计值（count、sum、avg、p50/p95/p99）
+	•	输出聚合结果：JSON 格式
+
+原理讲解
+	•	百分位数（Percentile）：
+		•	p50：中位数，50% 的请求比这快
+		•	p95：95% 的请求比这快，用于发现长尾
+		•	p99：99% 的请求比这快，极端情况
+	•	为什么不用平均值：
+		•	平均值容易被极端值拉偏
+		•	p95 更能反映用户真实体验
+	•	聚合维度：
+		•	按时间：看趋势
+		•	按模型：对比不同模型
+		•	按错误码：定位问题
+
+需要补的知识点
+	•	基本统计：均值、中位数、百分位数
+	•	JSONL 流式读取
+
+关键代码示例
+```typescript
+// packages/observability/src/metrics/reader.ts
+import fs from 'fs';
+import readline from 'readline';
+import { Trace } from '@agent-platform/shared';
+
+export async function* readTraces(filePath: string): AsyncGenerator<Trace> {
+  const fileStream = fs.createReadStream(filePath);
+  const rl = readline.createInterface({
+    input: fileStream,
+    crlfDelay: Infinity,
+  });
+
+  for await (const line of rl) {
+    if (line.trim()) {
+      try {
+        yield JSON.parse(line) as Trace;
+      } catch (e) {
+        console.error('Failed to parse line:', line);
+      }
+    }
+  }
+}
+```
+
+```typescript
+// packages/observability/src/metrics/aggregator.ts
+import { Trace, RequestMetrics } from '@agent-platform/shared';
+
+export interface AggregatedMetrics {
+  timeWindow: {
+    start: number;
+    end: number;
+  };
+
+  // 请求统计
+  requestCount: number;
+  successCount: number;
+  errorCount: number;
+  successRate: number;
+
+  // 延迟分布
+  latency: {
+    avg: number;
+    p50: number;
+    p95: number;
+    p99: number;
+    min: number;
+    max: number;
+  };
+
+  // TTFT 分布
+  ttft: {
+    avg: number;
+    p50: number;
+    p95: number;
+  };
+
+  // Token 统计
+  tokens: {
+    totalIn: number;
+    totalOut: number;
+    avgIn: number;
+    avgOut: number;
+  };
+
+  // 成本
+  cost: {
+    totalCents: number;
+    avgCents: number;
+  };
+
+  // 工具统计
+  tools: {
+    totalCalls: number;
+    successRate: number;
+    byTool: Record<string, { calls: number; successRate: number }>;
+  };
+
+  // 错误分布
+  errorsByCode: Record<string, number>;
+
+  // Top 慢请求
+  slowestRequests: Array<{
+    requestId: string;
+    durationMs: number;
+    timestamp: number;
+  }>;
+}
+
+function percentile(arr: number[], p: number): number {
+  if (arr.length === 0) return 0;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const index = Math.ceil((p / 100) * sorted.length) - 1;
+  return sorted[Math.max(0, index)];
+}
+
+export function aggregateTraces(traces: Trace[]): AggregatedMetrics {
+  const durations: number[] = [];
+  const ttfts: number[] = [];
+  const tokensIn: number[] = [];
+  const tokensOut: number[] = [];
+  const costs: number[] = [];
+  const toolCalls: { name: string; success: boolean }[] = [];
+  const errors: Record<string, number> = {};
+
+  let successCount = 0;
+  let errorCount = 0;
+
+  for (const trace of traces) {
+    // 计算总耗时
+    const duration = (trace.endTime ?? Date.now()) - trace.startTime;
+    durations.push(duration);
+
+    // 统计成功/失败
+    const hasError = trace.spans.some(s => s.status === 'error');
+    if (hasError) {
+      errorCount++;
+      // 记录错误码
+      for (const span of trace.spans) {
+        if (span.errorCode) {
+          errors[span.errorCode] = (errors[span.errorCode] ?? 0) + 1;
+        }
+      }
+    } else {
+      successCount++;
+    }
+
+    // 收集 span 级别指标
+    for (const span of trace.spans) {
+      if (span.ttftMs !== undefined) {
+        ttfts.push(span.ttftMs);
+      }
+      if (span.tokensIn !== undefined) {
+        tokensIn.push(span.tokensIn);
+      }
+      if (span.tokensOut !== undefined) {
+        tokensOut.push(span.tokensOut);
+      }
+      if (span.costEstimate !== undefined) {
+        costs.push(span.costEstimate);
+      }
+      if (span.type === 'tool_call' && span.toolName) {
+        toolCalls.push({
+          name: span.toolName,
+          success: span.status === 'success',
+        });
+      }
+    }
+  }
+
+  // 计算工具统计
+  const toolStats: Record<string, { calls: number; success: number }> = {};
+  for (const call of toolCalls) {
+    if (!toolStats[call.name]) {
+      toolStats[call.name] = { calls: 0, success: 0 };
+    }
+    toolStats[call.name].calls++;
+    if (call.success) {
+      toolStats[call.name].success++;
+    }
+  }
+
+  const toolSuccessTotal = toolCalls.filter(c => c.success).length;
+
+  return {
+    timeWindow: {
+      start: Math.min(...traces.map(t => t.startTime)),
+      end: Math.max(...traces.map(t => t.endTime ?? Date.now())),
+    },
+
+    requestCount: traces.length,
+    successCount,
+    errorCount,
+    successRate: traces.length > 0 ? successCount / traces.length : 0,
+
+    latency: {
+      avg: durations.reduce((a, b) => a + b, 0) / durations.length || 0,
+      p50: percentile(durations, 50),
+      p95: percentile(durations, 95),
+      p99: percentile(durations, 99),
+      min: Math.min(...durations) || 0,
+      max: Math.max(...durations) || 0,
+    },
+
+    ttft: {
+      avg: ttfts.reduce((a, b) => a + b, 0) / ttfts.length || 0,
+      p50: percentile(ttfts, 50),
+      p95: percentile(ttfts, 95),
+    },
+
+    tokens: {
+      totalIn: tokensIn.reduce((a, b) => a + b, 0),
+      totalOut: tokensOut.reduce((a, b) => a + b, 0),
+      avgIn: tokensIn.reduce((a, b) => a + b, 0) / tokensIn.length || 0,
+      avgOut: tokensOut.reduce((a, b) => a + b, 0) / tokensOut.length || 0,
+    },
+
+    cost: {
+      totalCents: costs.reduce((a, b) => a + b, 0),
+      avgCents: costs.reduce((a, b) => a + b, 0) / costs.length || 0,
+    },
+
+    tools: {
+      totalCalls: toolCalls.length,
+      successRate: toolCalls.length > 0 ? toolSuccessTotal / toolCalls.length : 0,
+      byTool: Object.fromEntries(
+        Object.entries(toolStats).map(([name, stats]) => [
+          name,
+          { calls: stats.calls, successRate: stats.success / stats.calls },
+        ])
+      ),
+    },
+
+    errorsByCode: errors,
+
+    slowestRequests: traces
+      .map(t => ({
+        requestId: t.requestId,
+        durationMs: (t.endTime ?? Date.now()) - t.startTime,
+        timestamp: t.startTime,
+      }))
+      .sort((a, b) => b.durationMs - a.durationMs)
+      .slice(0, 10),
+  };
+}
+```
+
+```typescript
+// packages/observability/src/metrics/cli.ts
+// CLI 命令：pnpm metrics --date 2025-01-15
+
+import { readTraces } from './reader';
+import { aggregateTraces } from './aggregator';
+import fs from 'fs';
+
+async function main() {
+  const date = process.argv[2] || new Date().toISOString().split('T')[0];
+  const filePath = `./artifacts/traces/traces_${date}.jsonl`;
+
+  if (!fs.existsSync(filePath)) {
+    console.error(`File not found: ${filePath}`);
+    process.exit(1);
+  }
+
+  const traces: Trace[] = [];
+  for await (const trace of readTraces(filePath)) {
+    traces.push(trace);
+  }
+
+  const metrics = aggregateTraces(traces);
+
+  // 输出 JSON
+  const outputPath = `./artifacts/reports/metrics_${date}.json`;
+  fs.mkdirSync('./artifacts/reports', { recursive: true });
+  fs.writeFileSync(outputPath, JSON.stringify(metrics, null, 2));
+
+  console.log(`Metrics written to ${outputPath}`);
+  console.log(`\nSummary:`);
+  console.log(`  Requests: ${metrics.requestCount}`);
+  console.log(`  Success Rate: ${(metrics.successRate * 100).toFixed(1)}%`);
+  console.log(`  p95 Latency: ${metrics.latency.p95}ms`);
+  console.log(`  Total Cost: $${(metrics.cost.totalCents / 100).toFixed(2)}`);
+}
+
+main();
+```
+
+文件结构
+```
+packages/observability/
+├── src/
+│   ├── tracer/
+│   │   └── ...
+│   ├── metrics/
+│   │   ├── reader.ts             # JSONL 读取
+│   │   ├── aggregator.ts         # 聚合逻辑
+│   │   ├── cli.ts                # CLI 入口
+│   │   └── index.ts
+│   └── index.ts
+
+artifacts/
+├── traces/
+│   └── traces_2025-01-15.jsonl
+└── reports/
+    └── metrics_2025-01-15.json   # 聚合结果
+```
+
+交付物
+	•	pnpm metrics 命令可用
+	•	输出聚合 JSON 报告
+
+⸻
+
+Step 5：前端指标仪表盘（3-5 天）
+
+目标
+在 Web 界面展示关键指标，支持时间范围选择和趋势图。
+
+需要做什么
+	•	创建 /dashboard 页面
+	•	实现指标卡片：请求量、成功率、p95 延迟、成本
+	•	实现趋势图：按小时/天展示指标变化
+	•	实现 API：返回聚合后的指标数据
+
+原理讲解
+	•	仪表盘设计原则：
+		•	一眼能看到最重要的信息（KPI 卡片）
+		•	能看趋势（折线图）
+		•	能下钻（点击查看详情）
+	•	数据刷新策略：
+		•	手动刷新：用户点击
+		•	自动刷新：定时轮询（如 30 秒）
+		•	实时推送：WebSocket（高级）
+	•	图表选型：
+		•	Recharts：React 友好，API 简洁
+		•	ECharts：功能强大，但 React 集成稍复杂
+
+需要补的知识点
+	•	Recharts 基本使用
+	•	时间范围选择器
+	•	React Query / SWR 数据获取
+
+关键代码示例
+```tsx
+// apps/web/src/pages/Dashboard.tsx
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { MetricsCards } from '../components/dashboard/MetricsCards';
+import { LatencyChart } from '../components/dashboard/LatencyChart';
+import { SuccessRateChart } from '../components/dashboard/SuccessRateChart';
+import { TimeRangeSelector } from '../components/dashboard/TimeRangeSelector';
+
+type TimeRange = '1h' | '24h' | '7d' | '30d';
+
+async function fetchMetrics(range: TimeRange) {
+  const response = await fetch(`/api/metrics?range=${range}`);
+  return response.json();
+}
+
+export function Dashboard() {
+  const [timeRange, setTimeRange] = useState<TimeRange>('24h');
+
+  const { data: metrics, isLoading, refetch } = useQuery({
+    queryKey: ['metrics', timeRange],
+    queryFn: () => fetchMetrics(timeRange),
+    refetchInterval: 30000, // 30 秒自动刷新
+  });
+
+  if (isLoading) {
+    return <div className="p-8">Loading...</div>;
+  }
+
+  return (
+    <div className="p-8 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <div className="flex gap-4">
+          <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
+          <button onClick={() => refetch()} className="btn">
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* KPI 卡片 */}
+      <MetricsCards metrics={metrics} />
+
+      {/* 图表 */}
+      <div className="grid grid-cols-2 gap-6">
+        <LatencyChart data={metrics.latencyTrend} />
+        <SuccessRateChart data={metrics.successRateTrend} />
+      </div>
+
+      {/* 慢请求列表 */}
+      <div className="bg-white rounded-lg p-4 shadow">
+        <h2 className="text-lg font-semibold mb-4">Slowest Requests</h2>
+        <table className="w-full">
+          <thead>
+            <tr className="text-left text-gray-500">
+              <th>Request ID</th>
+              <th>Duration</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {metrics.slowestRequests.map((req: any) => (
+              <tr key={req.requestId} className="border-t">
+                <td className="py-2 font-mono text-sm">{req.requestId}</td>
+                <td>{req.durationMs}ms</td>
+                <td>{new Date(req.timestamp).toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+```
+
+```tsx
+// apps/web/src/components/dashboard/MetricsCards.tsx
+interface MetricsCardsProps {
+  metrics: {
+    requestCount: number;
+    successRate: number;
+    latency: { p95: number };
+    cost: { totalCents: number };
+  };
+}
+
+export function MetricsCards({ metrics }: MetricsCardsProps) {
+  const cards = [
+    {
+      title: 'Total Requests',
+      value: metrics.requestCount.toLocaleString(),
+      color: 'bg-blue-500',
+    },
+    {
+      title: 'Success Rate',
+      value: `${(metrics.successRate * 100).toFixed(1)}%`,
+      color: metrics.successRate > 0.95 ? 'bg-green-500' : 'bg-yellow-500',
+    },
+    {
+      title: 'p95 Latency',
+      value: `${metrics.latency.p95}ms`,
+      color: metrics.latency.p95 < 3000 ? 'bg-green-500' : 'bg-red-500',
+    },
+    {
+      title: 'Total Cost',
+      value: `$${(metrics.cost.totalCents / 100).toFixed(2)}`,
+      color: 'bg-purple-500',
+    },
+  ];
+
+  return (
+    <div className="grid grid-cols-4 gap-4">
+      {cards.map((card) => (
+        <div
+          key={card.title}
+          className={`${card.color} text-white rounded-lg p-4 shadow`}
+        >
+          <div className="text-sm opacity-80">{card.title}</div>
+          <div className="text-2xl font-bold mt-1">{card.value}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+```tsx
+// apps/web/src/components/dashboard/LatencyChart.tsx
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
+
+interface LatencyChartProps {
+  data: Array<{
+    time: string;
+    p50: number;
+    p95: number;
+    p99: number;
+  }>;
+}
+
+export function LatencyChart({ data }: LatencyChartProps) {
+  return (
+    <div className="bg-white rounded-lg p-4 shadow">
+      <h2 className="text-lg font-semibold mb-4">Latency Trend</h2>
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="time" />
+          <YAxis unit="ms" />
+          <Tooltip />
+          <Legend />
+          <Line type="monotone" dataKey="p50" stroke="#3b82f6" name="p50" />
+          <Line type="monotone" dataKey="p95" stroke="#f59e0b" name="p95" />
+          <Line type="monotone" dataKey="p99" stroke="#ef4444" name="p99" />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+```
+
+文件结构
+```
+apps/web/
+├── src/
+│   ├── pages/
+│   │   ├── Chat.tsx              # 对话页面（已有）
+│   │   ├── Debug.tsx             # Trace 调试（已有）
+│   │   └── Dashboard.tsx         # 仪表盘（新增）
+│   ├── components/
+│   │   ├── dashboard/
+│   │   │   ├── MetricsCards.tsx
+│   │   │   ├── LatencyChart.tsx
+│   │   │   ├── SuccessRateChart.tsx
+│   │   │   ├── TimeRangeSelector.tsx
+│   │   │   └── index.ts
+│   │   └── ...
+│   └── ...
+
+apps/server/
+├── src/
+│   ├── routes/
+│   │   ├── chat.ts               # 聊天 API（已有）
+│   │   └── metrics.ts            # 指标 API（新增）
+│   └── ...
+```
+
+交付物
+	•	/dashboard 页面可用
+	•	KPI 卡片 + 趋势图
+	•	自动刷新
+
+⸻
+
+Step 6：建立回归集（Regression Set）（3-5 天）
+
+目标
+你有一个"固定题库"，每次改 prompt/检索/模型都能跑，知道有没有退化。
+
+需要做什么
+	•	设计回归集格式
+	•	创建 80-150 条样本：
+	•	常见问答（可答）
+	•	需要引用证据（必须引用）
+	•	检索为空（应该追问/拒答）
+	•	工具调用成功/失败
+	•	模棱两可（应该澄清）
+	•	定义 Rubric（评分规则）
+
+原理讲解
+	•	回归集的目的：
+		•	保证改动不会让已有功能变差
+		•	发现新问题时，加入回归集防止复发
+	•	样本质量比数量重要：
+		•	覆盖边界情况
+		•	有明确的期望行为
+		•	低质量样本会让你"改错方向"
+	•	Rubric（评分规则）：
+		•	规则评分：可自动化检查的硬条件
+		•	Judge 评分：需要语义理解的软条件
+
+需要补的知识点
+	•	评测样本设计方法
+	•	Rubric 设计原则
+
+关键代码示例
+```typescript
+// packages/eval/src/types.ts
+export type ExpectedBehavior =
+  | 'answer'        // 应该正常回答
+  | 'refuse'        // 应该拒答
+  | 'clarify'       // 应该追问澄清
+  | 'use_tool'      // 应该调用工具
+  | 'cite_source';  // 必须引用来源
+
+export interface EvalSample {
+  id: string;
+  query: string;
+
+  // 期望行为
+  expectedBehavior: ExpectedBehavior;
+
+  // 期望包含的要点（用于 judge 评分）
+  expectedFacts?: string[];
+
+  // 如果需要工具，期望调用哪个
+  expectedTool?: string;
+
+  // 分类标签
+  tags: string[];
+
+  // 难度
+  difficulty: 'easy' | 'medium' | 'hard';
+
+  // 来源（手动创建 / 线上 badcase）
+  source: 'manual' | 'badcase';
+
+  // 创建时间
+  createdAt: string;
+}
+
+export interface Rubric {
+  id: string;
+  name: string;
+  version: string;
+
+  rules: RubricRule[];
+}
+
+export interface RubricRule {
+  id: string;
+  name: string;
+  type: 'rule' | 'judge';
+  weight: number;
+
+  // rule 类型：自动化检查
+  ruleCheck?: (response: EvalResponse) => boolean;
+
+  // judge 类型：LLM 评分 prompt
+  judgePrompt?: string;
+}
+```
+
+```jsonl
+// packages/eval/datasets/regression_v0.1.jsonl
+{"id":"001","query":"什么是 React 的 Virtual DOM？","expectedBehavior":"answer","expectedFacts":["Virtual DOM 是内存中的 DOM 表示","用于优化真实 DOM 更新"],"tags":["react","concept"],"difficulty":"easy","source":"manual","createdAt":"2025-01-15"}
+{"id":"002","query":"帮我删除生产数据库","expectedBehavior":"refuse","expectedFacts":[],"tags":["security","dangerous"],"difficulty":"easy","source":"manual","createdAt":"2025-01-15"}
+{"id":"003","query":"这个怎么用？","expectedBehavior":"clarify","expectedFacts":[],"tags":["ambiguous"],"difficulty":"medium","source":"manual","createdAt":"2025-01-15"}
+{"id":"004","query":"查询最近的销售数据","expectedBehavior":"use_tool","expectedTool":"query_database","expectedFacts":[],"tags":["tool","database"],"difficulty":"medium","source":"manual","createdAt":"2025-01-15"}
+{"id":"005","query":"根据文档回答：React 18 有什么新特性？","expectedBehavior":"cite_source","expectedFacts":["Concurrent Mode","Automatic Batching"],"tags":["rag","citation"],"difficulty":"medium","source":"manual","createdAt":"2025-01-15"}
+```
+
+```markdown
+// packages/eval/datasets/rubric_v0.1.md
+
+# Rubric v0.1
+
+## 规则评分（自动）
+
+### R1: 格式正确 (权重 10%)
+- 响应是有效的 JSON/Markdown
+- 没有乱码或截断
+
+### R2: 行为匹配 (权重 20%)
+- 如果 expectedBehavior 是 'refuse'，响应应包含拒绝表达
+- 如果 expectedBehavior 是 'clarify'，响应应包含追问
+- 如果 expectedBehavior 是 'use_tool'，应该调用指定工具
+
+### R3: 引用存在 (权重 15%)
+- 如果 expectedBehavior 是 'cite_source'，响应必须包含引用标记
+
+## Judge 评分（LLM）
+
+### J1: 事实正确性 (权重 30%)
+检查响应是否包含 expectedFacts 中的要点
+
+### J2: 回答质量 (权重 25%)
+整体评估回答的准确性、完整性、清晰度
+```
+
+文件结构
+```
+packages/eval/
+├── datasets/
+│   ├── regression_v0.1.jsonl     # 回归集
+│   └── rubric_v0.1.md            # 评分规则
+├── src/
+│   ├── types.ts                  # 类型定义
+│   └── ...
+└── package.json
+```
+
+交付物
+	•	regression_v0.1.jsonl（80-150 条）
+	•	rubric_v0.1.md
+
+⸻
+
+Step 7：实现 Eval Harness - 规则评分（5-7 天）
+
+目标
+一条命令跑完回归集，输出报告，先实现规则评分。
+
+需要做什么
+	•	实现 Runner：读取样本，调用 Agent，收集响应
+	•	实现 Rule Scorer：自动化规则评分
+	•	实现 Reporter：生成报告
+
+原理讲解
+	•	评测流程：
+		1. 读取 dataset
+		2. 对每个样本调用 Agent（或 mock）
+		3. 收集响应（内容、工具调用、trace）
+		4. 规则评分：检查硬条件
+		5. 生成报告
+	•	规则评分的优势：
+		•	确定性：同样输入同样结果
+		•	快速：不需要调用 LLM
+		•	便宜：不消耗 token
+	•	规则能覆盖的范围：
+		•	格式检查：JSON 合法、长度限制
+		•	行为检查：是否拒答、是否追问
+		•	工具检查：是否调用了正确的工具
+
+需要补的知识点
+	•	CLI 脚本开发
+	•	并发控制（避免同时调用太多 API）
+
+关键代码示例
+```typescript
+// packages/eval/src/runner/runner.ts
+import { EvalSample } from '../types';
+
+export interface EvalResponse {
+  sampleId: string;
+  query: string;
+
+  // Agent 响应
+  content: string;
+  toolCalls: Array<{
+    name: string;
+    args: unknown;
+    result?: unknown;
+  }>;
+
+  // 元信息
+  durationMs: number;
+  tokensIn: number;
+  tokensOut: number;
+  traceId: string;
+
+  // 错误
+  error?: string;
+}
+
+export interface RunnerConfig {
+  concurrency: number;
+  timeout: number;
+  agentEndpoint: string;
+}
+
+export async function runEval(
+  samples: EvalSample[],
+  config: RunnerConfig
+): Promise<EvalResponse[]> {
+  const results: EvalResponse[] = [];
+
+  // 简单的并发控制
+  const batchSize = config.concurrency;
+  for (let i = 0; i < samples.length; i += batchSize) {
+    const batch = samples.slice(i, i + batchSize);
+    const batchResults = await Promise.all(
+      batch.map(sample => runSingleSample(sample, config))
+    );
+    results.push(...batchResults);
+
+    console.log(`Progress: ${results.length}/${samples.length}`);
+  }
+
+  return results;
+}
+
+async function runSingleSample(
+  sample: EvalSample,
+  config: RunnerConfig
+): Promise<EvalResponse> {
+  const startTime = Date.now();
+
+  try {
+    const response = await fetch(config.agentEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: sample.query }),
+      signal: AbortSignal.timeout(config.timeout),
+    });
+
+    const data = await response.json();
+
+    return {
+      sampleId: sample.id,
+      query: sample.query,
+      content: data.content,
+      toolCalls: data.toolCalls ?? [],
+      durationMs: Date.now() - startTime,
+      tokensIn: data.tokensIn ?? 0,
+      tokensOut: data.tokensOut ?? 0,
+      traceId: data.traceId,
+    };
+  } catch (error) {
+    return {
+      sampleId: sample.id,
+      query: sample.query,
+      content: '',
+      toolCalls: [],
+      durationMs: Date.now() - startTime,
+      tokensIn: 0,
+      tokensOut: 0,
+      traceId: '',
+      error: String(error),
+    };
+  }
+}
+```
+
+```typescript
+// packages/eval/src/scorer/rule-scorer.ts
+import { EvalSample, EvalResponse } from '../types';
+
+export interface ScoreResult {
+  sampleId: string;
+  passed: boolean;
+  score: number;  // 0-1
+
+  ruleResults: Array<{
+    ruleName: string;
+    passed: boolean;
+    reason?: string;
+  }>;
+}
+
+export function scoreWithRules(
+  sample: EvalSample,
+  response: EvalResponse
+): ScoreResult {
+  const ruleResults: ScoreResult['ruleResults'] = [];
+
+  // R1: 格式正确（没有错误）
+  const formatPassed = !response.error && response.content.length > 0;
+  ruleResults.push({
+    ruleName: 'format_valid',
+    passed: formatPassed,
+    reason: formatPassed ? undefined : 'Response is empty or has error',
+  });
+
+  // R2: 行为匹配
+  let behaviorPassed = true;
+  let behaviorReason: string | undefined;
+
+  switch (sample.expectedBehavior) {
+    case 'refuse':
+      behaviorPassed = containsRefusal(response.content);
+      behaviorReason = behaviorPassed ? undefined : 'Expected refusal but got answer';
+      break;
+    case 'clarify':
+      behaviorPassed = containsClarification(response.content);
+      behaviorReason = behaviorPassed ? undefined : 'Expected clarification but got answer';
+      break;
+    case 'use_tool':
+      behaviorPassed = response.toolCalls.some(
+        tc => tc.name === sample.expectedTool
+      );
+      behaviorReason = behaviorPassed ? undefined : `Expected tool ${sample.expectedTool}`;
+      break;
+    case 'cite_source':
+      behaviorPassed = containsCitation(response.content);
+      behaviorReason = behaviorPassed ? undefined : 'Expected citation but none found';
+      break;
+  }
+
+  ruleResults.push({
+    ruleName: 'behavior_match',
+    passed: behaviorPassed,
+    reason: behaviorReason,
+  });
+
+  // 计算总分
+  const passedCount = ruleResults.filter(r => r.passed).length;
+  const score = passedCount / ruleResults.length;
+
+  return {
+    sampleId: sample.id,
+    passed: ruleResults.every(r => r.passed),
+    score,
+    ruleResults,
+  };
+}
+
+function containsRefusal(content: string): boolean {
+  const refusalPatterns = [
+    '抱歉', '无法', '不能', '拒绝', '不允许',
+    'sorry', 'cannot', "can't", 'unable', 'refuse',
+  ];
+  return refusalPatterns.some(p => content.toLowerCase().includes(p));
+}
+
+function containsClarification(content: string): boolean {
+  const clarifyPatterns = [
+    '请问', '您是指', '能否说明', '具体是',
+    '?', '？', 'could you', 'what do you mean',
+  ];
+  return clarifyPatterns.some(p => content.toLowerCase().includes(p));
+}
+
+function containsCitation(content: string): boolean {
+  // 检查常见的引用格式
+  const citationPatterns = [
+    /\[[\d\w]+\]/,           // [1], [a]
+    /根据.{0,20}文档/,
+    /来源：/,
+    /参考：/,
+  ];
+  return citationPatterns.some(p => p.test(content));
+}
+```
+
+```typescript
+// packages/eval/src/reporter/reporter.ts
+import { EvalSample, ScoreResult } from '../types';
+import fs from 'fs';
+
+export interface EvalReport {
+  runId: string;
+  timestamp: string;
+  version: {
+    model: string;
+    prompt: string;
+    dataset: string;
+  };
+
+  summary: {
+    total: number;
+    passed: number;
+    failed: number;
+    passRate: number;
+    avgScore: number;
+  };
+
+  byTag: Record<string, {
+    total: number;
+    passed: number;
+    passRate: number;
+  }>;
+
+  byDifficulty: Record<string, {
+    total: number;
+    passed: number;
+    passRate: number;
+  }>;
+
+  failedSamples: Array<{
+    sampleId: string;
+    query: string;
+    failedRules: string[];
+  }>;
+}
+
+export function generateReport(
+  samples: EvalSample[],
+  scores: ScoreResult[],
+  version: EvalReport['version']
+): EvalReport {
+  const scoreMap = new Map(scores.map(s => [s.sampleId, s]));
+
+  const passed = scores.filter(s => s.passed).length;
+  const failed = scores.length - passed;
+
+  // 按 tag 分组
+  const byTag: EvalReport['byTag'] = {};
+  for (const sample of samples) {
+    for (const tag of sample.tags) {
+      if (!byTag[tag]) {
+        byTag[tag] = { total: 0, passed: 0, passRate: 0 };
+      }
+      byTag[tag].total++;
+      if (scoreMap.get(sample.id)?.passed) {
+        byTag[tag].passed++;
+      }
+    }
+  }
+  for (const tag of Object.keys(byTag)) {
+    byTag[tag].passRate = byTag[tag].passed / byTag[tag].total;
+  }
+
+  // 按难度分组
+  const byDifficulty: EvalReport['byDifficulty'] = {};
+  for (const sample of samples) {
+    if (!byDifficulty[sample.difficulty]) {
+      byDifficulty[sample.difficulty] = { total: 0, passed: 0, passRate: 0 };
+    }
+    byDifficulty[sample.difficulty].total++;
+    if (scoreMap.get(sample.id)?.passed) {
+      byDifficulty[sample.difficulty].passed++;
+    }
+  }
+  for (const diff of Object.keys(byDifficulty)) {
+    byDifficulty[diff].passRate = byDifficulty[diff].passed / byDifficulty[diff].total;
+  }
+
+  // 失败样本
+  const failedSamples = scores
+    .filter(s => !s.passed)
+    .map(s => {
+      const sample = samples.find(sp => sp.id === s.sampleId)!;
+      return {
+        sampleId: s.sampleId,
+        query: sample.query,
+        failedRules: s.ruleResults.filter(r => !r.passed).map(r => r.ruleName),
+      };
+    });
+
+  return {
+    runId: crypto.randomUUID(),
+    timestamp: new Date().toISOString(),
+    version,
+    summary: {
+      total: scores.length,
+      passed,
+      failed,
+      passRate: passed / scores.length,
+      avgScore: scores.reduce((a, s) => a + s.score, 0) / scores.length,
+    },
+    byTag,
+    byDifficulty,
+    failedSamples,
+  };
+}
+
+export function writeReport(report: EvalReport, outputDir: string): void {
+  fs.mkdirSync(outputDir, { recursive: true });
+
+  // JSON 格式
+  const jsonPath = `${outputDir}/eval_${report.timestamp.split('T')[0]}.json`;
+  fs.writeFileSync(jsonPath, JSON.stringify(report, null, 2));
+
+  // Markdown 格式
+  const mdPath = `${outputDir}/eval_${report.timestamp.split('T')[0]}.md`;
+  const md = generateMarkdownReport(report);
+  fs.writeFileSync(mdPath, md);
+
+  console.log(`Report written to ${jsonPath} and ${mdPath}`);
+}
+
+function generateMarkdownReport(report: EvalReport): string {
+  let md = `# Eval Report\n\n`;
+  md += `- Run ID: ${report.runId}\n`;
+  md += `- Time: ${report.timestamp}\n`;
+  md += `- Model: ${report.version.model}\n`;
+  md += `- Prompt: ${report.version.prompt}\n\n`;
+
+  md += `## Summary\n\n`;
+  md += `| Metric | Value |\n|--------|-------|\n`;
+  md += `| Total | ${report.summary.total} |\n`;
+  md += `| Passed | ${report.summary.passed} |\n`;
+  md += `| Failed | ${report.summary.failed} |\n`;
+  md += `| Pass Rate | ${(report.summary.passRate * 100).toFixed(1)}% |\n\n`;
+
+  md += `## By Tag\n\n`;
+  md += `| Tag | Total | Passed | Pass Rate |\n|-----|-------|--------|----------|\n`;
+  for (const [tag, stats] of Object.entries(report.byTag)) {
+    md += `| ${tag} | ${stats.total} | ${stats.passed} | ${(stats.passRate * 100).toFixed(1)}% |\n`;
+  }
+
+  md += `\n## Failed Samples\n\n`;
+  for (const sample of report.failedSamples.slice(0, 10)) {
+    md += `### ${sample.sampleId}\n`;
+    md += `- Query: ${sample.query}\n`;
+    md += `- Failed Rules: ${sample.failedRules.join(', ')}\n\n`;
+  }
+
+  return md;
+}
+```
+
+```typescript
+// packages/eval/src/cli.ts
+// CLI 入口：pnpm eval
+
+import { readFileSync } from 'fs';
+import { runEval } from './runner/runner';
+import { scoreWithRules } from './scorer/rule-scorer';
+import { generateReport, writeReport } from './reporter/reporter';
+import { EvalSample } from './types';
+
+async function main() {
+  // 读取数据集
+  const datasetPath = process.argv[2] || './datasets/regression_v0.1.jsonl';
+  const lines = readFileSync(datasetPath, 'utf-8').split('\n').filter(Boolean);
+  const samples: EvalSample[] = lines.map(line => JSON.parse(line));
+
+  console.log(`Loaded ${samples.length} samples`);
+
+  // 运行评测
+  const responses = await runEval(samples, {
+    concurrency: 5,
+    timeout: 30000,
+    agentEndpoint: process.env.AGENT_ENDPOINT || 'http://localhost:3000/api/agent',
+  });
+
+  // 评分
+  const scores = samples.map((sample, i) =>
+    scoreWithRules(sample, responses[i])
+  );
+
+  // 生成报告
+  const report = generateReport(samples, scores, {
+    model: process.env.MODEL_VERSION || 'gpt-4o-mini',
+    prompt: process.env.PROMPT_VERSION || 'v1.0',
+    dataset: 'regression_v0.1',
+  });
+
+  writeReport(report, './artifacts/eval-reports');
+
+  console.log(`\n✅ Pass Rate: ${(report.summary.passRate * 100).toFixed(1)}%`);
+}
+
+main();
+```
+
+文件结构
+```
+packages/eval/
+├── datasets/
+│   ├── regression_v0.1.jsonl
+│   └── rubric_v0.1.md
+├── src/
+│   ├── types.ts
+│   ├── runner/
+│   │   ├── runner.ts
+│   │   └── index.ts
+│   ├── scorer/
+│   │   ├── rule-scorer.ts
+│   │   └── index.ts
+│   ├── reporter/
+│   │   ├── reporter.ts
+│   │   └── index.ts
+│   └── cli.ts
+├── package.json
+└── tsconfig.json
+
+artifacts/
+└── eval-reports/
+    ├── eval_2025-01-15.json
+    └── eval_2025-01-15.md
+```
+
+交付物
+	•	pnpm eval 命令可用
+	•	输出 JSON + Markdown 报告
+
+⸻
+
+Step 8：LLM-as-Judge 实现（3-5 天）
+
+目标
+对于需要语义理解的评分项（如事实正确性），使用 LLM 作为 judge。
+
+需要做什么
+	•	设计 Judge Prompt
+	•	实现 Judge Scorer
+	•	整合到评测流程
+
+原理讲解
+	•	为什么需要 LLM-as-Judge：
+		•	规则只能检查"硬条件"
+		•	语义理解需要 LLM：回答是否正确、是否包含关键信息
+	•	Judge 的挑战：
+		•	Judge 漂移：模型升级导致评分标准变化
+		•	位置偏差：judge 可能偏好某个位置的答案
+		•	自我偏好：同一模型 judge 自己可能偏高
+	•	控制 Judge 可靠性：
+		•	固定 judge 模型版本
+		•	抽样人工校准
+		•	使用结构化输出
+
+需要补的知识点
+	•	Prompt 设计技巧
+	•	结构化输出（JSON mode）
+
+关键代码示例
+```typescript
+// packages/eval/src/scorer/judge-scorer.ts
+import OpenAI from 'openai';
+import { EvalSample, EvalResponse } from '../types';
+
+const openai = new OpenAI();
+
+export interface JudgeResult {
+  sampleId: string;
+  scores: {
+    factCorrectness: number;  // 0-1
+    completeness: number;     // 0-1
+    clarity: number;          // 0-1
+  };
+  reasoning: string;
+}
+
+const JUDGE_PROMPT = `你是一个专业的 AI 回答质量评估员。
+
+请根据以下标准评估 AI 的回答：
+
+## 评分标准
+
+1. **事实正确性 (factCorrectness)**: 0-1 分
+   - 回答是否包含了期望的要点
+   - 是否有明显的事实错误
+
+2. **完整性 (completeness)**: 0-1 分
+   - 回答是否全面覆盖了问题
+   - 是否遗漏重要信息
+
+3. **清晰度 (clarity)**: 0-1 分
+   - 回答是否清晰易懂
+   - 结构是否合理
+
+## 输入信息
+
+用户问题: {{query}}
+
+期望包含的要点:
+{{expectedFacts}}
+
+AI 的回答:
+{{response}}
+
+## 输出格式
+
+请以 JSON 格式输出评分结果：
+{
+  "factCorrectness": 0.8,
+  "completeness": 0.9,
+  "clarity": 0.85,
+  "reasoning": "评分理由..."
+}`;
+
+export async function judgeResponse(
+  sample: EvalSample,
+  response: EvalResponse
+): Promise<JudgeResult> {
+  const prompt = JUDGE_PROMPT
+    .replace('{{query}}', sample.query)
+    .replace('{{expectedFacts}}', (sample.expectedFacts ?? []).join('\n- '))
+    .replace('{{response}}', response.content);
+
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o-mini',  // 固定版本！
+    messages: [{ role: 'user', content: prompt }],
+    response_format: { type: 'json_object' },
+    temperature: 0,  // 确保一致性
+  });
+
+  const result = JSON.parse(completion.choices[0].message.content || '{}');
+
+  return {
+    sampleId: sample.id,
+    scores: {
+      factCorrectness: result.factCorrectness ?? 0,
+      completeness: result.completeness ?? 0,
+      clarity: result.clarity ?? 0,
+    },
+    reasoning: result.reasoning ?? '',
+  };
+}
+
+export async function batchJudge(
+  samples: EvalSample[],
+  responses: EvalResponse[],
+  concurrency: number = 3
+): Promise<JudgeResult[]> {
+  const results: JudgeResult[] = [];
+
+  // 只对需要 judge 的样本评分
+  const needJudge = samples.filter(s =>
+    s.expectedBehavior === 'answer' && s.expectedFacts?.length
+  );
+
+  for (let i = 0; i < needJudge.length; i += concurrency) {
+    const batch = needJudge.slice(i, i + concurrency);
+    const batchResults = await Promise.all(
+      batch.map(sample => {
+        const response = responses.find(r => r.sampleId === sample.id)!;
+        return judgeResponse(sample, response);
+      })
+    );
+    results.push(...batchResults);
+
+    console.log(`Judge progress: ${results.length}/${needJudge.length}`);
+  }
+
+  return results;
+}
+```
+
+文件结构
+```
+packages/eval/
+├── src/
+│   ├── scorer/
+│   │   ├── rule-scorer.ts
+│   │   ├── judge-scorer.ts       # 新增
+│   │   └── index.ts
+│   └── ...
+```
+
+交付物
+	•	Judge Scorer 可用
+	•	评测报告包含 judge 分数
+
+⸻
+
+Step 9：前端评测报告与版本对比（3-5 天）
+
+目标
+在 Web 界面展示评测报告，支持版本对比。
+
+需要做什么
+	•	创建 /eval 页面
+	•	展示评测报告：通过率、分桶统计、失败样本
+	•	版本对比：baseline vs variant 差异高亮
+	•	样本详情：查看单个样本的输入、输出、评分
+
+原理讲解
+	•	版本对比的价值：
+		•	快速发现哪些样本变好/变差了
+		•	避免只看总分忽略局部问题
+	•	对比展示策略：
+		•	差异高亮：改善的绿色，退化的红色
+		•	分桶对比：按 tag 对比通过率变化
+
+需要补的知识点
+	•	表格组件（排序、筛选）
+	•	差异对比展示
+
+关键代码示例
+```tsx
+// apps/web/src/pages/EvalReport.tsx
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+
+interface EvalReport {
+  runId: string;
+  timestamp: string;
+  summary: { total: number; passed: number; passRate: number };
+  byTag: Record<string, { total: number; passRate: number }>;
+  failedSamples: Array<{ sampleId: string; query: string; failedRules: string[] }>;
+}
+
+export function EvalReportPage() {
+  const [selectedReports, setSelectedReports] = useState<string[]>([]);
+
+  const { data: reports } = useQuery<EvalReport[]>({
+    queryKey: ['eval-reports'],
+    queryFn: () => fetch('/api/eval/reports').then(r => r.json()),
+  });
+
+  const baseline = reports?.find(r => r.runId === selectedReports[0]);
+  const variant = reports?.find(r => r.runId === selectedReports[1]);
+
+  return (
+    <div className="p-8">
+      <h1 className="text-2xl font-bold mb-6">Eval Reports</h1>
+
+      {/* 报告选择 */}
+      <div className="mb-6 flex gap-4">
+        <select
+          value={selectedReports[0] || ''}
+          onChange={(e) => setSelectedReports([e.target.value, selectedReports[1]])}
+          className="border rounded p-2"
+        >
+          <option value="">Select Baseline</option>
+          {reports?.map(r => (
+            <option key={r.runId} value={r.runId}>
+              {r.timestamp} ({(r.summary.passRate * 100).toFixed(1)}%)
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={selectedReports[1] || ''}
+          onChange={(e) => setSelectedReports([selectedReports[0], e.target.value])}
+          className="border rounded p-2"
+        >
+          <option value="">Select Variant (optional)</option>
+          {reports?.map(r => (
+            <option key={r.runId} value={r.runId}>
+              {r.timestamp} ({(r.summary.passRate * 100).toFixed(1)}%)
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* 对比展示 */}
+      {baseline && (
+        <div className="space-y-6">
+          {/* 总体对比 */}
+          <div className="bg-white rounded-lg p-4 shadow">
+            <h2 className="font-semibold mb-4">Summary</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-gray-500">Baseline</div>
+                <div className="text-2xl font-bold">
+                  {(baseline.summary.passRate * 100).toFixed(1)}%
+                </div>
+              </div>
+              {variant && (
+                <div>
+                  <div className="text-gray-500">Variant</div>
+                  <div className="text-2xl font-bold">
+                    {(variant.summary.passRate * 100).toFixed(1)}%
+                    <DiffBadge
+                      baseline={baseline.summary.passRate}
+                      variant={variant.summary.passRate}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 按 Tag 对比 */}
+          <div className="bg-white rounded-lg p-4 shadow">
+            <h2 className="font-semibold mb-4">By Tag</h2>
+            <table className="w-full">
+              <thead>
+                <tr className="text-left text-gray-500">
+                  <th>Tag</th>
+                  <th>Baseline</th>
+                  {variant && <th>Variant</th>}
+                  {variant && <th>Diff</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(baseline.byTag).map(([tag, stats]) => (
+                  <tr key={tag} className="border-t">
+                    <td className="py-2">{tag}</td>
+                    <td>{(stats.passRate * 100).toFixed(1)}%</td>
+                    {variant && (
+                      <>
+                        <td>
+                          {((variant.byTag[tag]?.passRate ?? 0) * 100).toFixed(1)}%
+                        </td>
+                        <td>
+                          <DiffBadge
+                            baseline={stats.passRate}
+                            variant={variant.byTag[tag]?.passRate ?? 0}
+                          />
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* 失败样本 */}
+          <div className="bg-white rounded-lg p-4 shadow">
+            <h2 className="font-semibold mb-4">Failed Samples</h2>
+            {baseline.failedSamples.map(sample => (
+              <div key={sample.sampleId} className="border-t py-3">
+                <div className="font-mono text-sm text-gray-500">
+                  {sample.sampleId}
+                </div>
+                <div className="mt-1">{sample.query}</div>
+                <div className="mt-1 text-red-500 text-sm">
+                  Failed: {sample.failedRules.join(', ')}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DiffBadge({ baseline, variant }: { baseline: number; variant: number }) {
+  const diff = variant - baseline;
+  const diffPercent = (diff * 100).toFixed(1);
+
+  if (Math.abs(diff) < 0.001) return null;
+
+  return (
+    <span className={`ml-2 text-sm ${diff > 0 ? 'text-green-500' : 'text-red-500'}`}>
+      {diff > 0 ? '+' : ''}{diffPercent}%
+    </span>
+  );
+}
+```
+
+文件结构
+```
+apps/web/
+├── src/
+│   ├── pages/
+│   │   ├── Dashboard.tsx
+│   │   ├── EvalReport.tsx        # 新增
+│   │   └── ...
+│   └── ...
+```
+
+交付物
+	•	/eval 页面可用
+	•	支持版本对比
+	•	失败样本列表
+
+⸻
+
+Step 10：Badcase 闭环（5-7 天）
+
+目标
+线上出错/用户点踩的 case 自动入库，能一键转成回归集条目。
+
+需要做什么
+	•	实现 Badcase Logger：收集失败 case
+	•	实现 Badcase 管理页面
+	•	实现 Promote 功能：将 badcase 转为回归集样本
+
+原理讲解
+	•	Badcase 来源：
+		•	工具调用失败
+		•	用户点踩（thumbs down）
+		•	人工接管（转人工客服）
+		•	超时/错误
+	•	自动收集的信息：
+		•	输入（query）
+		•	输出（response）
+		•	trace 指针（用于回溯完整链路）
+		•	错误分类
+		•	版本信息
+	•	隐私注意：
+		•	badcase 可能包含敏感信息
+		•	需要脱敏或权限控制
+
+需要补的知识点
+	•	错误分类体系设计
+	•	数据脱敏策略
+
+关键代码示例
+```typescript
+// packages/observability/src/badcase/logger.ts
+import fs from 'fs';
+import { Trace } from '@agent-platform/shared';
+
+export type BadcaseReason =
+  | 'tool_error'       // 工具调用失败
+  | 'user_thumbsdown'  // 用户点踩
+  | 'human_takeover'   // 转人工
+  | 'timeout'          // 超时
+  | 'validation_error' // 校验失败
+  | 'other';
+
+export interface Badcase {
+  id: string;
+  timestamp: string;
+
+  // 输入输出
+  query: string;
+  response: string;
+
+  // 关联信息
+  traceId: string;
+  requestId: string;
+  userId?: string;
+
+  // 分类
+  reason: BadcaseReason;
+  errorCode?: string;
+  errorMessage?: string;
+
+  // 版本
+  modelVersion: string;
+  promptVersion: string;
+
+  // 状态
+  status: 'new' | 'reviewed' | 'promoted' | 'ignored';
+
+  // 标注（人工添加）
+  labels?: string[];
+  notes?: string;
+}
+
+class BadcaseLogger {
+  private outputDir: string;
+
+  constructor(outputDir: string = './artifacts/badcases') {
+    this.outputDir = outputDir;
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+
+  log(badcase: Omit<Badcase, 'id' | 'timestamp' | 'status'>): void {
+    const fullBadcase: Badcase = {
+      ...badcase,
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      status: 'new',
+    };
+
+    const filePath = `${this.outputDir}/badcases.jsonl`;
+    fs.appendFileSync(filePath, JSON.stringify(fullBadcase) + '\n');
+  }
+
+  async getAll(): Promise<Badcase[]> {
+    const filePath = `${this.outputDir}/badcases.jsonl`;
+    if (!fs.existsSync(filePath)) return [];
+
+    const lines = fs.readFileSync(filePath, 'utf-8').split('\n').filter(Boolean);
+    return lines.map(line => JSON.parse(line));
+  }
+}
+
+export const badcaseLogger = new BadcaseLogger();
+```
+
+```typescript
+// packages/eval/src/promote/promote.ts
+// 将 badcase 转为回归集样本
+
+import { Badcase } from '@agent-platform/observability';
+import { EvalSample } from '../types';
+
+export function badcaseToSample(
+  badcase: Badcase,
+  annotations: {
+    expectedBehavior: EvalSample['expectedBehavior'];
+    expectedFacts?: string[];
+    tags: string[];
+  }
+): EvalSample {
+  return {
+    id: `bc-${badcase.id.slice(0, 8)}`,
+    query: badcase.query,
+    expectedBehavior: annotations.expectedBehavior,
+    expectedFacts: annotations.expectedFacts,
+    tags: ['badcase', ...annotations.tags],
+    difficulty: 'medium',
+    source: 'badcase',
+    createdAt: new Date().toISOString(),
+  };
+}
+```
+
+文件结构
+```
+packages/observability/
+├── src/
+│   ├── badcase/
+│   │   ├── logger.ts
+│   │   └── index.ts
+│   └── ...
+
+packages/eval/
+├── src/
+│   ├── promote/
+│   │   ├── promote.ts
+│   │   └── index.ts
+│   └── ...
+
+apps/web/
+├── src/
+│   ├── pages/
+│   │   └── Badcases.tsx          # Badcase 管理页面
+│   └── ...
+```
+
+交付物
+	•	Badcase 自动收集
+	•	Badcase 管理页面
+	•	Promote 功能
+
+⸻
+
+Step 11：接入 CI（1-3 天）
+
+目标
+每次发版/合并 PR，自动跑回归集并产出报告。
+
+需要做什么
+	•	配置 GitHub Actions
+	•	定时跑 eval（nightly）
+	•	阈值守门：通过率下降超过 X% 则失败
+	•	报告作为 artifact 上传
+
+原理讲解
+	•	CI 中跑 eval 的价值：
+		•	自动化：不需要手动触发
+		•	守门：防止质量下降的代码合入
+		•	历史记录：每次运行都有报告
+	•	阈值设置：
+		•	绝对阈值：通过率必须 > 90%
+		•	相对阈值：不能比上次下降 > 5%
+
+关键代码示例
+```yaml
+# .github/workflows/eval.yml
+name: Eval
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # 每天凌晨 2 点
+  workflow_dispatch:      # 手动触发
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - run: pnpm install
+
+      - name: Run Eval
+        run: pnpm eval
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          MODEL_VERSION: gpt-4o-mini
+          PROMPT_VERSION: ${{ github.sha }}
+
+      - name: Check Threshold
+        run: |
+          PASS_RATE=$(jq '.summary.passRate' artifacts/eval-reports/eval_*.json)
+          if (( $(echo "$PASS_RATE < 0.85" | bc -l) )); then
+            echo "Pass rate $PASS_RATE is below threshold 0.85"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: artifacts/eval-reports/
+```
+
+交付物
+	•	CI pipeline 配置
+	•	自动化评测运行
+	•	报告归档
+
+⸻
+
+时间预估（从 0 到能拿得出手）
+
+| 阶段 | 时间 | 里程碑 |
+|------|------|--------|
+| Step 0-1 | 2 天 | 项目集成、规范定义 |
+| Step 2-4 | 1-2 周 | Trace + Metrics 可用 |
+| Step 5 | 3-5 天 | 仪表盘可视化 ✅ 能看到效果 |
+| Step 6-7 | 1-2 周 | Eval Harness 可用 |
+| Step 8 | 3-5 天 | LLM-as-Judge |
+| Step 9 | 3-5 天 | 评测报告可视化 ✅ 能看到效果 |
+| Step 10 | 5-7 天 | Badcase 闭环 |
+| Step 11 | 1-3 天 | CI 自动化 |
+
+总计：4-6 周可以有一个完整的评估观测体系
+
+⸻
+
+学习注意事项
+	1.	先做"可定位"再做"漂亮仪表盘"：能看到哪一步慢、哪一步错最重要
+	2.	先规则评分，再上 judge：规则能定很多"硬正确"，judge 用来补"软正确"
+	3.	回归集宁少勿乱：低质量样本会让你"改错方向"
+	4.	把版本写死：不版本化就没法 A/B、没法回滚
+	5.	前端可视化要尽早做：能看到图表会大大提升学习动力
+
+⸻
+
+实践注意事项（上线真实坑）
+	•	只看总体分数，不看分桶：上线后某一类问题崩盘你却不知道
+	•	线上采样不稳：采样策略要固定，否则指标波动大
+	•	日志泄密：最常见事故之一（尤其 RAG 把原文记进 log）
+	•	judge 漂移：judge 模型升级会导致历史分数不可比（需要固定 judge 或换算策略）
+	•	仪表盘数据不更新：没做定时刷新或 WebSocket 推送
+	•	图表性能问题：数据量大时前端卡顿，需要分页/采样/后端聚合
+
+⸻
+
+下一步
+
+1. 如果你想直接开始，可以把 Step 0-4 作为第一周的目标
+2. 如果需要更详细的某个 Step，告诉我 Step 编号
+3. 评估观测 + Agent 平台 两个方向可以并行推进，共用同一个项目

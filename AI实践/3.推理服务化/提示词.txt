@@ -1,0 +1,1741 @@
+下面是一条针对 7 年前端经验工程师，从 0 开始落地 推理服务化（LLM Gateway/成本/性能）的完整路线图。
+
+技术栈：TypeScript/Node.js + React
+项目关系：与 Agent 平台、评估观测共用同一个项目（agent-platform）
+核心定位：把"模型调用"做成像数据库/缓存一样稳定可运营的服务：可用、可控、可观测、可扩展、可计费
+
+我拆成 13 个步骤，每一步都有：目标 / 要做什么 / 原理讲解 / 需要补的知识点 / 文件结构 / 交付物。
+
+注意：没有本地 GPU 完全没问题，可以用云 GPU 服务（RunPod/Modal）体验本地推理。
+
+⸻
+
+Step 0：明确范围与 SLO（1 天）
+
+目标
+写清楚你要服务化的对象、性能目标、成本目标与约束。
+
+需要做什么
+	•	定义 v0.1 服务范围（只做两类接口）：
+	•	/v1/chat/completions（流式）
+	•	/v1/embeddings
+	•	定义最小 SLO：
+		•	chat：p95 < 5 秒（按场景调整），错误率 < 1%
+	•	可用性：至少能降级而不是崩溃
+	•	定义成本目标：每请求 tokens 上限、每日预算
+
+原理讲解
+	•	SLO（Service Level Objective）：
+		•	服务质量目标，用指标量化
+		•	例：p95 延迟 < 3s，可用性 > 99.9%
+	•	为什么要定义 SLO：
+		•	有了目标才知道做得好不好
+		•	避免过度优化或不够优化
+	•	关键指标：
+		•	TTFT（Time To First Token）：用户感知的响应速度
+		•	p95/p99：长尾延迟，比平均值更有意义
+		•	tokens/s：吞吐量
+
+需要补的知识点
+	•	SLO/SLA 概念
+	•	p95/p99、TTFT 的意义
+
+文件结构
+```
+agent-platform/
+├── docs/
+│   ├── PLATFORM_SPEC.md
+│   ├── OBSERVABILITY_SPEC.md
+│   └── GATEWAY_SLO.md            # 新增
+├── packages/
+│   ├── gateway/                   # 新增：LLM Gateway
+│   │   ├── src/
+│   │   │   ├── core/             # 核心逻辑
+│   │   │   ├── routes/           # API 路由
+│   │   │   ├── middleware/       # 中间件
+│   │   │   └── index.ts
+│   │   └── package.json
+│   └── ...
+└── ...
+```
+
+交付物
+	•	GATEWAY_SLO.md：接口范围、指标、阈值、预算
+
+⸻
+
+Step 1：最小 LLM Gateway（3-5 天）
+
+目标
+把"模型调用"统一到一个网关服务里：鉴权、流式转发、统一错误处理。
+
+需要做什么
+	•	实现网关核心：
+		•	接收请求 → 校验 API key → 转发到后端 → 流式返回
+	•	统一请求/响应结构（OpenAI 兼容风格）
+	•	统一错误码：401/403/429/5xx
+
+原理讲解
+	•	为什么需要 Gateway：
+		•	统一入口：所有模型调用都经过一个地方
+		•	关注点分离：业务代码不关心用哪个模型
+		•	横切关注点：鉴权、日志、限流等统一处理
+	•	OpenAI 兼容的好处：
+		•	生态工具可以直接接入（LangChain、Vercel AI SDK）
+		•	切换后端模型对上层透明
+	•	流式转发的挑战：
+		•	不能等响应完再返回，要边收边发
+		•	需要正确处理 SSE 格式
+		•	要处理中途断开
+
+需要补的知识点
+	•	Node 服务端基础
+	•	SSE 流式：转发、flush、断线处理
+	•	统一错误处理与中间件
+
+关键代码示例
+```typescript
+// packages/gateway/src/types.ts
+// OpenAI 兼容的类型定义
+
+export interface ChatCompletionRequest {
+  model: string;
+  messages: Array<{
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+  }>;
+  stream?: boolean;
+  max_tokens?: number;
+  temperature?: number;
+}
+
+export interface ChatCompletionChunk {
+  id: string;
+  object: 'chat.completion.chunk';
+  created: number;
+  model: string;
+  choices: Array<{
+    index: number;
+    delta: {
+      role?: string;
+      content?: string;
+    };
+    finish_reason: string | null;
+  }>;
+}
+```
+
+```typescript
+// packages/gateway/src/core/backends/openai.ts
+import OpenAI from 'openai';
+import { ChatCompletionRequest } from '../../types';
+
+export class OpenAIBackend {
+  private client: OpenAI;
+
+  constructor(apiKey: string) {
+    this.client = new OpenAI({ apiKey });
+  }
+
+  async *streamChat(request: ChatCompletionRequest): AsyncGenerator<string> {
+    const stream = await this.client.chat.completions.create({
+      ...request,
+      stream: true,
+    });
+
+    for await (const chunk of stream) {
+      // 转换为 SSE 格式
+      yield `data: ${JSON.stringify(chunk)}\n\n`;
+    }
+
+    yield 'data: [DONE]\n\n';
+  }
+}
+```
+
+```typescript
+// packages/gateway/src/core/backends/claude.ts
+import Anthropic from '@anthropic-ai/sdk';
+import { ChatCompletionRequest } from '../../types';
+
+export class ClaudeBackend {
+  private client: Anthropic;
+
+  constructor(apiKey: string) {
+    this.client = new Anthropic({ apiKey });
+  }
+
+  async *streamChat(request: ChatCompletionRequest): AsyncGenerator<string> {
+    // 转换消息格式
+    const systemMessage = request.messages.find(m => m.role === 'system');
+    const messages = request.messages
+      .filter(m => m.role !== 'system')
+      .map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+
+    const stream = await this.client.messages.stream({
+      model: this.mapModel(request.model),
+      max_tokens: request.max_tokens ?? 4096,
+      system: systemMessage?.content,
+      messages,
+    });
+
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta') {
+        // 转换为 OpenAI 格式
+        const chunk = {
+          id: `chatcmpl-${Date.now()}`,
+          object: 'chat.completion.chunk',
+          created: Math.floor(Date.now() / 1000),
+          model: request.model,
+          choices: [{
+            index: 0,
+            delta: { content: event.delta.text },
+            finish_reason: null,
+          }],
+        };
+        yield `data: ${JSON.stringify(chunk)}\n\n`;
+      }
+    }
+
+    yield 'data: [DONE]\n\n';
+  }
+
+  private mapModel(model: string): string {
+    // 模型名映射
+    const mapping: Record<string, string> = {
+      'gpt-4o': 'claude-3-5-sonnet-latest',
+      'gpt-4o-mini': 'claude-3-5-haiku-latest',
+    };
+    return mapping[model] ?? model;
+  }
+}
+```
+
+```typescript
+// packages/gateway/src/routes/chat.ts
+import { Hono } from 'hono';
+import { streamSSE } from 'hono/streaming';
+import { OpenAIBackend } from '../core/backends/openai';
+import { authenticateApiKey } from '../middleware/auth';
+
+const app = new Hono();
+
+// 鉴权中间件
+app.use('*', authenticateApiKey);
+
+app.post('/v1/chat/completions', async (c) => {
+  const request = await c.req.json();
+  const backend = new OpenAIBackend(process.env.OPENAI_API_KEY!);
+
+  if (request.stream) {
+    return streamSSE(c, async (stream) => {
+      try {
+        for await (const chunk of backend.streamChat(request)) {
+          await stream.write(chunk);
+        }
+      } catch (error) {
+        console.error('Stream error:', error);
+        await stream.write(`data: ${JSON.stringify({ error: 'Stream failed' })}\n\n`);
+      }
+    });
+  } else {
+    // 非流式（简化版）
+    const chunks: string[] = [];
+    for await (const chunk of backend.streamChat(request)) {
+      chunks.push(chunk);
+    }
+    // 合并响应...
+    return c.json({ /* ... */ });
+  }
+});
+
+export default app;
+```
+
+```typescript
+// packages/gateway/src/middleware/auth.ts
+import { Context, Next } from 'hono';
+
+interface ApiKeyConfig {
+  key: string;
+  tenant: string;
+  quotaLimit: number;
+  enabled: boolean;
+}
+
+// 简单的内存存储（生产应该用数据库）
+const apiKeys = new Map<string, ApiKeyConfig>([
+  ['sk-test-123', { key: 'sk-test-123', tenant: 'test', quotaLimit: 10000, enabled: true }],
+]);
+
+export async function authenticateApiKey(c: Context, next: Next) {
+  const authHeader = c.req.header('Authorization');
+
+  if (!authHeader?.startsWith('Bearer ')) {
+    return c.json({ error: { message: 'Missing API key', type: 'invalid_request_error' } }, 401);
+  }
+
+  const apiKey = authHeader.slice(7);
+  const config = apiKeys.get(apiKey);
+
+  if (!config || !config.enabled) {
+    return c.json({ error: { message: 'Invalid API key', type: 'invalid_api_key' } }, 401);
+  }
+
+  // 将租户信息放入上下文
+  c.set('tenant', config.tenant);
+  c.set('apiKeyConfig', config);
+
+  await next();
+}
+```
+
+文件结构
+```
+packages/gateway/
+├── src/
+│   ├── core/
+│   │   ├── backends/
+│   │   │   ├── openai.ts         # OpenAI 后端
+│   │   │   ├── claude.ts         # Claude 后端
+│   │   │   ├── types.ts
+│   │   │   └── index.ts
+│   │   └── index.ts
+│   ├── routes/
+│   │   ├── chat.ts               # /v1/chat/completions
+│   │   ├── embeddings.ts         # /v1/embeddings
+│   │   └── index.ts
+│   ├── middleware/
+│   │   ├── auth.ts               # 鉴权
+│   │   ├── logger.ts             # 日志
+│   │   └── index.ts
+│   └── index.ts
+├── package.json
+└── tsconfig.json
+```
+
+交付物
+	•	可用的 /v1/chat/completions 网关（流式）
+	•	curl 测试通过
+
+⸻
+
+Step 2：请求上下文 + 结构化日志（2-4 天）
+
+目标
+每个请求都可追踪：谁调用的、用了哪个模型、耗时多少、tokens 多少。
+
+需要做什么
+	•	生成 request_id / trace_id 并贯穿
+	•	结构化日志（JSON）：
+		•	request_id、tenant、model、latency_ms、status
+		•	tokens_in/out（从响应中提取）
+	•	日志脱敏：不记录原始 prompt
+
+原理讲解
+	•	为什么需要 request_id：
+		•	一次请求可能经过多个环节
+		•	出问题时能串起整个链路
+	•	结构化日志 vs console.log：
+		•	结构化日志可以被程序解析
+		•	可以做聚合、查询、告警
+	•	tokens 统计：
+		•	OpenAI API 会在响应中返回 usage
+		•	流式场景需要累加或从最后一个 chunk 获取
+
+需要补的知识点
+	•	结构化日志格式
+	•	隐私与脱敏
+
+关键代码示例
+```typescript
+// packages/gateway/src/middleware/logger.ts
+import { Context, Next } from 'hono';
+import fs from 'fs';
+
+interface RequestLog {
+  timestamp: string;
+  requestId: string;
+  traceId: string;
+  tenant: string;
+  method: string;
+  path: string;
+  model: string;
+  status: number;
+  latencyMs: number;
+  tokensIn?: number;
+  tokensOut?: number;
+  error?: string;
+}
+
+const logStream = fs.createWriteStream('./artifacts/gateway/requests.jsonl', { flags: 'a' });
+
+export async function requestLogger(c: Context, next: Next) {
+  const requestId = crypto.randomUUID();
+  const traceId = c.req.header('X-Trace-Id') || requestId;
+  const startTime = Date.now();
+
+  // 设置到上下文
+  c.set('requestId', requestId);
+  c.set('traceId', traceId);
+
+  // 响应头
+  c.header('X-Request-Id', requestId);
+
+  try {
+    await next();
+
+    const log: RequestLog = {
+      timestamp: new Date().toISOString(),
+      requestId,
+      traceId,
+      tenant: c.get('tenant') || 'unknown',
+      method: c.req.method,
+      path: c.req.path,
+      model: c.get('model') || 'unknown',
+      status: c.res.status,
+      latencyMs: Date.now() - startTime,
+      tokensIn: c.get('tokensIn'),
+      tokensOut: c.get('tokensOut'),
+    };
+
+    logStream.write(JSON.stringify(log) + '\n');
+  } catch (error) {
+    const log: RequestLog = {
+      timestamp: new Date().toISOString(),
+      requestId,
+      traceId,
+      tenant: c.get('tenant') || 'unknown',
+      method: c.req.method,
+      path: c.req.path,
+      model: c.get('model') || 'unknown',
+      status: 500,
+      latencyMs: Date.now() - startTime,
+      error: String(error),
+    };
+
+    logStream.write(JSON.stringify(log) + '\n');
+    throw error;
+  }
+}
+```
+
+文件结构
+```
+packages/gateway/
+├── src/
+│   ├── middleware/
+│   │   ├── auth.ts
+│   │   ├── logger.ts             # 请求日志
+│   │   └── index.ts
+│   └── ...
+
+artifacts/
+└── gateway/
+    └── requests.jsonl            # 请求日志
+```
+
+交付物
+	•	每个请求都有 request_id
+	•	结构化日志落地
+
+⸻
+
+Step 3：限流 + 配额 + 超时 + 取消（5-7 天）
+
+目标
+系统不会因为流量尖峰把自己拖死；成本可控；用户可取消请求。
+
+需要做什么
+	•	限流：per API key 每分钟请求数
+	•	配额：每日 tokens 上限
+	•	超时：后端调用超时（60s）
+	•	取消：客户端断开 → 中止后端请求
+
+原理讲解
+	•	限流算法：
+		•	Token Bucket：桶里有 token，每次请求消耗 token，定时补充
+		•	Leaky Bucket：固定速率流出，超过就排队或丢弃
+		•	Sliding Window：滑动时间窗口内计数
+	•	为什么需要超时：
+		•	LLM 调用可能很慢（尤其长输出）
+		•	没有超时 = 连接一直占用 = 资源耗尽
+	•	取消的实现：
+		•	客户端断开时，用 AbortController 中止后端请求
+		•	避免用户走了还在烧 token
+
+需要补的知识点
+	•	backpressure（背压）
+	•	token bucket / leaky bucket
+	•	AbortController
+
+关键代码示例
+```typescript
+// packages/gateway/src/core/rate-limiter.ts
+
+interface RateLimitConfig {
+  requestsPerMinute: number;
+  tokensPerDay: number;
+}
+
+interface RateLimitState {
+  requestCount: number;
+  tokenCount: number;
+  windowStart: number;
+  dayStart: number;
+}
+
+export class RateLimiter {
+  private state = new Map<string, RateLimitState>();
+  private config: RateLimitConfig;
+
+  constructor(config: RateLimitConfig) {
+    this.config = config;
+  }
+
+  check(tenant: string): { allowed: boolean; reason?: string; retryAfter?: number } {
+    const now = Date.now();
+    const state = this.getOrCreateState(tenant, now);
+
+    // 检查每分钟请求数
+    if (now - state.windowStart > 60000) {
+      // 新的分钟窗口
+      state.requestCount = 0;
+      state.windowStart = now;
+    }
+
+    if (state.requestCount >= this.config.requestsPerMinute) {
+      const retryAfter = Math.ceil((state.windowStart + 60000 - now) / 1000);
+      return {
+        allowed: false,
+        reason: 'Rate limit exceeded',
+        retryAfter,
+      };
+    }
+
+    // 检查每日 token 配额
+    const dayStart = new Date().setHours(0, 0, 0, 0);
+    if (state.dayStart !== dayStart) {
+      state.tokenCount = 0;
+      state.dayStart = dayStart;
+    }
+
+    if (state.tokenCount >= this.config.tokensPerDay) {
+      return {
+        allowed: false,
+        reason: 'Daily token quota exceeded',
+      };
+    }
+
+    // 允许
+    state.requestCount++;
+    return { allowed: true };
+  }
+
+  recordTokens(tenant: string, tokens: number): void {
+    const state = this.state.get(tenant);
+    if (state) {
+      state.tokenCount += tokens;
+    }
+  }
+
+  private getOrCreateState(tenant: string, now: number): RateLimitState {
+    if (!this.state.has(tenant)) {
+      this.state.set(tenant, {
+        requestCount: 0,
+        tokenCount: 0,
+        windowStart: now,
+        dayStart: new Date().setHours(0, 0, 0, 0),
+      });
+    }
+    return this.state.get(tenant)!;
+  }
+}
+
+export const rateLimiter = new RateLimiter({
+  requestsPerMinute: 60,
+  tokensPerDay: 100000,
+});
+```
+
+```typescript
+// packages/gateway/src/middleware/rate-limit.ts
+import { Context, Next } from 'hono';
+import { rateLimiter } from '../core/rate-limiter';
+
+export async function rateLimitMiddleware(c: Context, next: Next) {
+  const tenant = c.get('tenant');
+  const result = rateLimiter.check(tenant);
+
+  if (!result.allowed) {
+    if (result.retryAfter) {
+      c.header('Retry-After', String(result.retryAfter));
+    }
+    return c.json({
+      error: {
+        message: result.reason,
+        type: 'rate_limit_error',
+      },
+    }, 429);
+  }
+
+  await next();
+}
+```
+
+```typescript
+// packages/gateway/src/core/backends/openai.ts（添加超时和取消）
+export class OpenAIBackend {
+  async *streamChat(
+    request: ChatCompletionRequest,
+    options?: { signal?: AbortSignal; timeoutMs?: number }
+  ): AsyncGenerator<string> {
+    const { signal, timeoutMs = 60000 } = options ?? {};
+
+    // 创建超时 signal
+    const timeoutController = new AbortController();
+    const timeout = setTimeout(() => timeoutController.abort(), timeoutMs);
+
+    // 合并 signal
+    const combinedSignal = signal
+      ? AbortSignal.any([signal, timeoutController.signal])
+      : timeoutController.signal;
+
+    try {
+      const stream = await this.client.chat.completions.create({
+        ...request,
+        stream: true,
+      }, {
+        signal: combinedSignal,
+      });
+
+      for await (const chunk of stream) {
+        if (combinedSignal.aborted) {
+          break;
+        }
+        yield `data: ${JSON.stringify(chunk)}\n\n`;
+      }
+
+      yield 'data: [DONE]\n\n';
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+}
+```
+
+文件结构
+```
+packages/gateway/
+├── src/
+│   ├── core/
+│   │   ├── rate-limiter.ts       # 限流器
+│   │   ├── quota.ts              # 配额管理
+│   │   └── ...
+│   ├── middleware/
+│   │   ├── rate-limit.ts         # 限流中间件
+│   │   └── ...
+│   └── ...
+```
+
+交付物
+	•	限流/配额配置
+	•	超时和取消功能
+	•	压测时不会雪崩
+
+⸻
+
+Step 4：请求队列与并发控制（3-5 天）
+
+目标
+在高并发下稳定：超出能力就排队或拒绝，不让延迟无穷变大。
+
+需要做什么
+	•	并发控制：每个租户/每个后端最大并发
+	•	有界队列：满了直接 429
+	•	排队超时：等太久直接失败
+
+原理讲解
+	•	为什么需要有界队列：
+		•	无界队列 = 内存无限增长 = 必崩
+		•	队列越长，延迟越大
+	•	并发控制的层次：
+		•	全局并发：整个网关的最大并发
+		•	租户并发：单个租户的最大并发
+		•	后端并发：单个后端模型的最大并发
+	•	p99 延迟的来源：
+		•	主要来自排队时间
+		•	处理时间相对稳定
+
+需要补的知识点
+	•	有界队列 vs 无界队列
+	•	p95/p99 延迟
+
+关键代码示例
+```typescript
+// packages/gateway/src/core/queue.ts
+import PQueue from 'p-queue';
+
+interface QueueConfig {
+  concurrency: number;
+  maxQueued: number;
+  queueTimeoutMs: number;
+}
+
+export class RequestQueue {
+  private queues = new Map<string, PQueue>();
+  private config: QueueConfig;
+
+  constructor(config: QueueConfig) {
+    this.config = config;
+  }
+
+  async enqueue<T>(
+    key: string,
+    fn: () => Promise<T>,
+    options?: { signal?: AbortSignal }
+  ): Promise<T> {
+    const queue = this.getOrCreateQueue(key);
+
+    // 检查队列是否满
+    if (queue.pending >= this.config.maxQueued) {
+      throw new QueueFullError(`Queue ${key} is full`);
+    }
+
+    // 添加排队超时
+    const queueTimeout = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new QueueTimeoutError('Queue timeout')), this.config.queueTimeoutMs);
+    });
+
+    const task = queue.add(fn, { signal: options?.signal });
+
+    return Promise.race([task, queueTimeout]) as Promise<T>;
+  }
+
+  getStats(key: string) {
+    const queue = this.queues.get(key);
+    return {
+      pending: queue?.pending ?? 0,
+      size: queue?.size ?? 0,
+    };
+  }
+
+  private getOrCreateQueue(key: string): PQueue {
+    if (!this.queues.has(key)) {
+      this.queues.set(key, new PQueue({
+        concurrency: this.config.concurrency,
+      }));
+    }
+    return this.queues.get(key)!;
+  }
+}
+
+export class QueueFullError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'QueueFullError';
+  }
+}
+
+export class QueueTimeoutError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'QueueTimeoutError';
+  }
+}
+
+export const requestQueue = new RequestQueue({
+  concurrency: 10,      // 每个后端最大 10 并发
+  maxQueued: 50,        // 最多排队 50 个
+  queueTimeoutMs: 5000, // 排队超过 5 秒就失败
+});
+```
+
+文件结构
+```
+packages/gateway/
+├── src/
+│   ├── core/
+│   │   ├── queue.ts              # 请求队列
+│   │   └── ...
+│   └── ...
+```
+
+交付物
+	•	有界队列实现
+	•	压力大时可预测行为
+
+⸻
+
+Step 5：成本核算与归因（3-5 天）
+
+目标
+你能回答：谁在花钱？哪个接口最贵？为什么贵？
+
+需要做什么
+	•	记录 tokens_in/out 与 cost_estimate
+	•	按维度聚合：tenant / api_key / model
+	•	成本告警：某租户/接口突增
+
+原理讲解
+	•	Token 统计方法：
+		•	OpenAI 流式：最后一个 chunk 的 usage 字段
+		•	Claude：响应中的 usage 字段
+		•	估算：用 tiktoken 预先估算
+	•	成本计算：
+		•	OpenAI：$0.15/1M input tokens, $0.60/1M output tokens（gpt-4o-mini）
+		•	Claude：$0.25/1M input, $1.25/1M output（claude-3-5-haiku）
+		•	价格表需要维护和更新
+
+需要补的知识点
+	•	tokens 统计方法
+	•	成本告警阈值
+
+关键代码示例
+```typescript
+// packages/gateway/src/core/cost.ts
+
+interface ModelPricing {
+  inputPer1M: number;  // 美元
+  outputPer1M: number; // 美元
+}
+
+const PRICING: Record<string, ModelPricing> = {
+  'gpt-4o': { inputPer1M: 2.5, outputPer1M: 10 },
+  'gpt-4o-mini': { inputPer1M: 0.15, outputPer1M: 0.60 },
+  'claude-3-5-sonnet-latest': { inputPer1M: 3, outputPer1M: 15 },
+  'claude-3-5-haiku-latest': { inputPer1M: 0.25, outputPer1M: 1.25 },
+};
+
+export function calculateCost(
+  model: string,
+  tokensIn: number,
+  tokensOut: number
+): number {
+  const pricing = PRICING[model];
+  if (!pricing) return 0;
+
+  const inputCost = (tokensIn / 1_000_000) * pricing.inputPer1M;
+  const outputCost = (tokensOut / 1_000_000) * pricing.outputPer1M;
+
+  return inputCost + outputCost;
+}
+
+// 成本聚合
+interface CostRecord {
+  timestamp: string;
+  tenant: string;
+  model: string;
+  tokensIn: number;
+  tokensOut: number;
+  costUsd: number;
+}
+
+export class CostTracker {
+  private records: CostRecord[] = [];
+
+  record(data: Omit<CostRecord, 'timestamp'>): void {
+    this.records.push({
+      ...data,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  getSummary(filters?: { tenant?: string; model?: string; since?: Date }) {
+    let filtered = this.records;
+
+    if (filters?.tenant) {
+      filtered = filtered.filter(r => r.tenant === filters.tenant);
+    }
+    if (filters?.model) {
+      filtered = filtered.filter(r => r.model === filters.model);
+    }
+    if (filters?.since) {
+      filtered = filtered.filter(r => new Date(r.timestamp) >= filters.since);
+    }
+
+    const byTenant: Record<string, number> = {};
+    const byModel: Record<string, number> = {};
+    let total = 0;
+
+    for (const r of filtered) {
+      byTenant[r.tenant] = (byTenant[r.tenant] ?? 0) + r.costUsd;
+      byModel[r.model] = (byModel[r.model] ?? 0) + r.costUsd;
+      total += r.costUsd;
+    }
+
+    return { total, byTenant, byModel };
+  }
+}
+
+export const costTracker = new CostTracker();
+```
+
+文件结构
+```
+packages/gateway/
+├── src/
+│   ├── core/
+│   │   ├── cost.ts               # 成本计算
+│   │   └── ...
+│   └── ...
+```
+
+交付物
+	•	成本记录与聚合
+	•	简单的成本报告
+
+⸻
+
+Step 6：前端成本仪表盘（简略）（2-3 天）
+
+目标
+在 Web 界面展示成本统计，按租户/模型分组。
+
+需要做什么
+	•	创建 /gateway/cost 页面
+	•	展示成本卡片：总成本、按租户、按模型
+	•	简单的趋势图
+
+原理讲解
+	•	成本可视化的价值：
+		•	快速发现成本异常
+		•	归因到具体租户/模型
+		•	辅助决策（是否需要路由优化）
+
+关键代码示例
+```tsx
+// apps/web/src/pages/GatewayCost.tsx
+import { useQuery } from '@tanstack/react-query';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+
+export function GatewayCostPage() {
+  const { data: costData } = useQuery({
+    queryKey: ['gateway-cost'],
+    queryFn: () => fetch('/api/gateway/cost').then(r => r.json()),
+  });
+
+  if (!costData) return <div>Loading...</div>;
+
+  const byTenantData = Object.entries(costData.byTenant).map(([name, cost]) => ({
+    name,
+    cost: Number(cost).toFixed(2),
+  }));
+
+  return (
+    <div className="p-8 space-y-6">
+      <h1 className="text-2xl font-bold">Gateway Cost</h1>
+
+      {/* 总成本 */}
+      <div className="bg-purple-500 text-white rounded-lg p-4">
+        <div className="text-sm opacity-80">Total Cost (Today)</div>
+        <div className="text-3xl font-bold">${costData.total.toFixed(2)}</div>
+      </div>
+
+      {/* 按租户 */}
+      <div className="bg-white rounded-lg p-4 shadow">
+        <h2 className="text-lg font-semibold mb-4">Cost by Tenant</h2>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={byTenantData}>
+            <XAxis dataKey="name" />
+            <YAxis unit="$" />
+            <Tooltip />
+            <Bar dataKey="cost" fill="#8b5cf6" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+```
+
+文件结构
+```
+apps/web/
+├── src/
+│   ├── pages/
+│   │   ├── GatewayCost.tsx       # 成本仪表盘
+│   │   └── ...
+│   └── ...
+```
+
+交付物
+	•	/gateway/cost 页面
+	•	成本可视化
+
+⸻
+
+Step 7：多模型路由（Router）（5-7 天）
+
+目标
+同一入口下，根据任务/预算/复杂度选择不同模型。
+
+需要做什么
+	•	路由策略：默认便宜模型，触发条件升级
+	•	fallback：后端失败切备用
+	•	路由日志：记录选择原因
+
+原理讲解
+	•	路由策略的维度：
+		•	模型能力：简单任务用小模型，复杂任务用大模型
+		•	成本：便宜模型优先
+		•	延迟：需要快速响应时用快模型
+		•	可用性：后端挂了切换
+	•	升级策略 vs 重试：
+		•	重试：同一模型再试一次
+		•	升级：换更强的模型
+		•	注意：避免无限升级烧钱
+	•	路由可解释性：
+		•	为什么选了这个模型？
+		•	对调试和优化很重要
+
+需要补的知识点
+	•	质量/成本/延迟的 tradeoff
+	•	路由策略设计
+
+关键代码示例
+```typescript
+// packages/gateway/src/core/router.ts
+
+interface RoutingRule {
+  condition: (request: ChatCompletionRequest, context: RoutingContext) => boolean;
+  targetModel: string;
+  priority: number;
+}
+
+interface RoutingContext {
+  tenant: string;
+  previousAttempts: number;
+  lastError?: string;
+}
+
+interface RoutingDecision {
+  model: string;
+  reason: string;
+  fallbackModels: string[];
+}
+
+export class ModelRouter {
+  private rules: RoutingRule[] = [];
+  private defaultModel = 'gpt-4o-mini';
+  private fallbackChain: Record<string, string[]> = {
+    'gpt-4o-mini': ['claude-3-5-haiku-latest', 'gpt-4o'],
+    'gpt-4o': ['claude-3-5-sonnet-latest'],
+    'claude-3-5-haiku-latest': ['gpt-4o-mini', 'claude-3-5-sonnet-latest'],
+  };
+
+  constructor() {
+    this.initDefaultRules();
+  }
+
+  private initDefaultRules() {
+    // 长上下文用大模型
+    this.rules.push({
+      condition: (req) => {
+        const totalLength = req.messages.reduce((acc, m) => acc + m.content.length, 0);
+        return totalLength > 10000;
+      },
+      targetModel: 'gpt-4o',
+      priority: 10,
+    });
+
+    // 代码生成用 Claude
+    this.rules.push({
+      condition: (req) => {
+        const content = req.messages.map(m => m.content).join(' ').toLowerCase();
+        return content.includes('代码') || content.includes('code') || content.includes('function');
+      },
+      targetModel: 'claude-3-5-sonnet-latest',
+      priority: 5,
+    });
+
+    // 失败后升级
+    this.rules.push({
+      condition: (_, ctx) => ctx.previousAttempts > 0,
+      targetModel: 'gpt-4o',
+      priority: 100,
+    });
+  }
+
+  route(request: ChatCompletionRequest, context: RoutingContext): RoutingDecision {
+    // 如果请求指定了模型，直接使用
+    if (request.model && request.model !== 'auto') {
+      return {
+        model: request.model,
+        reason: 'User specified model',
+        fallbackModels: this.fallbackChain[request.model] ?? [],
+      };
+    }
+
+    // 按优先级排序规则
+    const sortedRules = [...this.rules].sort((a, b) => b.priority - a.priority);
+
+    for (const rule of sortedRules) {
+      if (rule.condition(request, context)) {
+        return {
+          model: rule.targetModel,
+          reason: `Rule matched: priority ${rule.priority}`,
+          fallbackModels: this.fallbackChain[rule.targetModel] ?? [],
+        };
+      }
+    }
+
+    return {
+      model: this.defaultModel,
+      reason: 'Default model',
+      fallbackModels: this.fallbackChain[this.defaultModel] ?? [],
+    };
+  }
+}
+
+export const modelRouter = new ModelRouter();
+```
+
+```typescript
+// packages/gateway/src/routes/chat.ts（集成路由）
+import { modelRouter } from '../core/router';
+
+app.post('/v1/chat/completions', async (c) => {
+  const request = await c.req.json();
+  const tenant = c.get('tenant');
+
+  // 路由决策
+  const decision = modelRouter.route(request, {
+    tenant,
+    previousAttempts: 0,
+  });
+
+  console.log(`Routing: ${decision.model} (${decision.reason})`);
+
+  // 选择后端
+  const backend = getBackendForModel(decision.model);
+
+  // 执行，失败则 fallback
+  for (const model of [decision.model, ...decision.fallbackModels]) {
+    try {
+      return await executeWithModel(c, request, model);
+    } catch (error) {
+      console.log(`Model ${model} failed, trying fallback...`);
+    }
+  }
+
+  return c.json({ error: 'All models failed' }, 500);
+});
+```
+
+文件结构
+```
+packages/gateway/
+├── src/
+│   ├── core/
+│   │   ├── router.ts             # 模型路由
+│   │   └── ...
+│   └── ...
+```
+
+交付物
+	•	可配置的 Router
+	•	fallback 机制
+	•	路由日志
+
+⸻
+
+Step 8：前端网关管理界面（简略）（2-3 天）
+
+目标
+提供简单的网关管理界面：API Key 管理、配额设置。
+
+需要做什么
+	•	创建 /gateway/admin 页面
+	•	API Key 列表（创建/禁用）
+	•	配额设置
+
+关键代码示例
+```tsx
+// apps/web/src/pages/GatewayAdmin.tsx
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+interface ApiKey {
+  key: string;
+  tenant: string;
+  quotaLimit: number;
+  enabled: boolean;
+  createdAt: string;
+}
+
+export function GatewayAdminPage() {
+  const queryClient = useQueryClient();
+  const [newTenant, setNewTenant] = useState('');
+
+  const { data: apiKeys } = useQuery<ApiKey[]>({
+    queryKey: ['api-keys'],
+    queryFn: () => fetch('/api/gateway/api-keys').then(r => r.json()),
+  });
+
+  const createKey = useMutation({
+    mutationFn: (tenant: string) =>
+      fetch('/api/gateway/api-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenant }),
+      }).then(r => r.json()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['api-keys'] });
+      setNewTenant('');
+    },
+  });
+
+  return (
+    <div className="p-8 space-y-6">
+      <h1 className="text-2xl font-bold">Gateway Admin</h1>
+
+      {/* 创建 API Key */}
+      <div className="bg-white rounded-lg p-4 shadow">
+        <h2 className="text-lg font-semibold mb-4">Create API Key</h2>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newTenant}
+            onChange={(e) => setNewTenant(e.target.value)}
+            placeholder="Tenant name"
+            className="border rounded px-3 py-2 flex-1"
+          />
+          <button
+            onClick={() => createKey.mutate(newTenant)}
+            className="bg-blue-500 text-white px-4 py-2 rounded"
+          >
+            Create
+          </button>
+        </div>
+      </div>
+
+      {/* API Key 列表 */}
+      <div className="bg-white rounded-lg p-4 shadow">
+        <h2 className="text-lg font-semibold mb-4">API Keys</h2>
+        <table className="w-full">
+          <thead>
+            <tr className="text-left text-gray-500 border-b">
+              <th className="py-2">Tenant</th>
+              <th>Key</th>
+              <th>Quota</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {apiKeys?.map((key) => (
+              <tr key={key.key} className="border-b">
+                <td className="py-2">{key.tenant}</td>
+                <td className="font-mono text-sm">{key.key.slice(0, 12)}...</td>
+                <td>{key.quotaLimit.toLocaleString()} tokens/day</td>
+                <td>
+                  <span className={`px-2 py-1 rounded text-sm ${
+                    key.enabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                  }`}>
+                    {key.enabled ? 'Active' : 'Disabled'}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+```
+
+文件结构
+```
+apps/web/
+├── src/
+│   ├── pages/
+│   │   ├── GatewayAdmin.tsx      # 网关管理
+│   │   ├── GatewayCost.tsx
+│   │   └── ...
+│   └── ...
+```
+
+交付物
+	•	/gateway/admin 页面
+	•	API Key 管理功能
+
+⸻
+
+Step 9：本地推理（云 GPU）（7-14 天）
+
+目标
+在云 GPU 上部署 vLLM，接入网关，对比闭源 API 的成本与性能。
+
+需要做什么
+	•	选择云 GPU 平台（推荐 RunPod 入门）
+	•	部署 vLLM 服务
+	•	网关添加本地模型后端
+	•	压测对比
+
+原理讲解
+	•	vLLM 的优势：
+		•	PagedAttention：高效的 KV cache 管理
+		•	Continuous Batching：动态批处理，提高吞吐
+		•	OpenAI 兼容 API：无缝接入
+	•	云 GPU 选择：
+		•	RunPod：按需付费，有 vLLM 模板，推荐入门
+		•	Modal：Serverless，按秒计费，冷启动问题
+		•	Vast.ai：便宜，但稳定性一般
+	•	模型选择（7B 入门）：
+		•	Qwen2.5-7B-Instruct：中文友好
+		•	Llama-3.1-8B-Instruct：通用能力强
+		•	显存需求：7B 模型约需 16GB 显存（半精度）
+	•	成本对比：
+		•	闭源 API：按 token 付费，无固定成本
+		•	本地推理：按 GPU 时间付费，token 无限
+
+需要补的知识点
+	•	vLLM 基本使用
+	•	云 GPU 平台操作
+	•	continuous batching、KV cache 概念
+
+关键步骤
+```bash
+# 1. 在 RunPod 上创建 Pod
+# 选择 GPU: RTX 4090 (24GB) 或 A10G (24GB)
+# 选择模板: RunPod vLLM
+
+# 2. SSH 进入 Pod，启动 vLLM
+vllm serve Qwen/Qwen2.5-7B-Instruct \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --max-model-len 4096
+
+# 3. 测试 API（OpenAI 兼容）
+curl http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "Qwen/Qwen2.5-7B-Instruct",
+    "messages": [{"role": "user", "content": "你好"}]
+  }'
+```
+
+```typescript
+// packages/gateway/src/core/backends/vllm.ts
+export class VLLMBackend {
+  private baseUrl: string;
+
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
+
+  async *streamChat(request: ChatCompletionRequest): AsyncGenerator<string> {
+    const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...request,
+        stream: true,
+      }),
+    });
+
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+
+    if (!reader) throw new Error('No response body');
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const text = decoder.decode(value);
+      yield text;
+    }
+  }
+}
+```
+
+文件结构
+```
+packages/gateway/
+├── src/
+│   ├── core/
+│   │   ├── backends/
+│   │   │   ├── openai.ts
+│   │   │   ├── claude.ts
+│   │   │   ├── vllm.ts           # 本地推理后端
+│   │   │   └── index.ts
+│   │   └── ...
+│   └── ...
+
+docs/
+└── VLLM_DEPLOYMENT.md            # 部署文档
+```
+
+交付物
+	•	云 GPU 上运行的 vLLM
+	•	网关支持本地模型
+	•	压测报告（对比闭源 API）
+
+⸻
+
+Step 10：缓存与加速（3-7 天）
+
+目标
+降低重复成本、提升响应速度，但不引入错答扩散。
+
+需要做什么
+	•	检索缓存（RAG 场景，最安全）
+	•	Embedding 缓存（相同文本不重复调用）
+	•	（谨慎）回答缓存
+
+原理讲解
+	•	缓存的风险：
+		•	错误答案被缓存 → 扩散
+		•	权限绕过：A 用户的答案被 B 用户看到
+	•	安全的缓存策略：
+		•	缓存键必须包含：tenant + 权限信息
+		•	只缓存确定性结果（如 embedding）
+		•	回答缓存需要严格条件（完全相同 prompt + 短 TTL）
+	•	缓存失效：
+		•	模型版本变更 → 失效
+		•	prompt 版本变更 → 失效
+
+需要补的知识点
+	•	缓存键设计
+	•	缓存失效策略
+
+关键代码示例
+```typescript
+// packages/gateway/src/core/cache.ts
+import crypto from 'crypto';
+
+interface CacheEntry<T> {
+  value: T;
+  expiresAt: number;
+  version: string;
+}
+
+export class LLMCache {
+  private cache = new Map<string, CacheEntry<unknown>>();
+  private version: string;
+
+  constructor(version: string) {
+    this.version = version;
+  }
+
+  private generateKey(
+    type: 'embedding' | 'response',
+    tenant: string,
+    input: string
+  ): string {
+    const hash = crypto.createHash('sha256')
+      .update(`${type}:${tenant}:${input}`)
+      .digest('hex');
+    return hash;
+  }
+
+  // Embedding 缓存（相对安全）
+  getEmbedding(tenant: string, text: string): number[] | undefined {
+    const key = this.generateKey('embedding', tenant, text);
+    const entry = this.cache.get(key) as CacheEntry<number[]> | undefined;
+
+    if (!entry) return undefined;
+    if (entry.version !== this.version) return undefined;
+    if (entry.expiresAt < Date.now()) {
+      this.cache.delete(key);
+      return undefined;
+    }
+
+    return entry.value;
+  }
+
+  setEmbedding(tenant: string, text: string, embedding: number[], ttlMs: number = 86400000): void {
+    const key = this.generateKey('embedding', tenant, text);
+    this.cache.set(key, {
+      value: embedding,
+      expiresAt: Date.now() + ttlMs,
+      version: this.version,
+    });
+  }
+
+  // 回答缓存（谨慎使用）
+  getResponse(tenant: string, prompt: string): string | undefined {
+    // 只在非常严格的条件下使用
+    // 例如：完全相同的 prompt，短 TTL，无工具调用
+    const key = this.generateKey('response', tenant, prompt);
+    const entry = this.cache.get(key) as CacheEntry<string> | undefined;
+
+    if (!entry) return undefined;
+    if (entry.version !== this.version) return undefined;
+    if (entry.expiresAt < Date.now()) {
+      this.cache.delete(key);
+      return undefined;
+    }
+
+    return entry.value;
+  }
+
+  // 获取缓存统计
+  getStats() {
+    let hits = 0;
+    let misses = 0;
+    // ... 统计逻辑
+    return { hits, misses, hitRate: hits / (hits + misses) };
+  }
+}
+```
+
+文件结构
+```
+packages/gateway/
+├── src/
+│   ├── core/
+│   │   ├── cache.ts              # 缓存
+│   │   └── ...
+│   └── ...
+```
+
+交付物
+	•	Embedding 缓存
+	•	缓存命中率报表
+
+⸻
+
+Step 11：可观测 + 告警 + 灰度（5-10 天）
+
+目标
+稳定运营：问题来了能第一时间知道，变更能小流量验证。
+
+需要做什么
+	•	指标收集：latency、error rate、queue length、tokens、cost
+	•	告警规则：error rate 激增、p95 超阈值、成本异常
+	•	灰度发布：按 api_key 分桶
+
+原理讲解
+	•	告警的原则：
+		•	只告警可 actionable 的问题
+		•	避免告警疲劳
+		•	阈值需要根据实际情况调整
+	•	灰度发布：
+	•	5% → 20% → 50% → 100%
+		•	每个阶段观察指标
+		•	发现问题立即回滚
+
+需要补的知识点
+	•	监控告警基本思路
+	•	灰度与回滚流程
+
+关键代码示例
+```typescript
+// packages/gateway/src/core/canary.ts
+
+interface CanaryConfig {
+  feature: string;
+  enabledPercentage: number;
+  enabledTenants: string[];
+}
+
+export class CanaryManager {
+  private configs: CanaryConfig[] = [];
+
+  setConfig(config: CanaryConfig): void {
+    const index = this.configs.findIndex(c => c.feature === config.feature);
+    if (index >= 0) {
+      this.configs[index] = config;
+    } else {
+      this.configs.push(config);
+    }
+  }
+
+  isEnabled(feature: string, tenant: string): boolean {
+    const config = this.configs.find(c => c.feature === feature);
+    if (!config) return false;
+
+    // 明确启用的租户
+    if (config.enabledTenants.includes(tenant)) {
+      return true;
+    }
+
+    // 按百分比
+    const hash = this.hashTenant(tenant);
+    return hash < config.enabledPercentage;
+  }
+
+  private hashTenant(tenant: string): number {
+    let hash = 0;
+    for (let i = 0; i < tenant.length; i++) {
+      hash = ((hash << 5) - hash) + tenant.charCodeAt(i);
+      hash |= 0;
+    }
+    return Math.abs(hash) % 100;
+  }
+}
+
+export const canaryManager = new CanaryManager();
+
+// 使用示例
+// canaryManager.setConfig({
+//   feature: 'new-router',
+//   enabledPercentage: 20,  // 20% 的租户
+//   enabledTenants: ['test-tenant'],  // 测试租户始终启用
+// });
+```
+
+文件结构
+```
+packages/gateway/
+├── src/
+│   ├── core/
+│   │   ├── canary.ts             # 灰度控制
+│   │   ├── alerts.ts             # 告警规则
+│   │   └── ...
+│   └── ...
+
+docs/
+└── RUNBOOK.md                    # 故障排查手册
+```
+
+交付物
+	•	告警规则配置
+	•	灰度发布机制
+	•	RUNBOOK.md
+
+⸻
+
+Step 12：与评估观测打通（2-3 天）
+
+目标
+路由策略变更前后用回归集评测守门。
+
+需要做什么
+	•	路由策略版本化
+	•	变更前跑 eval
+	•	指标对比
+	•	集成到 CI
+
+原理讲解
+	•	为什么路由需要评测：
+		•	换了便宜模型，质量可能下降
+		•	不评测就不知道影响多大
+	•	守门流程：
+		1. 提交路由策略变更
+		2. 跑回归集
+		3. 对比 baseline
+		4. 通过才能上线
+
+需要补的知识点
+	•	与评估观测方向的协作
+
+关键代码示例
+```yaml
+# .github/workflows/router-eval.yml
+name: Router Eval
+
+on:
+  pull_request:
+    paths:
+      - 'packages/gateway/src/core/router.ts'
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+      - uses: actions/setup-node@v4
+
+      - run: pnpm install
+
+      - name: Run Eval with New Router
+        run: pnpm eval --router=new
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Compare with Baseline
+        run: pnpm eval:compare
+```
+
+文件结构
+```
+packages/gateway/
+├── src/
+│   ├── core/
+│   │   ├── router.ts
+│   │   └── ...
+│   └── ...
+
+.github/
+└── workflows/
+    └── router-eval.yml           # 路由评测 CI
+```
+
+交付物
+	•	路由策略评测集成
+	•	CI 守门
+
+⸻
+
+时间预估（从 0 到能拿得出手）
+
+| 阶段 | 时间 | 里程碑 |
+|------|------|--------|
+| Step 0-2 | 1 周 | 最小网关 + 日志 ✅ 可演示 |
+| Step 3-5 | 2 周 | 限流/队列/成本 ✅ 能上试点 |
+| Step 6-8 | 1-2 周 | 路由 + 管理界面 |
+| Step 9 | 1-2 周 | 本地推理（云 GPU）✅ 很强作品集 |
+| Step 10-12 | 1-2 周 | 缓存/告警/灰度 ✅ 生产级 |
+
+总计：6-10 周可以有一个完整的 LLM Gateway
+
+⸻
+
+学习注意事项
+	1.	先做"网关"再做"本地推理"：网关能力不依赖 GPU，最通用
+	2.	先把"取消/超时/限流"做出来：这是服务化的底线
+	3.	先学指标口径：TTFT、p95、队列长度、tokens/s
+	4.	不要过早优化：先正确、稳定、可观测
+	5.	本地推理用云 GPU：RunPod 入门最简单
+
+⸻
+
+实践注意事项（真实坑）
+	•	无界队列：流量一上来必雪崩（最常见）
+	•	只看吞吐不看 TTFT：用户体验会很差
+	•	缓存没把权限放进 key：直接数据泄露
+	•	路由没回归评测：便宜模型上了但质量崩
+	•	没有成本告警：预算被刷爆
+	•	云 GPU 忘记关：一直计费
+
+⸻
+
+三个方向的协作关系
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    agent-platform (共用项目)                  │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
+│  │   Agent 平台  │  │  评估观测    │  │  推理服务化   │       │
+│  │              │  │              │  │              │       │
+│  │  - Runtime   │  │  - Trace     │  │  - Gateway   │       │
+│  │  - Tools     │  │  - Eval      │  │  - Router    │       │
+│  │  - MCP       │  │  - Metrics   │  │  - Cost      │       │
+│  │  - 对话界面  │  │  - Dashboard │  │  - 管理界面  │       │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘       │
+│         │                 │                  │               │
+│         └────────────────┴──────────────────┘               │
+│                          │                                   │
+│                   packages/shared                            │
+│                   (类型、错误码、工具)                        │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+
+数据流：
+Agent → Gateway (模型调用) → Trace (记录) → Eval (质量守门)
+```
+
+⸻
+
+下一步
+
+1. 三个方向可以并行推进，建议先从 Agent 平台 Step 0-2 开始
+2. 推理服务化可以在 Agent 平台有基础后再做
+3. 评估观测贯穿始终，边做边集成

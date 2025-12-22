@@ -1,0 +1,1931 @@
+下面是一条针对 7 年前端经验工程师，从 0 开始落地 Agent 平台能力（规模化/复用/治理 + 前端体验）的完整路线图。
+
+技术栈：TypeScript/Node.js + React
+目标场景：知识库 Agent（RAG Agent）—— 最常见的 LLM 应用场景
+核心原则：可控、可治理、可复用、可审计、可回滚 + 极致前端体验
+
+我拆成 14 个步骤，每一步都有：目标 / 要做什么 / 原理讲解 / 需要补的知识点 / 文件结构 / 交付物。
+
+⸻
+
+Step 0：定义平台边界与成功标准（1 天）
+
+目标
+写清楚：平台要服务谁、解决什么痛点、先支持哪些工具/工作流，避免一上来做"大而全"。
+
+需要做什么
+	•	定义 v0.1 范围（只做 1 个核心场景）：
+		•	知识库 Agent：用户提问 → 检索文档 → 生成带引用的回答
+	•	定义平台"不可妥协原则"：
+	•	默认只读、写操作必须人工确认
+	•	工具调用必须 schema 校验
+	•	必须有审计日志与 request_id
+		•	前端必须支持流式渲染
+
+原理讲解
+	•	为什么要先定义边界：避免过度工程化，聚焦核心价值
+	•	知识库 Agent 的典型架构：Query → Embedding → 向量检索 → Rerank → LLM 生成
+
+需要补的知识点
+	•	平台化思维：稳定接口、可配置、向后兼容
+	•	最小权限原则
+	•	RAG 基本流程
+
+文件结构
+```
+agent-platform/
+├── docs/
+│   └── PLATFORM_SPEC.md          # 平台规范文档
+├── packages/
+│   ├── runtime/                   # Agent 运行时（后端）
+│   ├── tools/                     # 工具集合
+│   ├── ui/                        # React 组件库
+│   └── shared/                    # 共享类型定义
+├── apps/
+│   ├── server/                    # API 服务
+│   └── web/                       # 前端应用
+├── package.json                   # monorepo 配置
+└── turbo.json                     # Turborepo 配置（可选）
+```
+
+交付物
+	•	PLATFORM_SPEC.md（范围、术语、版本、风险分级）
+	•	项目脚手架初始化
+
+⸻
+
+Step 1：跑通最小 Agent（API 调用 + 简单对话）（2-3 天）
+
+目标
+先有个能跑的 Agent，后续所有抽象才有对象。
+
+需要做什么
+	•	接入 OpenAI/Claude API（选一个即可）
+	•	实现最简单的对话接口：用户输入 → LLM 回复
+	•	支持流式输出（SSE）
+
+原理讲解
+	•	LLM API 的基本结构：messages 数组、system/user/assistant 角色
+	•	流式 vs 非流式：
+		•	非流式：等全部生成完才返回，延迟高
+		•	流式：边生成边返回，TTFT（Time To First Token）更好
+	•	SSE（Server-Sent Events）：
+		•	HTTP 长连接，服务器单向推送
+		•	相比 WebSocket 更轻量，适合 LLM 场景
+
+需要补的知识点
+	•	OpenAI API 格式（messages、stream、tools）
+	•	SSE 协议与 Node.js 实现
+	•	环境变量管理（API Key 安全）
+
+关键代码示例
+```typescript
+// packages/runtime/src/llm/openai.ts
+import OpenAI from 'openai';
+
+export async function* streamChat(
+  messages: OpenAI.Chat.ChatCompletionMessageParam[]
+): AsyncGenerator<string> {
+  const openai = new OpenAI();
+
+  const stream = await openai.chat.completions.create({
+    model: 'gpt-4o-mini',
+    messages,
+    stream: true,
+  });
+
+  for await (const chunk of stream) {
+    const content = chunk.choices[0]?.delta?.content;
+    if (content) {
+      yield content;
+    }
+  }
+}
+```
+
+```typescript
+// apps/server/src/routes/chat.ts
+import { Hono } from 'hono';
+import { streamSSE } from 'hono/streaming';
+import { streamChat } from '@agent-platform/runtime';
+
+const app = new Hono();
+
+app.post('/api/chat', async (c) => {
+  const { messages } = await c.req.json();
+
+  return streamSSE(c, async (stream) => {
+    for await (const chunk of streamChat(messages)) {
+      await stream.writeSSE({ data: chunk });
+    }
+  });
+});
+```
+
+文件结构
+```
+packages/runtime/
+├── src/
+│   ├── llm/
+│   │   ├── openai.ts             # OpenAI 封装
+│   │   ├── types.ts              # 类型定义
+│   │   └── index.ts
+│   └── index.ts
+apps/server/
+├── src/
+│   ├── routes/
+│   │   └── chat.ts               # 聊天接口
+│   ├── index.ts                  # 入口
+│   └── env.ts                    # 环境变量
+```
+
+交付物
+	•	POST /api/chat 接口，支持流式返回
+	•	curl 或 Postman 测试通过
+
+⸻
+
+Step 2：前端对话界面（流式渲染）（3-5 天）
+
+目标
+尽早看到效果！实现一个支持流式渲染的对话界面。
+
+需要做什么
+	•	消息列表展示（user / assistant 区分）
+	•	流式接收 SSE 并实时渲染
+	•	Markdown 实时解析（代码高亮、表格、列表）
+	•	消息状态展示：streaming / done / error
+	•	中断生成按钮
+
+原理讲解
+	•	流式 Markdown 解析的挑战：
+		•	不完整的代码块：```typescript 还没闭合
+		•	不完整的链接：[text](url 还没写完
+		•	解决方案：使用增量解析器或容错解析
+	•	React 中处理流式数据：
+		•	不要每个 chunk 都 setState（性能差）
+		•	使用 ref 累积，定时刷新（如 requestAnimationFrame）
+		•	或使用 useSyncExternalStore
+	•	AbortController：用于中断请求
+
+需要补的知识点
+	•	EventSource API / fetch + ReadableStream
+	•	react-markdown + remark-gfm
+	•	AbortController 中断请求
+
+关键代码示例
+```typescript
+// apps/web/src/hooks/useChat.ts
+import { useState, useCallback, useRef } from 'react';
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  status: 'pending' | 'streaming' | 'done' | 'error';
+}
+
+export function useChat() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const sendMessage = useCallback(async (content: string) => {
+    // 添加用户消息
+    const userMessage: Message = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content,
+      status: 'done',
+    };
+
+    // 添加 assistant 占位
+    const assistantMessage: Message = {
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      content: '',
+      status: 'streaming',
+    };
+
+    setMessages(prev => [...prev, userMessage, assistantMessage]);
+
+    // 创建 AbortController
+    abortRef.current = new AbortController();
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [...messages, userMessage].map(m => ({
+            role: m.role,
+            content: m.content,
+          }))
+        }),
+        signal: abortRef.current.signal,
+      });
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = '';
+
+      while (reader) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value);
+        // 解析 SSE 格式
+        const lines = text.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            accumulated += line.slice(6);
+            setMessages(prev =>
+              prev.map(m =>
+                m.id === assistantMessage.id
+                  ? { ...m, content: accumulated }
+                  : m
+              )
+            );
+          }
+        }
+      }
+
+      // 完成
+      setMessages(prev =>
+        prev.map(m =>
+          m.id === assistantMessage.id
+            ? { ...m, status: 'done' }
+            : m
+        )
+      );
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        // 用户中断
+        setMessages(prev =>
+          prev.map(m =>
+            m.id === assistantMessage.id
+              ? { ...m, status: 'done' }
+              : m
+          )
+        );
+      } else {
+        // 其他错误
+        setMessages(prev =>
+          prev.map(m =>
+            m.id === assistantMessage.id
+              ? { ...m, status: 'error' }
+              : m
+          )
+        );
+      }
+    }
+  }, [messages]);
+
+  const stopGeneration = useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
+
+  return { messages, sendMessage, stopGeneration };
+}
+```
+
+```tsx
+// apps/web/src/components/ChatMessage.tsx
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+
+interface ChatMessageProps {
+  message: Message;
+}
+
+export function ChatMessage({ message }: ChatMessageProps) {
+  return (
+    <div className={`message ${message.role}`}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          code({ node, inline, className, children, ...props }) {
+            const match = /language-(\w+)/.exec(className || '');
+            return !inline && match ? (
+              <SyntaxHighlighter language={match[1]} {...props}>
+                {String(children).replace(/\n$/, '')}
+              </SyntaxHighlighter>
+            ) : (
+              <code className={className} {...props}>
+                {children}
+              </code>
+            );
+          },
+        }}
+      >
+        {message.content}
+      </ReactMarkdown>
+
+      {message.status === 'streaming' && (
+        <span className="cursor-blink">▊</span>
+      )}
+    </div>
+  );
+}
+```
+
+文件结构
+```
+apps/web/
+├── src/
+│   ├── components/
+│   │   ├── ChatMessage.tsx       # 单条消息
+│   │   ├── ChatInput.tsx         # 输入框
+│   │   ├── ChatList.tsx          # 消息列表
+│   │   └── StopButton.tsx        # 中断按钮
+│   ├── hooks/
+│   │   └── useChat.ts            # 聊天状态管理
+│   ├── pages/
+│   │   └── Chat.tsx              # 聊天页面
+│   └── App.tsx
+```
+
+交付物
+	•	可用的对话界面，支持流式渲染
+	•	Markdown 正确解析，代码高亮
+	•	可中断生成
+
+⸻
+
+Step 3：定义工具协议（Tool Contract）与注册中心（3-5 天）
+
+目标
+让工具接入变成"填配置/写适配器"，而不是改 Agent 核心代码。
+
+需要做什么
+	•	定义工具的标准结构（Zod Schema）：
+	•	name、description、risk_level、owner
+		•	inputSchema（参数校验）
+		•	outputSchema（输出校验）
+	•	实现 Tool Registry：
+	•	registerTool(toolDef)
+	•	getTool(name)
+		•	listTools()
+
+原理讲解
+	•	为什么需要 Schema：
+		•	LLM 输出不可靠，必须校验
+		•	Schema 可以自动生成给 LLM 的工具描述
+		•	统一错误处理：校验失败 → 告诉 LLM 哪里错了 → 让它重试
+	•	Zod vs JSON Schema：
+		•	Zod：TypeScript 友好，运行时校验，可以 .describe() 加描述
+		•	JSON Schema：LLM 原生理解，OpenAI tools 参数直接用
+		•	推荐：用 Zod 定义，用 zod-to-json-schema 转换
+
+需要补的知识点
+	•	Zod 校验库
+	•	zod-to-json-schema 转换
+	•	TypeScript 泛型（类型安全的工具定义）
+
+关键代码示例
+```typescript
+// packages/shared/src/tool-types.ts
+import { z } from 'zod';
+
+// 风险等级
+export const RiskLevel = z.enum(['read', 'write', 'dangerous']);
+export type RiskLevel = z.infer<typeof RiskLevel>;
+
+// 工具定义
+export interface ToolDefinition<
+  TInput extends z.ZodType = z.ZodType,
+  TOutput extends z.ZodType = z.ZodType
+> {
+  name: string;
+  description: string;
+  riskLevel: RiskLevel;
+  owner: string;
+  inputSchema: TInput;
+  outputSchema: TOutput;
+  execute: (input: z.infer<TInput>, context: ToolContext) => Promise<z.infer<TOutput>>;
+}
+
+export interface ToolContext {
+  requestId: string;
+  userId: string;
+  traceId: string;
+}
+```
+
+```typescript
+// packages/runtime/src/tools/registry.ts
+import { z } from 'zod';
+import { zodToJsonSchema } from 'zod-to-json-schema';
+import type { ToolDefinition, ToolContext } from '@agent-platform/shared';
+
+export class ToolRegistry {
+  private tools = new Map<string, ToolDefinition>();
+
+  register<TInput extends z.ZodType, TOutput extends z.ZodType>(
+    tool: ToolDefinition<TInput, TOutput>
+  ): void {
+    if (this.tools.has(tool.name)) {
+      throw new Error(`Tool "${tool.name}" already registered`);
+    }
+    this.tools.set(tool.name, tool);
+  }
+
+  get(name: string): ToolDefinition | undefined {
+    return this.tools.get(name);
+  }
+
+  list(): ToolDefinition[] {
+    return Array.from(this.tools.values());
+  }
+
+  // 生成 OpenAI tools 格式
+  toOpenAITools(): OpenAI.Chat.ChatCompletionTool[] {
+    return this.list().map(tool => ({
+      type: 'function',
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: zodToJsonSchema(tool.inputSchema),
+      },
+    }));
+  }
+}
+
+// 全局单例
+export const toolRegistry = new ToolRegistry();
+```
+
+```typescript
+// packages/tools/src/example-tool.ts
+import { z } from 'zod';
+import { toolRegistry } from '@agent-platform/runtime';
+
+// 示例：天气查询工具
+const weatherTool = {
+  name: 'get_weather',
+  description: '查询指定城市的天气',
+  riskLevel: 'read' as const,
+  owner: 'platform',
+  inputSchema: z.object({
+    city: z.string().describe('城市名称，如 "北京"'),
+    unit: z.enum(['celsius', 'fahrenheit']).default('celsius'),
+  }),
+  outputSchema: z.object({
+    temperature: z.number(),
+    condition: z.string(),
+    humidity: z.number(),
+  }),
+  execute: async (input) => {
+    // 模拟查询
+    return {
+      temperature: 25,
+      condition: '晴',
+      humidity: 60,
+    };
+  },
+};
+
+toolRegistry.register(weatherTool);
+```
+
+文件结构
+```
+packages/shared/
+├── src/
+│   ├── tool-types.ts             # 工具类型定义
+│   ├── error-codes.ts            # 错误码定义
+│   └── index.ts
+
+packages/runtime/
+├── src/
+│   ├── tools/
+│   │   ├── registry.ts           # 工具注册中心
+│   │   ├── executor.ts           # （下一步）
+│   │   └── index.ts
+│   └── index.ts
+
+packages/tools/
+├── src/
+│   ├── weather.ts                # 示例工具
+│   └── index.ts
+```
+
+交付物
+	•	ToolDefinition 类型定义
+	•	ToolRegistry 实现
+	•	1-2 个示例工具
+
+⸻
+
+Step 4：实现 RAG 工具（知识库检索）（5-7 天）
+
+目标
+实现核心业务场景：用户提问 → 检索相关文档 → 返回相关片段。
+
+需要做什么
+	•	文档切分（Chunking）：
+		•	按段落 / 按 token 数切分
+		•	保留 overlap（上下文连续性）
+	•	向量化（Embedding）：
+		•	使用 OpenAI text-embedding-3-small 或其他
+	•	向量存储与检索：
+		•	开发环境：Chroma（本地）或内存存储
+		•	检索 Top-K 相关片段
+	•	封装为标准工具：
+		•	遵循 Step 3 定义的 ToolDefinition
+
+原理讲解
+	•	RAG 的核心思想：
+		•	LLM 知识有截止日期，且不了解你的私有数据
+		•	RAG = 检索增强生成，把相关文档"塞进"上下文
+	•	Embedding 原理：
+		•	把文本映射到高维向量空间
+		•	语义相似的文本，向量距离近（余弦相似度高）
+	•	Chunking 策略：
+		•	太大：检索不精准，塞不进上下文
+		•	太小：丢失上下文，无法理解
+		•	经验值：200-500 tokens，overlap 50-100
+	•	向量检索：
+		•	暴力搜索：O(n)，数据量小可以
+		•	ANN（近似最近邻）：HNSW、IVF，数据量大必须
+	•	Rerank（可选）：
+		•	向量检索是粗筛，Rerank 是精排
+		•	用交叉编码器对 query-doc 对打分
+
+需要补的知识点
+	•	Embedding API 调用
+	•	向量相似度计算（余弦相似度）
+	•	Chroma / 其他向量数据库基本使用
+
+关键代码示例
+```typescript
+// packages/tools/src/rag/chunker.ts
+interface Chunk {
+  id: string;
+  content: string;
+  metadata: {
+    sourceId: string;
+    startIndex: number;
+    endIndex: number;
+  };
+}
+
+export function chunkText(
+  text: string,
+  sourceId: string,
+  options: { chunkSize?: number; overlap?: number } = {}
+): Chunk[] {
+  const { chunkSize = 500, overlap = 100 } = options;
+  const chunks: Chunk[] = [];
+
+  let start = 0;
+  while (start < text.length) {
+    const end = Math.min(start + chunkSize, text.length);
+    chunks.push({
+      id: `${sourceId}-${chunks.length}`,
+      content: text.slice(start, end),
+      metadata: {
+        sourceId,
+        startIndex: start,
+        endIndex: end,
+      },
+    });
+    start += chunkSize - overlap;
+  }
+
+  return chunks;
+}
+```
+
+```typescript
+// packages/tools/src/rag/embedder.ts
+import OpenAI from 'openai';
+
+const openai = new OpenAI();
+
+export async function embed(texts: string[]): Promise<number[][]> {
+  const response = await openai.embeddings.create({
+    model: 'text-embedding-3-small',
+    input: texts,
+  });
+
+  return response.data.map(d => d.embedding);
+}
+
+export function cosineSimilarity(a: number[], b: number[]): number {
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+
+  for (let i = 0; i < a.length; i++) {
+    dotProduct += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+```
+
+```typescript
+// packages/tools/src/rag/vector-store.ts
+import { embed, cosineSimilarity } from './embedder';
+import type { Chunk } from './chunker';
+
+interface StoredChunk extends Chunk {
+  embedding: number[];
+}
+
+// 简单内存向量存储（开发用）
+export class InMemoryVectorStore {
+  private chunks: StoredChunk[] = [];
+
+  async add(chunks: Chunk[]): Promise<void> {
+    const embeddings = await embed(chunks.map(c => c.content));
+
+    for (let i = 0; i < chunks.length; i++) {
+      this.chunks.push({
+        ...chunks[i],
+        embedding: embeddings[i],
+      });
+    }
+  }
+
+  async search(query: string, topK: number = 5): Promise<Chunk[]> {
+    const [queryEmbedding] = await embed([query]);
+
+    const scored = this.chunks.map(chunk => ({
+      chunk,
+      score: cosineSimilarity(queryEmbedding, chunk.embedding),
+    }));
+
+    scored.sort((a, b) => b.score - a.score);
+
+    return scored.slice(0, topK).map(s => s.chunk);
+  }
+}
+```
+
+```typescript
+// packages/tools/src/rag/tool.ts
+import { z } from 'zod';
+import { toolRegistry } from '@agent-platform/runtime';
+import { vectorStore } from './vector-store';
+
+export const ragSearchTool = {
+  name: 'search_knowledge_base',
+  description: '在知识库中搜索与问题相关的文档片段',
+  riskLevel: 'read' as const,
+  owner: 'platform',
+  inputSchema: z.object({
+    query: z.string().describe('搜索查询，用自然语言描述你要找的内容'),
+    topK: z.number().min(1).max(10).default(5).describe('返回的结果数量'),
+  }),
+  outputSchema: z.object({
+    results: z.array(z.object({
+      content: z.string(),
+      sourceId: z.string(),
+      score: z.number(),
+    })),
+  }),
+  execute: async (input) => {
+    const results = await vectorStore.search(input.query, input.topK);
+    return {
+      results: results.map(r => ({
+        content: r.content,
+        sourceId: r.metadata.sourceId,
+        score: 0, // 简化，实际应返回相似度分数
+      })),
+    };
+  },
+};
+
+toolRegistry.register(ragSearchTool);
+```
+
+文件结构
+```
+packages/tools/
+├── src/
+│   ├── rag/
+│   │   ├── chunker.ts            # 文档切分
+│   │   ├── embedder.ts           # 向量化
+│   │   ├── vector-store.ts       # 向量存储
+│   │   ├── tool.ts               # RAG 工具定义
+│   │   └── index.ts
+│   └── index.ts
+```
+
+交付物
+	•	文档切分 + 向量化 + 检索完整链路
+	•	search_knowledge_base 工具可用
+	•	能对一批文档进行问答
+
+⸻
+
+Step 5：工具执行器（Tool Executor）与可靠性（3-5 天）
+
+目标
+所有工具调用都经过同一套"超时、重试、错误码、日志、幂等"机制。
+
+需要做什么
+	•	统一执行入口：executeTool(toolName, args, context)
+	•	强制校验：
+		•	入参 schema 校验（失败返回可解释错误）
+	•	输出 schema 校验（保证下游能消费）
+	•	标准化错误码：
+		•	TOOL_NOT_FOUND / TOOL_SCHEMA_INVALID / TOOL_TIMEOUT / TOOL_RUNTIME_ERROR
+	•	超时控制
+	•	执行日志记录
+
+原理讲解
+	•	为什么需要统一执行器：
+		•	单点控制：所有工具调用都经过一个入口，方便加日志、限流、权限
+		•	错误统一：业务代码不用处理各种异常格式
+		•	可观测：自动记录执行耗时、成功率
+	•	校验失败怎么处理：
+		•	不是直接失败，而是把错误信息返回给 LLM
+		•	让 LLM 修正参数后重试
+		•	这是 Agent 可靠性的关键
+	•	幂等的重要性：
+		•	网络抖动导致重试很常见
+		•	没有幂等 = 重复扣费、重复创建
+
+需要补的知识点
+	•	Zod 校验的 safeParse
+	•	Promise.race 实现超时
+	•	错误码设计模式
+
+关键代码示例
+```typescript
+// packages/shared/src/error-codes.ts
+export enum ToolErrorCode {
+  NOT_FOUND = 'TOOL_NOT_FOUND',
+  SCHEMA_INVALID = 'TOOL_SCHEMA_INVALID',
+  TIMEOUT = 'TOOL_TIMEOUT',
+  PERMISSION_DENIED = 'TOOL_PERMISSION_DENIED',
+  RUNTIME_ERROR = 'TOOL_RUNTIME_ERROR',
+}
+
+export class ToolError extends Error {
+  constructor(
+    public code: ToolErrorCode,
+    message: string,
+    public details?: unknown
+  ) {
+    super(message);
+    this.name = 'ToolError';
+  }
+}
+```
+
+```typescript
+// packages/runtime/src/tools/executor.ts
+import { toolRegistry } from './registry';
+import { ToolError, ToolErrorCode } from '@agent-platform/shared';
+import type { ToolContext } from '@agent-platform/shared';
+
+interface ExecuteResult<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: {
+    code: ToolErrorCode;
+    message: string;
+    details?: unknown;
+  };
+  meta: {
+    toolName: string;
+    durationMs: number;
+    requestId: string;
+  };
+}
+
+export async function executeTool(
+  toolName: string,
+  args: unknown,
+  context: ToolContext,
+  options: { timeoutMs?: number } = {}
+): Promise<ExecuteResult> {
+  const { timeoutMs = 30000 } = options;
+  const startTime = Date.now();
+
+  // 1. 查找工具
+  const tool = toolRegistry.get(toolName);
+  if (!tool) {
+    return {
+      success: false,
+      error: {
+        code: ToolErrorCode.NOT_FOUND,
+        message: `Tool "${toolName}" not found`,
+      },
+      meta: {
+        toolName,
+        durationMs: Date.now() - startTime,
+        requestId: context.requestId,
+      },
+    };
+  }
+
+  // 2. 入参校验
+  const inputResult = tool.inputSchema.safeParse(args);
+  if (!inputResult.success) {
+    return {
+      success: false,
+      error: {
+        code: ToolErrorCode.SCHEMA_INVALID,
+        message: 'Invalid input parameters',
+        details: inputResult.error.format(), // 结构化错误信息
+      },
+      meta: {
+        toolName,
+        durationMs: Date.now() - startTime,
+        requestId: context.requestId,
+      },
+    };
+  }
+
+  // 3. 执行（带超时）
+  try {
+    const executePromise = tool.execute(inputResult.data, context);
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Timeout')), timeoutMs);
+    });
+
+    const result = await Promise.race([executePromise, timeoutPromise]);
+
+    // 4. 输出校验
+    const outputResult = tool.outputSchema.safeParse(result);
+    if (!outputResult.success) {
+      return {
+        success: false,
+        error: {
+          code: ToolErrorCode.RUNTIME_ERROR,
+          message: 'Tool output validation failed',
+          details: outputResult.error.format(),
+        },
+        meta: {
+          toolName,
+          durationMs: Date.now() - startTime,
+          requestId: context.requestId,
+        },
+      };
+    }
+
+    return {
+      success: true,
+      data: outputResult.data,
+      meta: {
+        toolName,
+        durationMs: Date.now() - startTime,
+        requestId: context.requestId,
+      },
+    };
+  } catch (error) {
+    const isTimeout = error instanceof Error && error.message === 'Timeout';
+    return {
+      success: false,
+      error: {
+        code: isTimeout ? ToolErrorCode.TIMEOUT : ToolErrorCode.RUNTIME_ERROR,
+        message: isTimeout ? 'Tool execution timeout' : String(error),
+      },
+      meta: {
+        toolName,
+        durationMs: Date.now() - startTime,
+        requestId: context.requestId,
+      },
+    };
+  }
+}
+```
+
+文件结构
+```
+packages/runtime/
+├── src/
+│   ├── tools/
+│   │   ├── registry.ts
+│   │   ├── executor.ts           # 统一执行器
+│   │   └── index.ts
+│   └── index.ts
+
+packages/shared/
+├── src/
+│   ├── tool-types.ts
+│   ├── error-codes.ts            # 错误码定义
+│   └── index.ts
+```
+
+交付物
+	•	executeTool 函数
+	•	标准错误码
+	•	单测覆盖：正常执行、校验失败、超时
+
+⸻
+
+Step 6：前端工具调用可视化（3-5 天）
+
+目标
+在对话界面中实时展示 Agent 正在调用哪个工具、参数是什么、状态如何。
+
+需要做什么
+	•	消息类型扩展：支持 tool_call 类型
+	•	工具调用卡片：
+		•	工具名称 + 图标
+		•	参数展示（JSON 格式化）
+		•	状态：pending → running → success/failed
+		•	执行耗时
+		•	结果预览（可折叠）
+	•	后端 SSE 事件扩展：
+		•	type: 'text' | 'tool_call_start' | 'tool_call_end' | 'error'
+
+原理讲解
+	•	Agent 调用工具的流程（OpenAI Function Calling）：
+		1. LLM 返回 tool_calls（工具名 + 参数）
+		2. 系统执行工具，获取结果
+		3. 把结果作为 tool 消息发回 LLM
+		4. LLM 根据结果生成最终回答
+	•	前端展示策略：
+		•	收到 tool_call_start → 显示卡片（pending 状态）
+		•	收到 tool_call_end → 更新卡片（success/failed + 结果）
+	•	折叠展示：
+		•	默认只显示工具名 + 状态
+		•	用户点击可展开查看参数和结果
+		•	避免占用太多屏幕空间
+
+需要补的知识点
+	•	OpenAI Function Calling 的响应格式
+	•	SSE 事件类型设计
+	•	React 动画（状态变化过渡）
+
+关键代码示例
+```typescript
+// packages/shared/src/stream-events.ts
+export type StreamEvent =
+  | { type: 'text'; content: string }
+  | { type: 'tool_call_start'; toolName: string; args: unknown; callId: string }
+  | { type: 'tool_call_end'; callId: string; success: boolean; result?: unknown; error?: string; durationMs: number }
+  | { type: 'done' }
+  | { type: 'error'; message: string };
+```
+
+```tsx
+// apps/web/src/components/ToolCallCard.tsx
+import { useState } from 'react';
+import { ChevronDown, ChevronRight, CheckCircle, XCircle, Loader } from 'lucide-react';
+
+interface ToolCallCardProps {
+  toolName: string;
+  args: unknown;
+  status: 'pending' | 'running' | 'success' | 'failed';
+  result?: unknown;
+  error?: string;
+  durationMs?: number;
+}
+
+export function ToolCallCard({
+  toolName,
+  args,
+  status,
+  result,
+  error,
+  durationMs,
+}: ToolCallCardProps) {
+  const [expanded, setExpanded] = useState(false);
+
+  const statusIcon = {
+    pending: <Loader className="animate-spin" size={16} />,
+    running: <Loader className="animate-spin" size={16} />,
+    success: <CheckCircle className="text-green-500" size={16} />,
+    failed: <XCircle className="text-red-500" size={16} />,
+  }[status];
+
+  return (
+    <div className="tool-call-card border rounded-lg p-3 my-2 bg-slate-50">
+      <div
+        className="flex items-center gap-2 cursor-pointer"
+        onClick={() => setExpanded(!expanded)}
+      >
+        {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        <span className="font-mono text-sm font-medium">{toolName}</span>
+        {statusIcon}
+        {durationMs !== undefined && (
+          <span className="text-xs text-slate-500 ml-auto">{durationMs}ms</span>
+        )}
+      </div>
+
+      {expanded && (
+        <div className="mt-3 space-y-2">
+          <div>
+            <div className="text-xs text-slate-500 mb-1">参数</div>
+            <pre className="text-xs bg-slate-100 p-2 rounded overflow-auto">
+              {JSON.stringify(args, null, 2)}
+            </pre>
+          </div>
+
+          {status === 'success' && result && (
+            <div>
+              <div className="text-xs text-slate-500 mb-1">结果</div>
+              <pre className="text-xs bg-green-50 p-2 rounded overflow-auto max-h-40">
+                {JSON.stringify(result, null, 2)}
+              </pre>
+            </div>
+          )}
+
+          {status === 'failed' && error && (
+            <div>
+              <div className="text-xs text-slate-500 mb-1">错误</div>
+              <pre className="text-xs bg-red-50 p-2 rounded text-red-600">
+                {error}
+              </pre>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+```typescript
+// apps/web/src/hooks/useChat.ts（扩展版）
+interface ToolCall {
+  id: string;
+  toolName: string;
+  args: unknown;
+  status: 'pending' | 'running' | 'success' | 'failed';
+  result?: unknown;
+  error?: string;
+  durationMs?: number;
+}
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  status: 'pending' | 'streaming' | 'done' | 'error';
+  toolCalls?: ToolCall[]; // 新增
+}
+
+// 解析 SSE 事件时处理 tool_call_start / tool_call_end
+```
+
+文件结构
+```
+apps/web/
+├── src/
+│   ├── components/
+│   │   ├── ChatMessage.tsx
+│   │   ├── ToolCallCard.tsx      # 工具调用卡片
+│   │   └── ...
+│   └── ...
+```
+
+交付物
+	•	ToolCallCard 组件
+	•	工具调用实时展示
+	•	展开/折叠参数和结果
+
+⸻
+
+Step 7：MCP 协议学习与实现（5-7 天）
+
+目标
+理解并实现 MCP（Model Context Protocol），让你的工具能被任何 MCP Client 调用。
+
+需要做什么
+	•	学习 MCP 核心概念
+	•	实现一个 MCP Server：
+		•	暴露 search_knowledge_base 工具
+		•	可被 Claude Desktop / Cursor 调用
+	•	在 Agent Runtime 中实现 MCP Client：
+		•	发现外部 MCP Server
+		•	调用外部工具
+
+原理讲解
+	•	MCP 是什么：
+		•	Anthropic 推出的开放协议
+		•	定义了 LLM 应用与外部能力的通信标准
+		•	类似于"AI 时代的 USB"——标准化接口
+	•	MCP 四大能力：
+		•	Resources：可读取的数据（文件、数据库记录）
+		•	Tools：可执行的操作（函数调用）
+		•	Prompts：可复用的提示词模板
+		•	Sampling：Server 请求 LLM 生成（高级）
+	•	通信方式：
+		•	stdio：通过标准输入输出通信（本地进程）
+		•	HTTP + SSE：网络通信（远程）
+	•	为什么重要：
+		•	Cursor、Claude Desktop 等主流工具都支持
+		•	写一次 MCP Server，到处可用
+		•	生态正在快速发展
+
+需要补的知识点
+	•	MCP 官方文档（modelcontextprotocol.io）
+	•	@modelcontextprotocol/sdk 使用
+	•	stdio 进程通信
+
+关键代码示例
+```typescript
+// packages/mcp-server/src/index.ts
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
+import { vectorStore } from '@agent-platform/tools';
+
+const server = new Server(
+  {
+    name: 'knowledge-base-server',
+    version: '1.0.0',
+  },
+  {
+    capabilities: {
+      tools: {},
+    },
+  }
+);
+
+// 列出工具
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  return {
+    tools: [
+      {
+        name: 'search_knowledge_base',
+        description: '在知识库中搜索与问题相关的文档片段',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: '搜索查询',
+            },
+            topK: {
+              type: 'number',
+              description: '返回结果数量',
+              default: 5,
+            },
+          },
+          required: ['query'],
+        },
+      },
+    ],
+  };
+});
+
+// 执行工具
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  if (request.params.name === 'search_knowledge_base') {
+    const { query, topK = 5 } = request.params.arguments as {
+      query: string;
+      topK?: number;
+    };
+
+    const results = await vectorStore.search(query, topK);
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(results, null, 2),
+        },
+      ],
+    };
+  }
+
+  throw new Error(`Unknown tool: ${request.params.name}`);
+});
+
+// 启动
+async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.error('Knowledge Base MCP Server running');
+}
+
+main();
+```
+
+```json
+// Claude Desktop 配置示例（~/Library/Application Support/Claude/claude_desktop_config.json）
+{
+  "mcpServers": {
+    "knowledge-base": {
+      "command": "node",
+      "args": ["/path/to/packages/mcp-server/dist/index.js"]
+    }
+  }
+}
+```
+
+```typescript
+// packages/runtime/src/mcp/client.ts
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+
+export class MCPClient {
+  private client: Client;
+  private connected = false;
+
+  async connect(command: string, args: string[]): Promise<void> {
+    const transport = new StdioClientTransport({ command, args });
+    this.client = new Client(
+      { name: 'agent-platform', version: '1.0.0' },
+      { capabilities: {} }
+    );
+    await this.client.connect(transport);
+    this.connected = true;
+  }
+
+  async listTools() {
+    if (!this.connected) throw new Error('Not connected');
+    return this.client.listTools();
+  }
+
+  async callTool(name: string, args: unknown) {
+    if (!this.connected) throw new Error('Not connected');
+    return this.client.callTool({ name, arguments: args });
+  }
+
+  async disconnect() {
+    if (this.connected) {
+      await this.client.close();
+      this.connected = false;
+    }
+  }
+}
+```
+
+文件结构
+```
+packages/mcp-server/
+├── src/
+│   └── index.ts                  # MCP Server 入口
+├── package.json
+└── tsconfig.json
+
+packages/runtime/
+├── src/
+│   ├── mcp/
+│   │   ├── client.ts             # MCP Client
+│   │   └── index.ts
+│   └── ...
+```
+
+交付物
+	•	可运行的 MCP Server
+	•	能在 Claude Desktop 中调用
+	•	Agent Runtime 支持 MCP 工具发现
+
+⸻
+
+Step 8：权限与审计（RBAC）+ 审计日志（5-7 天）
+
+目标
+做到"不同用户能用不同工具、访问不同数据"，并且可追踪。
+
+需要做什么
+	•	权限模型（RBAC）：
+	•	role：viewer / analyst / admin
+	•	工具权限：某 role 可用哪些工具
+		•	数据权限：知识库工具允许访问哪些知识库（白名单）
+	•	审计日志：
+		•	每次工具调用记录：who/when/what tool/args hash/result summary/request_id
+	•	敏感信息规则：
+		•	输入/输出脱敏（不把原始内容写进日志）
+		•	只记录元信息
+
+原理讲解
+	•	RBAC vs ABAC：
+		•	RBAC（基于角色）：用户 → 角色 → 权限，简单直观
+		•	ABAC（基于属性）：根据用户/资源/环境属性动态判断，更灵活
+		•	推荐：先 RBAC，够用再说
+	•	审计 vs 日志：
+		•	日志：给开发者看，用于调试
+		•	审计：给合规看，用于追责，必须不可篡改
+	•	脱敏策略：
+		•	参数哈希：只记录 hash(args)，原始参数不落盘
+		•	结果摘要：只记录 row_count、字段名，不记录内容
+
+需要补的知识点
+	•	RBAC 基本概念
+	•	审计日志格式设计
+	•	数据脱敏方法
+
+关键代码示例
+```typescript
+// packages/runtime/src/auth/types.ts
+export type Role = 'viewer' | 'analyst' | 'admin';
+
+export interface User {
+  id: string;
+  roles: Role[];
+}
+
+export interface ToolPermission {
+  toolName: string;
+  allowedRoles: Role[];
+  requireConfirmation?: boolean; // 是否需要人工确认
+}
+```
+
+```typescript
+// packages/runtime/src/auth/authorizer.ts
+import type { User, Role, ToolPermission } from './types';
+
+const toolPermissions: ToolPermission[] = [
+  { toolName: 'search_knowledge_base', allowedRoles: ['viewer', 'analyst', 'admin'] },
+  { toolName: 'execute_sql', allowedRoles: ['analyst', 'admin'], requireConfirmation: true },
+  { toolName: 'delete_document', allowedRoles: ['admin'], requireConfirmation: true },
+];
+
+export function canUseTool(user: User, toolName: string): {
+  allowed: boolean;
+  requireConfirmation: boolean;
+  reason?: string;
+} {
+  const permission = toolPermissions.find(p => p.toolName === toolName);
+
+  if (!permission) {
+    return { allowed: false, requireConfirmation: false, reason: 'Tool not configured' };
+  }
+
+  const hasRole = user.roles.some(role => permission.allowedRoles.includes(role));
+
+  if (!hasRole) {
+    return {
+      allowed: false,
+      requireConfirmation: false,
+      reason: `Requires one of roles: ${permission.allowedRoles.join(', ')}`
+    };
+  }
+
+  return {
+    allowed: true,
+    requireConfirmation: permission.requireConfirmation ?? false
+  };
+}
+```
+
+```typescript
+// packages/runtime/src/audit/logger.ts
+import crypto from 'crypto';
+
+interface AuditEntry {
+  timestamp: string;
+  requestId: string;
+  userId: string;
+  action: string;
+  toolName: string;
+  argsHash: string;           // 参数哈希，不存原始参数
+  resultSummary: string;      // 结果摘要
+  success: boolean;
+  durationMs: number;
+  ipAddress?: string;
+}
+
+class AuditLogger {
+  private entries: AuditEntry[] = []; // 实际应写入持久化存储
+
+  log(entry: Omit<AuditEntry, 'timestamp' | 'argsHash'> & { args: unknown }): void {
+    const auditEntry: AuditEntry = {
+      ...entry,
+      timestamp: new Date().toISOString(),
+      argsHash: crypto.createHash('sha256').update(JSON.stringify(entry.args)).digest('hex'),
+    };
+
+    this.entries.push(auditEntry);
+
+    // 实际应写入数据库或日志服务
+    console.log('[AUDIT]', JSON.stringify(auditEntry));
+  }
+
+  query(filters: { userId?: string; toolName?: string; startTime?: string }): AuditEntry[] {
+    return this.entries.filter(e => {
+      if (filters.userId && e.userId !== filters.userId) return false;
+      if (filters.toolName && e.toolName !== filters.toolName) return false;
+      if (filters.startTime && e.timestamp < filters.startTime) return false;
+      return true;
+    });
+  }
+}
+
+export const auditLogger = new AuditLogger();
+```
+
+文件结构
+```
+packages/runtime/
+├── src/
+│   ├── auth/
+│   │   ├── types.ts              # 权限类型
+│   │   ├── authorizer.ts         # 权限检查
+│   │   └── index.ts
+│   ├── audit/
+│   │   ├── logger.ts             # 审计日志
+│   │   └── index.ts
+│   └── ...
+```
+
+交付物
+	•	authz 模块 + audit_logger 模块
+	•	权限配置文件
+	•	工具调用自动记录审计日志
+
+⸻
+
+Step 9：工作流编排（状态机/图）（5-7 天）
+
+目标
+Agent 不再是"一次 call"，而是一个可控的流程：能重试、能回退、能停。
+
+需要做什么
+	•	定义工作流节点类型：
+		•	llm：调用 LLM
+		•	tool：调用工具
+		•	condition：条件分支
+		•	human：等待人工确认
+	•	实现工作流引擎：
+		•	按定义执行节点
+		•	处理失败和重试
+		•	预算控制（token/time/tool budget）
+		•	防循环（最大步数）
+
+原理讲解
+	•	为什么需要编排：
+		•	简单 Agent：一次 LLM 调用 → 一次工具调用 → 结束
+		•	复杂 Agent：规划 → 多次检索 → 多次工具 → 反思 → 修正 → 生成
+		•	需要"状态机"来管理流程
+	•	状态机 vs 图：
+		•	状态机：明确的状态转移，适合线性流程
+		•	图（DAG/有环图）：更灵活，适合复杂流程
+		•	推荐：先用简单状态机，理解原理
+	•	预算控制：
+		•	token budget：限制总 token 消耗
+		•	time budget：限制总执行时间
+		•	tool budget：限制工具调用次数
+		•	超预算 → 返回部分结果 + 提示
+
+需要补的知识点
+	•	状态机设计模式
+	•	递归/迭代 Agent 模式
+	•	LangGraph 概念（对比学习）
+
+关键代码示例
+```typescript
+// packages/runtime/src/workflow/types.ts
+export type NodeType = 'llm' | 'tool' | 'condition' | 'human' | 'end';
+
+export interface WorkflowNode {
+  id: string;
+  type: NodeType;
+  config: Record<string, unknown>;
+  next?: string | { [condition: string]: string }; // 条件分支
+}
+
+export interface WorkflowDefinition {
+  id: string;
+  name: string;
+  startNode: string;
+  nodes: Record<string, WorkflowNode>;
+  budget: {
+    maxTokens: number;
+    maxTimeMs: number;
+    maxToolCalls: number;
+    maxSteps: number;
+  };
+}
+
+export interface WorkflowState {
+  currentNode: string;
+  messages: Message[];
+  toolResults: Record<string, unknown>;
+  tokensUsed: number;
+  startTime: number;
+  toolCallCount: number;
+  stepCount: number;
+}
+```
+
+```typescript
+// packages/runtime/src/workflow/engine.ts
+import type { WorkflowDefinition, WorkflowState, WorkflowNode } from './types';
+import { executeTool } from '../tools/executor';
+import { streamChat } from '../llm/openai';
+
+export class WorkflowEngine {
+  constructor(
+    private definition: WorkflowDefinition,
+    private context: { userId: string; requestId: string }
+  ) {}
+
+  async *run(initialMessage: string): AsyncGenerator<StreamEvent> {
+    const state: WorkflowState = {
+      currentNode: this.definition.startNode,
+      messages: [{ role: 'user', content: initialMessage }],
+      toolResults: {},
+      tokensUsed: 0,
+      startTime: Date.now(),
+      toolCallCount: 0,
+      stepCount: 0,
+    };
+
+    while (state.currentNode !== 'end') {
+      // 检查预算
+      const budgetCheck = this.checkBudget(state);
+      if (!budgetCheck.ok) {
+        yield { type: 'error', message: budgetCheck.reason };
+        break;
+      }
+
+      const node = this.definition.nodes[state.currentNode];
+      if (!node) {
+        yield { type: 'error', message: `Node ${state.currentNode} not found` };
+        break;
+      }
+
+      state.stepCount++;
+
+      // 执行节点
+      const result = await this.executeNode(node, state);
+
+      for await (const event of result.events) {
+        yield event;
+      }
+
+      // 更新状态
+      state.currentNode = result.nextNode;
+      state.tokensUsed += result.tokensUsed ?? 0;
+    }
+
+    yield { type: 'done' };
+  }
+
+  private checkBudget(state: WorkflowState): { ok: boolean; reason?: string } {
+    const { budget } = this.definition;
+    const elapsed = Date.now() - state.startTime;
+
+    if (state.tokensUsed >= budget.maxTokens) {
+      return { ok: false, reason: 'Token budget exceeded' };
+    }
+    if (elapsed >= budget.maxTimeMs) {
+      return { ok: false, reason: 'Time budget exceeded' };
+    }
+    if (state.toolCallCount >= budget.maxToolCalls) {
+      return { ok: false, reason: 'Tool call budget exceeded' };
+    }
+    if (state.stepCount >= budget.maxSteps) {
+      return { ok: false, reason: 'Max steps exceeded (possible loop)' };
+    }
+
+    return { ok: true };
+  }
+
+  private async *executeNode(node: WorkflowNode, state: WorkflowState) {
+    // 根据节点类型执行不同逻辑
+    switch (node.type) {
+      case 'llm':
+        // LLM 调用逻辑
+        break;
+      case 'tool':
+        // 工具调用逻辑
+        break;
+      case 'condition':
+        // 条件判断逻辑
+        break;
+      case 'human':
+        // 等待人工确认
+        break;
+    }
+  }
+}
+```
+
+```typescript
+// 示例：RAG Agent 工作流定义
+const ragAgentWorkflow: WorkflowDefinition = {
+  id: 'rag-agent',
+  name: 'RAG Knowledge Base Agent',
+  startNode: 'retrieve',
+  budget: {
+    maxTokens: 10000,
+    maxTimeMs: 60000,
+    maxToolCalls: 5,
+    maxSteps: 10,
+  },
+  nodes: {
+    retrieve: {
+      id: 'retrieve',
+      type: 'tool',
+      config: { toolName: 'search_knowledge_base' },
+      next: 'generate',
+    },
+    generate: {
+      id: 'generate',
+      type: 'llm',
+      config: {
+        systemPrompt: '根据检索到的文档回答问题，必须引用来源。'
+      },
+      next: 'check_quality',
+    },
+    check_quality: {
+      id: 'check_quality',
+      type: 'condition',
+      config: {
+        condition: 'hasReferences',
+        trueNode: 'end',
+        falseNode: 'retrieve', // 没有引用则重新检索
+      },
+      next: { 'true': 'end', 'false': 'retrieve' },
+    },
+  },
+};
+```
+
+文件结构
+```
+packages/runtime/
+├── src/
+│   ├── workflow/
+│   │   ├── types.ts              # 工作流类型
+│   │   ├── engine.ts             # 工作流引擎
+│   │   ├── nodes/                # 节点实现
+│   │   │   ├── llm.ts
+│   │   │   ├── tool.ts
+│   │   │   └── condition.ts
+│   │   └── index.ts
+│   └── ...
+```
+
+交付物
+	•	WorkflowEngine 实现
+	•	RAG Agent 工作流定义
+	•	预算控制 + 防循环
+
+⸻
+
+Step 10：Trace 可视化面板（3-5 天）
+
+目标
+实现一个调试面板，展示请求的完整执行链路。
+
+需要做什么
+	•	Trace 数据收集：
+		•	每个 span：开始时间、结束时间、类型、输入、输出
+		•	span 之间的父子关系
+	•	前端 Trace 面板：
+		•	时间线视图：瀑布图展示各阶段耗时
+		•	详情面板：点击 span 查看输入输出
+		•	错误高亮：失败的 span 红色标记
+
+原理讲解
+	•	Trace 的核心概念：
+		•	Trace：一次请求的完整链路
+		•	Span：链路中的一个阶段（LLM 调用、工具调用等）
+		•	Parent-Child：span 之间的嵌套关系
+	•	OpenTelemetry 标准：
+		•	trace_id：唯一标识一次请求
+		•	span_id：唯一标识一个阶段
+		•	parent_span_id：父阶段
+	•	瀑布图的实现：
+		•	X 轴：时间（相对于请求开始）
+		•	Y 轴：span 列表
+		•	条形：span 的开始和持续时间
+
+需要补的知识点
+	•	OpenTelemetry 基本概念
+	•	瀑布图布局算法
+	•	React 时间线组件
+
+关键代码示例
+```typescript
+// packages/shared/src/trace-types.ts
+export interface Span {
+  traceId: string;
+  spanId: string;
+  parentSpanId?: string;
+  name: string;
+  type: 'llm' | 'tool' | 'embedding' | 'retrieve' | 'workflow';
+  startTime: number;
+  endTime?: number;
+  status: 'running' | 'success' | 'error';
+  attributes: Record<string, unknown>;
+  input?: unknown;
+  output?: unknown;
+  error?: string;
+}
+
+export interface Trace {
+  traceId: string;
+  requestId: string;
+  userId: string;
+  startTime: number;
+  endTime?: number;
+  spans: Span[];
+}
+```
+
+```tsx
+// apps/web/src/components/TraceViewer.tsx
+import { useMemo } from 'react';
+import type { Trace, Span } from '@agent-platform/shared';
+
+interface TraceViewerProps {
+  trace: Trace;
+  onSpanClick: (span: Span) => void;
+}
+
+export function TraceViewer({ trace, onSpanClick }: TraceViewerProps) {
+  const { spans, duration, minTime } = useMemo(() => {
+    const minTime = Math.min(...trace.spans.map(s => s.startTime));
+    const maxTime = Math.max(...trace.spans.map(s => s.endTime ?? Date.now()));
+    return {
+      spans: trace.spans.sort((a, b) => a.startTime - b.startTime),
+      duration: maxTime - minTime,
+      minTime,
+    };
+  }, [trace]);
+
+  return (
+    <div className="trace-viewer">
+      <div className="trace-header">
+        <span>Trace: {trace.traceId.slice(0, 8)}</span>
+        <span>Duration: {duration}ms</span>
+      </div>
+
+      <div className="trace-timeline">
+        {spans.map(span => {
+          const left = ((span.startTime - minTime) / duration) * 100;
+          const width = (((span.endTime ?? Date.now()) - span.startTime) / duration) * 100;
+
+          return (
+            <div
+              key={span.spanId}
+              className={`span-bar span-${span.status}`}
+              style={{ left: `${left}%`, width: `${width}%` }}
+              onClick={() => onSpanClick(span)}
+            >
+              <span className="span-name">{span.name}</span>
+              <span className="span-duration">
+                {(span.endTime ?? Date.now()) - span.startTime}ms
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+```
+
+文件结构
+```
+apps/web/
+├── src/
+│   ├── components/
+│   │   ├── TraceViewer.tsx       # Trace 瀑布图
+│   │   ├── SpanDetail.tsx        # Span 详情面板
+│   │   └── ...
+│   ├── pages/
+│   │   └── Debug.tsx             # 调试页面
+│   └── ...
+```
+
+交付物
+	•	Trace 收集模块
+	•	Trace 可视化面板
+	•	Span 详情展示
+
+⸻
+
+Step 11：平台化复用（SDK 化 + 接入规范）（3-5 天）
+
+目标
+让第二个业务接入时：不需要手把手改代码，而是"照规范接入"。
+
+需要做什么
+	•	工具接入模板
+	•	工作流模板
+	•	文档化：接入 checklist、常见错误与排查
+
+交付物
+	•	docs/platform_integration_guide.md
+	•	examples/ 目录
+	•	"一键起 demo"脚本
+
+⸻
+
+Step 12：框架对比学习（LangGraph / CrewAI / Vercel AI SDK）（3-5 天）
+
+目标
+理解主流 Agent 框架的设计思想，知道何时自研、何时用框架。
+
+需要做什么
+	•	LangGraph（Python）：
+		•	核心概念：State、Node、Edge、Conditional Edge
+		•	适用场景：复杂状态管理、多步骤流程
+	•	CrewAI（Python）：
+		•	核心概念：Agent、Task、Crew
+		•	适用场景：多 Agent 协作
+	•	Vercel AI SDK（TypeScript）：
+		•	核心概念：streamText、streamObject、tools
+		•	适用场景：前端友好、流式 UI
+	•	对比表格
+
+原理讲解
+
+| 框架 | 语言 | 核心抽象 | 优势 | 劣势 |
+|-----|------|---------|------|------|
+| LangGraph | Python | State Graph | 复杂流程控制、可视化 | Python 生态、学习曲线 |
+| CrewAI | Python | Agent/Task | 多 Agent 协作、角色分工 | 抽象较重、灵活性差 |
+| Vercel AI SDK | TypeScript | Stream + Tools | 前端友好、流式原生 | 编排能力弱 |
+| 自研 | Any | 自定义 | 完全控制、理解原理 | 开发成本高 |
+
+推荐策略
+	•	学习阶段：自研理解原理
+	•	生产环境：评估后选择框架或继续自研
+	•	TypeScript 项目：Vercel AI SDK 是好选择
+
+交付物
+	•	FRAMEWORK_COMPARISON.md
+	•	各框架 Hello World 示例
+
+⸻
+
+Step 13：可视化编排器（进阶 - 选做）（7-14 天）
+
+目标
+实现一个拖拽式 Agent 工作流构建器，类似 n8n / LangGraph Studio。
+
+需要做什么
+	•	节点拖拽：LLM / Tool / Condition / Loop
+	•	连线编辑：定义节点间的流转
+	•	属性面板：配置节点参数
+	•	导出工作流定义（JSON）
+	•	实时预览/运行
+
+需要补的知识点
+	•	reactflow 库
+	•	拖拽交互设计
+	•	JSON 双向绑定
+
+交付物
+	•	可视化编排器原型
+	•	支持导出/导入工作流
+
+⸻
+
+时间预估（从 0 到能拿得出手）
+
+| 阶段 | 时间 | 里程碑 |
+|------|------|--------|
+| Step 0-2 | 1-2 周 | 最小 Agent + 流式对话界面 |
+| Step 3-6 | 2-3 周 | 工具协议 + RAG + 工具可视化 |
+| Step 7-8 | 1-2 周 | MCP + 权限审计 |
+| Step 9-10 | 1-2 周 | 工作流编排 + Trace 面板 |
+| Step 11-12 | 1 周 | 平台化 + 框架对比 |
+| Step 13 | 1-2 周 | 可视化编排器（选做） |
+
+总计：6-10 周可以有一个很强的作品集
+
+⸻
+
+学习注意事项（前端转 Agent 平台最容易踩的坑）
+	1.	不要一开始就做"通用平台"：先围绕 1 个高价值场景做深（知识库 Agent）
+	2.	schema 校验是底线：没有 schema 校验，你永远会被"参数乱填"折磨
+	3.	默认只读：写操作必须 HITL，否则一次事故平台信誉归零
+	4.	审计不是日志：审计要可追责、可还原决策链；日志更多用于调试
+	5.	幂等很重要：工具重试很常见，不幂等就会重复扣费/重复写入
+	6.	前端体验要尽早做：能看到效果会大大提升学习动力
+	7.	MCP 要学：这是正在成为标准的协议，早学早受益
+
+⸻
+
+实践注意事项（上线真实坑）
+	•	权限配置错：越权访问是最危险问题
+	•	工具失败没分级：你无法定位是网络、权限、参数、还是工具本身
+	•	无预算控制：Agent 死循环烧钱
+	•	文档/接入规范缺失：平台最终变成"你一个人能用"，无法复用
+	•	流式渲染不处理中断：用户停止后后端还在跑，浪费 token
+	•	Markdown 解析不处理不完整片段：流式场景下会闪烁
+
+⸻
+
+平台工作原理（用这段向别人解释）
+	1.	用户请求进入 Agent Runtime（带 user/role/tenant/context）
+	2.	Runtime 选择一个工作流（状态机/图）
+	3.	工作流节点会调用 LLM 产生下一步计划或工具调用（结构化）
+	4.	工具调用必须经过：权限校验 → schema 校验 → 执行器 → 结果校验
+	5.	每一步都会写：trace（观测）+ audit（审计）
+	6.	失败按策略处理：重试/回退/追问/人工确认
+	7.	前端实时展示每一步状态（thinking/tool_calling/streaming）
+	8.	团队要接新工具时，只要按工具协议（或 MCP）注册，不改核心流程
+
+⸻
+
+下一步
+
+1. 如果你想直接开始，可以把 Step 0-2 作为第一周的目标
+2. 如果需要更详细的某个 Step，告诉我 Step 编号，我可以进一步拆解
+3. 如果需要完整的项目脚手架（package.json、tsconfig.json 等），我可以生成
