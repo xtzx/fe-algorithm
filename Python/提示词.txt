@@ -1,0 +1,521 @@
+下面是我把“Python 工作原理 + 工程化生态 + 脚本/自动化 + 并发爬虫 + 后端/BFF + AI/RAG”全部补齐后，重新整理的一套 稳扎稳打 Prompt Pack。
+
+你可以把每一段保存成一个单独文件（例如 P00-python-runtime.prompt.md），然后一次对话只用一个 prompt，让 AI 生成一个对应的“多文件项目文件夹”（目录树 + 每个文件完整内容）。
+
+⸻
+
+Prompt Pack 目录与推荐顺序
+
+建议顺序（先底座再实战）：
+	•	P00 Python 运行时原理（CPython、字节码、GIL、import、内存、性能）
+	•	P01 Python 包与构建体系（pyproject、PEP、wheel/sdist、build backend）
+	•	P02 包管理与环境（uv/poetry/pdm/pip-tools、lockfile、私有源、CI）
+	•	P03 工程质量工具链（ruff/black、pyright/mypy、pre-commit、任务编排）
+	•	P04 测试体系（pytest、mock、覆盖率、集成测试）
+	•	P05 工程化脚手架（可复用模板，后面模块都基于它）
+	•	P06 Python 基础（JS/TS 对照 + 练习 + 小项目）
+	•	P07 数据处理与模型化（清洗、pydantic、JSONL、统计）
+	•	P08 文件自动化与可恢复作业（dry-run、断点续跑、日志）
+	•	P09 HTTP 客户端工程化（httpx、重试/限流/代理/连接池/可观测）
+	•	P10 asyncio 并发（结构化并发、取消、超时、报表）
+	•	P11 爬虫工程化（静态+可选 Playwright、合规、去重、断点、fixture 测试）
+	•	P12 FastAPI BFF 模板（鉴权、统一错误、trace、测试、CORS）
+	•	P13 存储/缓存/队列（SQLite/SQLAlchemy + Redis + 简单任务队列）
+	•	P14 部署/分发/可观测性（Docker、uvicorn/gunicorn、zipapp/pex、日志/metrics/trace）
+	•	P15 AI 工程与 RAG 服务（结构化输出、流式、注入防护、RAG、评测、服务化）
+
+⸻
+
+每个 Prompt 文件内容（复制保存即可）
+
+说明：每个 prompt 都要求 AI 输出一个文件夹项目：
+	1.	先输出目录树；2) 再逐文件输出完整内容；3) 所有示例可运行；4) docs 里包含概念/坑/面试问答。
+
+⸻
+
+P00-python-runtime.prompt.md
+
+你现在是「Python 运行时与解释器原理导师」。
+面向对象：有 JS/TS 背景、熟悉 V8/JIT 概念，想深入理解 Python 的工作原理，并能在工程中做正确选择（async/线程/进程/性能诊断）。
+
+【本次主题】P00：Python 工作原理（CPython 为主）
+
+必须覆盖（每项都有代码或命令演示）：
+1) CPython 执行链路：源码 -> AST -> 字节码 -> 虚拟机执行
+   - 展示 compile()/ast 模块、dis 反汇编
+   - .pyc 与 __pycache__：何时生成、何时失效
+2) 与 JS/V8 对照：解释器/字节码 vs JIT；PyPy/Numba 等“JIT路线”概览（不依赖外部库也要讲清思路）
+3) GIL 与并发：线程为何不适合 CPU 密集；I/O 密集为何仍有效
+   - 给出：threading vs multiprocessing vs asyncio 的选择表
+4) import 系统：sys.path、包/模块、命名空间包、python -m、__main__.py
+5) 内存与对象模型：引用计数 + GC（循环引用）
+   - 展示 gc 模块、tracemalloc 入门
+6) 错误与 traceback：raise from、异常链、如何读栈
+7) 性能工具入门：cProfile、tracemalloc、时间基准（time.perf_counter）
+8) 面试高频（至少 8 个）：GIL、pyc、import 查找、async 本质、何时多进程、如何定位内存泄漏等
+
+【输出形式：多文件项目】
+/py-runtime-internals/
+├── README.md
+├── docs/
+│   ├── 01-cpython-execution-model.md
+│   ├── 02-bytecode-pyc-cache.md
+│   ├── 03-gil-and-concurrency.md
+│   ├── 04-import-system.md
+│   ├── 05-memory-gc-tracemalloc.md
+│   ├── 06-traceback-and-errors.md
+│   └── 07-interview-questions.md
+├── examples/
+│   ├── ast_and_compile.py
+│   ├── dis_bytecode.py
+│   ├── pyc_cache_demo.sh
+│   ├── gil_threads_cpu_bound.py
+│   ├── io_bound_threads_vs_async.py
+│   ├── import_path_demo.py
+│   ├── tracemalloc_demo.py
+│   └── cprofile_demo.py
+└── scripts/
+    ├── run_examples.sh
+    └── dev_notes.md
+
+要求：
+- docs 每篇必须包含：概念、示例、常见坑、面试问答
+- README 必须包含：与 JS/V8 的对照总结表
+- 所有示例在 Python 3.12+ 可运行（必要时用标准库即可）
+- 输出顺序：先目录树，再逐文件完整内容
+
+
+⸻
+
+P01-packaging-build.prompt.md
+
+你现在是「Python 包管理与构建体系专家」。
+目标：让工程师理解“Python 的 webpack/tsc 对应物是什么”，掌握 pyproject.toml、wheel/sdist、构建后端、发布流程、可重复构建。
+
+【本次主题】P01：包与构建体系（pyproject + PEP）
+
+必须覆盖：
+1) pyproject.toml 的角色：项目元数据、依赖、构建配置（PEP 517/518/621）
+2) wheel vs sdist：差异、何时用、可重复构建
+3) build backend：setuptools / hatchling / poetry-core 的概念差异（不强制安装全部，但要讲清）
+4) entry points：project.scripts / console_scripts
+5) 版本与发布：semver、打 tag、构建产物、发布到 PyPI（演示流程写在 docs，示例用 test.pypi 说明即可）
+6) 常见坑：依赖范围、可选依赖 extras、平台相关依赖、源码包 vs 二进制包
+7) 面试高频（至少 8 个）：wheel/sdist、pyproject、editable install、依赖解析、PEP 517 等
+
+【输出形式：多文件项目】
+/py-packaging-build-lab/
+├── README.md
+├── pyproject.toml
+├── docs/
+│   ├── 01-pyproject-and-peps.md
+│   ├── 02-wheel-vs-sdist.md
+│   ├── 03-build-backends.md
+│   ├── 04-entry-points.md
+│   ├── 05-publishing-flow.md
+│   └── 06-interview-questions.md
+├── src/
+│   └── packaging_lab/
+│       ├── __init__.py
+│       ├── cli.py
+│       └── core.py
+├── tests/
+│   └── test_cli.py
+└── scripts/
+    ├── build_dist.sh
+    ├── install_editable.sh
+    └── run_all.sh
+
+要求：
+- 提供一个最小 CLI（例如 pkg-lab hello --name xxx）
+- README 写清：如何 build 出 wheel/sdist，如何本地安装与运行
+- 尽量只依赖标准库 + pytest（可选加 build 作为演示）
+- 输出顺序：目录树 -> 文件完整内容
+
+
+⸻
+
+P02-env-deps-tools.prompt.md
+
+你现在是「Python 环境与依赖管理（工程化）」导师。
+目标：让工程师像管理 Node 依赖一样管理 Python：可重复、可锁定、可迁移、支持私有源与 CI。
+
+【本次主题】P02：环境/依赖/lockfile/私有源
+
+必须覆盖：
+1) venv 的本质：解释器隔离、site-packages、PATH
+2) pip 体系：requirements.txt 的局限
+3) lockfile 路线对比：
+   - uv（优先）：依赖解析、lock、同步
+   - poetry：lock 与 workspace 思路
+   - pdm：PEP 582 思路（说明即可）
+   - pip-tools：requirements.in -> requirements.txt lock
+4) 私有源/镜像：pip config、index-url、extra-index-url（只写演示，不要求真实账号）
+5) 多环境：dev/test/prod 依赖分组
+6) CI 最佳实践：缓存、离线安装、可重复构建
+7) 安全：依赖审计（原则 + 工具名即可）
+8) 面试高频（至少 8 个）：为什么要 lock、如何处理私有包、如何最小化依赖漂移等
+
+【输出形式：多文件项目】
+/py-env-deps-playbook/
+├── README.md
+├── docs/
+│   ├── 01-venv-and-site-packages.md
+│   ├── 02-pip-and-lockfile.md
+│   ├── 03-uv-workflow.md
+│   ├── 04-poetry-pdm-piptools.md
+│   ├── 05-private-index-and-ci.md
+│   └── 06-interview-questions.md
+├── examples/
+│   ├── uv/
+│   │   └── uv_commands.md
+│   ├── piptools/
+│   │   ├── requirements.in
+│   │   └── piptools_commands.md
+│   └── ci/
+│       └── ci_cache_strategy.md
+└── scripts/
+    └── checklist.sh
+
+要求：
+- README 给出：uv 与 pip-tools 两条可执行命令链
+- docs 给出：与 Node（npm/pnpm/yarn）的类比表
+- 输出顺序：目录树 -> 文件完整内容
+
+
+⸻
+
+P03-quality-toolchain.prompt.md
+
+你现在是「Python 工程质量工具链」导师。
+目标：给出等价于 ESLint/Prettier/TS 的 Python 方案：ruff/format、类型检查、pre-commit、任务编排。
+
+【本次主题】P03：lint/format/type/pre-commit/tasks
+
+必须覆盖：
+1) ruff：lint + import 排序 +（可选）format
+2) black/ruff format：格式化策略与冲突处理
+3) 类型检查：pyright（优先）与 mypy 对比
+4) pre-commit：等价于 husky + lint-staged
+5) 任务编排：make/just/nox/tox（选 1-2 个落地）
+6) 面试高频（至少 6 个）：ruff/black 差异、pyright vs mypy、pre-commit 原理等
+
+【输出形式：多文件项目】
+/py-quality-toolchain/
+├── README.md
+├── pyproject.toml
+├── .pre-commit-config.yaml
+├── docs/
+│   ├── 01-ruff-and-format.md
+│   ├── 02-type-checking.md
+│   ├── 03-pre-commit.md
+│   ├── 04-tasks-and-ci.md
+│   └── 05-interview-questions.md
+├── src/
+│   └── quality_demo/
+│       ├── __init__.py
+│       ├── sample_good.py
+│       └── sample_bad.py
+└── scripts/
+    ├── run_lint.sh
+    ├── run_typecheck.sh
+    └── run_all.sh
+
+要求：
+- sample_bad.py 里故意放 6+ 个会被 ruff/pyright 抓到的问题，并在 docs 解释
+- README 给出一键命令：lint / format / typecheck
+- 输出顺序：目录树 -> 文件完整内容
+
+
+⸻
+
+P04-testing.prompt.md
+
+你现在是「Python 测试与可测试设计」导师。
+目标：让工程师建立 pytest 思维、mock 技巧、覆盖率、集成测试（FastAPI/HTTP）。
+
+【本次主题】P04：pytest / mock / coverage / integration
+
+必须覆盖：
+1) pytest 基础：fixture、参数化、tmp_path、monkeypatch
+2) mock 策略：unittest.mock、替身对象、时间与随机数控制
+3) 覆盖率：coverage.py（原则 + 配置）
+4) 集成测试：一个最小 HTTP 服务（可用 http.server 或 FastAPI 的简化版），用 httpx 测试
+5) 面试高频（至少 8 个）：单测 vs 集成、mock 边界、如何测异步、如何测文件系统等
+
+【输出形式：多文件项目】
+/py-testing-lab/
+├── README.md
+├── pyproject.toml
+├── docs/
+│   ├── 01-pytest-foundations.md
+│   ├── 02-mock-strategies.md
+│   ├── 03-coverage-and-quality.md
+│   ├── 04-integration-testing.md
+│   └── 05-interview-questions.md
+├── src/
+│   └── testing_lab/
+│       ├── __init__.py
+│       ├── math_utils.py
+│       ├── file_utils.py
+│       └── mini_http_app.py
+├── tests/
+│   ├── test_math_utils.py
+│   ├── test_file_utils.py
+│   └── test_http_integration.py
+└── scripts/
+    └── run_all.sh
+
+要求：
+- 至少 10 个测试用例，覆盖边界
+- README 给出：如何跑测试、如何看覆盖率
+- 输出顺序：目录树 -> 文件完整内容
+
+
+⸻
+
+P05-bootstrap.prompt.md
+
+你现在是「Python 工程脚手架搭建教练」。
+目标：生成一个可复用模板，后续 P06–P15 都能基于它开新仓库。
+
+【本次主题】P05：工程化脚手架（uv优先）
+
+要求：
+- Python 3.12+
+- uv 工作流（含 lock 思路），同时给 pip+venv 备选
+- ruff + pyright + pytest + pre-commit
+- src 布局
+- 命令入口（project.scripts）
+- 示例：logging、cli、配置读取
+
+【输出形式：多文件项目】
+/py-bootstrap/
+├── README.md
+├── pyproject.toml
+├── .python-version
+├── .env.example
+├── .pre-commit-config.yaml
+├── src/
+│   └── py_bootstrap/
+│       ├── __init__.py
+│       ├── cli.py
+│       ├── config.py
+│       ├── log.py
+│       └── utils.py
+├── tests/
+│   ├── test_smoke.py
+│   └── test_utils.py
+├── examples/
+│   ├── hello.py
+│   ├── logging_demo.py
+│   └── cli_demo.sh
+└── scripts/
+    ├── run_tests.sh
+    ├── run_lint.sh
+    ├── run_typecheck.sh
+    └── run_examples.sh
+
+要求：
+- README 给出一键命令（lint/format/typecheck/test/run）
+- config.py 用 pydantic-settings（或等价）读取 .env.example（脱敏）
+- 输出顺序：目录树 -> 文件完整内容
+
+
+⸻
+
+P06-python-basics.prompt.md
+
+你现在是「Python 语法与思维」导师，面向 JS/TS 工程师。
+目标：快速掌握高频语言特性，并产出一个可测试的小项目。
+
+【主题】P06：Python 基础（JS/TS对照 + 练习 + 小项目）
+
+必须覆盖：
+- 基本语法对照、容器/切片/推导式、异常、with、typing 基础
+- 练习 25 道（含答案与思路）
+- 小项目：文本分析器（TopN、行数、最长行、输出 JSON）
+
+输出：
+/py-basics-js-to-py/ （目录结构同你之前的风格：README+docs+src+tests+examples+scripts）
+并要求：先目录树，再逐文件内容。
+
+
+⸻
+
+P07-data-cleaning.prompt.md
+
+你现在是「数据清洗与模型化（为AI/爬虫输入服务）」导师。
+目标：掌握 JSON/CSV/JSONL、pydantic、清洗、统计、CLI、测试。
+
+【主题】P07：数据清洗实验室
+输出结构与要求同你之前风格：/py-data-cleaning-lab/（README+docs+src+tests+examples+scripts）
+关键要求：必须实现 CLI、输出 clean.jsonl + report.json、至少 6 个测试、docs 包含常见坑。
+按目录树->逐文件内容输出。
+
+
+⸻
+
+P08-file-automation.prompt.md
+
+你现在是「Python 自动化脚本工程师」导师。
+目标：批处理任务可控、可回滚、可恢复（dry-run、断点续跑、失败汇总、日志）。
+
+【主题】P08：文件自动化工具箱
+输出结构：/py-file-automation-toolkit/（README+docs+src+tests+scripts）
+关键要求：planner/executor 分离、state.json 续跑、tmp_path 单测。
+按目录树->逐文件内容输出。
+
+
+⸻
+
+P09-http-client.prompt.md
+
+你现在是「Python 网络工程（httpx）导师」。
+目标：可复用 http 客户端：timeout/retry/rate-limit/proxy/pooling/tracing + CLI + mock 测试。
+
+【主题】P09：httpx-client-kit
+输出结构：/py-httpx-client-kit/（README+docs+src+tests+scripts）
+要求：respx 或 MockTransport；同步+异步用法；429/5xx 策略；trace_id。
+按目录树->逐文件内容输出。
+
+
+⸻
+
+P10-asyncio.prompt.md
+
+你现在是「asyncio 并发导师」。
+目标：结构化并发、取消、超时、失败收集、统计报表。
+
+【主题】P10：asyncio-concurrency-lab
+输出结构：/py-asyncio-concurrency-lab/（README+docs+src+tests+examples+scripts）
+要求：p50/p95、失败分类、TaskGroup（3.11+）、可取消收尾。
+按目录树->逐文件内容输出。
+
+
+⸻
+
+P11-scraping.prompt.md
+
+你现在是「爬虫工程（合规+可恢复+可测试）」导师。
+目标：静态抓取 + 可选 Playwright；去重；断点；items.jsonl；fixture 测试。
+
+【主题】P11：scraping-starter
+输出结构：/py-scraping-starter/（README+docs+src+tests+scripts）
+要求：强调合规；parse 纯函数；提供扩展点；fixture 单测。
+按目录树->逐文件内容输出。
+
+
+⸻
+
+P12-fastapi-bff.prompt.md
+
+你现在是「FastAPI BFF 架构导师」。
+目标：routers/services/schemas/core 分层；鉴权；统一错误；trace/log；CORS；测试。
+
+【主题】P12：fastapi-bff-template
+输出结构：/py-fastapi-bff-template/（README+docs+src+tests+scripts）
+要求：/healthz；分页接口；错误示例；至少 6 测试；pydantic-settings + .env.example。
+按目录树->逐文件内容输出。
+
+
+⸻
+
+P13-storage-cache-queue.prompt.md
+
+你现在是「存储/缓存/任务队列」导师。
+目标：SQLite/SQLAlchemy + Alembic；Repository；Redis 缓存/限流；简单任务队列（可选 RQ/自实现简化版）。
+
+【主题】P13：storage-layer-lab
+输出结构：
+/py-storage-layer-lab/
+- README + docs（含 SQLite->Postgres 迁移注意）
+- src（db/models/repo/cache/cli）
+- tests（内存 SQLite）
+- scripts（初始化->seed->query 一条命令链）
+按目录树->逐文件内容输出。
+
+
+⸻
+
+P14-deploy-distribute-observe.prompt.md
+
+你现在是「Python 部署/分发/可观测性」导师。
+目标：把脚本/服务跑到生产：Docker、uvicorn/gunicorn、zipapp/pex、日志/metrics/trace 基础。
+
+【主题】P14：deploy-distribute-observability
+
+必须覆盖：
+1) 服务部署：uvicorn/gunicorn（概念+配置示例）
+2) Docker：最小 Dockerfile + 多阶段构建（可选）
+3) 脚本分发：zipapp（必须）+ pex/shiv（可选说明）
+4) 打包可执行：PyInstaller/Nuitka（讲清适用场景）
+5) 可观测性：结构化日志、prometheus_client（可选）、OpenTelemetry（概念与最小接入示例）
+6) 面试高频（至少 8 个）：如何健康检查、如何优雅停机、如何排查性能、如何控制依赖等
+
+【输出形式】
+/py-deploy-and-observe/
+├── README.md
+├── docs/
+│   ├── 01-deploy-uvicorn-gunicorn.md
+│   ├── 02-docker-basics.md
+│   ├── 03-zipapp-and-pex.md
+│   ├── 04-observability-logging-metrics-tracing.md
+│   └── 05-interview-questions.md
+├── examples/
+│   ├── zipapp_demo/
+│   │   ├── app/__main__.py
+│   │   └── build_zipapp.sh
+│   ├── docker_demo/
+│   │   ├── Dockerfile
+│   │   └── run.sh
+│   └── logging_demo.py
+└── scripts/
+    └── run_all.sh
+
+输出：目录树->逐文件内容
+
+
+⸻
+
+P15-ai-rag-service.prompt.md
+
+你现在是「Python AI 工程（生产思维）」导师。
+目标：LLM 调用抽象 + 结构化输出 + 流式 + 注入防护 + RAG + 评测雏形 + FastAPI 服务化。
+
+【主题】P15：ai-rag-service（capstone）
+
+必须覆盖：
+1) LLM client 抽象（不绑定厂商 SDK）：
+   - timeout/retry/streaming
+   - 幂等 request_id
+   - 结构化输出（JSON Schema 强约束）
+   - 成本/耗时统计
+2) 提示词注入与安全：
+   - 输入过滤/长度限制
+   - system 指令隔离、引用来源
+3) RAG：
+   - loader、chunker、embedder（可 stub）、index、retriever
+   - 必须返回 citations（引用片段）
+4) FastAPI：
+   - /ingest /query /healthz
+   - Bearer 鉴权
+5) 评测：
+   - 最小评测脚本：给定 queries.jsonl，输出结果与命中率/引用覆盖率（简单指标即可）
+6) 测试：至少 8 个（chunk/retrieve/api/auth/error/eval）
+
+【输出结构】
+/py-ai-rag-service/（README+docs+src+tests+examples+scripts）
+要求：先目录树，再逐文件完整内容；README 给出完整命令链（启动->ingest->query->eval）。
+
+
+⸻
+
+你下一步怎么选（两种方式）
+	1.	你直接照顺序用：从 P00 开始，一次对话一个 prompt，生成一个项目文件夹。
+	2.	我帮你打包成“prompt 仓库”结构：你说一声，我可以把这些 prompt 再组织成一个 /python-learning-prompts/ 的目录树（每个 prompt 一个文件），方便你直接复制粘贴到本地仓库里管理。
+
+如果你希望我再“加厚”，我还能把每个 prompt 统一加上：
+	•	验收 Checklist（跑哪些命令算学会）
+	•	练习题与面试题配额（每个模块 10–20 问）
+	•	跨模块串联任务（例如 P09 的 httpx kit 被 P10/P11/P12/P15 复用）
