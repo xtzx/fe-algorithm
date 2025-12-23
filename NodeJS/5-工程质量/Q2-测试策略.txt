@@ -1,0 +1,171 @@
+
+================================================================================
+【Q2】测试策略（Jest / Vitest / Supertest）
+================================================================================
+
+```text
+你现在是「Node.js 测试与质量保障专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解 Node.js 测试，面向中高级面试。
+
+【本次主题】Q2：测试策略（Jest / Vitest / Supertest）
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）测试金字塔
+   - 单元测试（Unit Test）：
+     - 最小可测试单元
+     - 快速、独立
+     - Mock 外部依赖
+   - 集成测试（Integration Test）：
+     - 模块协作
+     - 可能涉及真实数据库
+   - 端到端测试（E2E）：
+     - 完整请求链路
+     - 最接近真实场景
+   - 测试比例：70% 单元 / 20% 集成 / 10% E2E
+
+2）Jest 详解 ⭐⭐⭐⭐⭐
+   - 测试文件命名：*.test.ts / *.spec.ts
+   - 测试结构：
+     - describe：测试套件
+     - it / test：测试用例
+     - beforeEach / afterEach
+     - beforeAll / afterAll
+   - 断言（expect）：
+     - toBe / toEqual
+     - toContain / toHaveLength
+     - toThrow / rejects.toThrow
+     - toHaveBeenCalled / toHaveBeenCalledWith
+   - Jest 配置：jest.config.ts
+
+3）Mock 技术 ⭐⭐⭐⭐⭐
+   - jest.fn()：创建 Mock 函数
+   - jest.mock()：Mock 整个模块
+   - jest.spyOn()：监视方法调用
+   - Mock 返回值：
+     - mockReturnValue / mockReturnValueOnce
+     - mockResolvedValue / mockRejectedValue
+   - Mock HTTP 客户端（axios）
+   - Mock 数据库模块
+   - 示例：Mock 外部服务
+
+4）Vitest
+   - 与 Jest 的兼容性
+   - 优势：
+     - 更快（基于 Vite）
+     - ESM 原生支持
+     - TypeScript 原生支持
+   - 配置与使用
+   - 迁移指南
+
+5）HTTP 接口测试（Supertest）⭐
+   - 安装与配置
+   - 测试 Express 应用：
+     ```typescript
+     import request from 'supertest';
+     import app from '../app';
+
+     describe('GET /users', () => {
+       it('should return users', async () => {
+         const response = await request(app)
+           .get('/users')
+           .expect(200);
+         expect(response.body).toHaveLength(10);
+       });
+     });
+     ```
+   - 测试认证接口
+   - 测试不同状态码
+   - 测试请求体验证
+
+6）数据库测试策略 ⭐
+   - 问题：测试需要真实数据库？
+   - 方案一：Mock 数据库层
+   - 方案二：内存数据库
+     - SQLite 内存模式
+     - mongodb-memory-server
+   - 方案三：Testcontainers（Docker）
+   - 测试数据隔离：
+     - 每个测试前清理
+     - 使用事务回滚
+   - 示例：使用 Prisma + SQLite
+
+7）代码覆盖率
+   - 覆盖率指标：
+     - 行覆盖（Line）
+     - 分支覆盖（Branch）
+     - 函数覆盖（Function）
+     - 语句覆盖（Statement）
+   - 配置覆盖率阈值
+   - 生成覆盖率报告
+   - 合理的覆盖率目标（80%+）
+
+8）测试最佳实践
+   - AAA 模式：Arrange, Act, Assert
+   - 测试隔离：每个测试独立
+   - 测试命名：描述行为
+   - 避免测试实现细节
+   - 适度 Mock
+
+9）CI 集成
+   - 在 CI 中运行测试
+   - 覆盖率报告上传
+   - 测试失败阻止合并
+   - 并行测试加速
+
+10）面试高频问题（至少 6 个问题 + 加分回答）
+   - 你们服务的测试覆盖率是多少？
+   - 单元测试和集成测试的区别？
+   - 如何 Mock 外部依赖？
+   - 如何测试数据库相关的代码？
+   - 你们的 CI 流程是怎样的？
+   - Jest 和 Vitest 有什么区别？
+
+【输出形式要求：多文件、多格式】
+
+/node-testing/
+├── README.md
+├── docs/
+│   ├── 01-testing-pyramid.md
+│   ├── 02-jest-complete-guide.md
+│   ├── 03-mocking-techniques.md
+│   ├── 04-http-api-testing.md
+│   ├── 05-database-testing.md
+│   └── 06-interview-questions.md
+├── src/
+│   ├── app.ts
+│   ├── services/
+│   │   ├── user.service.ts
+│   │   └── order.service.ts
+│   └── routes/
+│       ├── user.route.ts
+│       └── health.route.ts
+├── tests/
+│   ├── unit/
+│   │   ├── user.service.test.ts
+│   │   └── order.service.test.ts
+│   ├── integration/
+│   │   ├── user.route.test.ts
+│   │   └── health.route.test.ts
+│   └── helpers/
+│       ├── test-server.ts
+│       ├── mock-helpers.ts
+│       └── db-helpers.ts
+├── config/
+│   └── jest.config.ts
+└── scripts/
+    ├── run-tests.sh
+    └── run-coverage.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. 包含完整的单元测试和集成测试示例。
+3. 包含 Mock 和数据库测试示例。
+4. 使用 TypeScript + Jest。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

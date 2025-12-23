@@ -1,0 +1,176 @@
+
+================================================================================
+【D1】Redis 缓存
+================================================================================
+
+```text
+你现在是「Redis 缓存与 Node.js 数据层专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解 Redis 缓存，面向中高级面试。
+
+【本次主题】D1：Redis 缓存
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）Redis 概述
+   - 什么是 Redis：内存键值数据库
+   - 特点：
+     - 极快（内存操作）
+     - 支持丰富数据结构
+     - 持久化支持
+     - 原子操作
+   - 使用场景：
+     - 缓存
+     - 会话存储
+     - 排行榜
+     - 消息队列（简单场景）
+     - 分布式锁
+
+2）Redis 数据结构 ⭐⭐⭐⭐⭐
+   - String（字符串）：
+     - 最基础类型
+     - SET / GET / INCR / DECR
+     - 场景：计数器、缓存序列化对象
+   - Hash（哈希）：
+     - 字段-值映射
+     - HSET / HGET / HMSET / HGETALL
+     - 场景：对象存储、用户 Session
+   - List（列表）：
+     - 有序列表，双向链表
+     - LPUSH / RPUSH / LPOP / RPOP / LRANGE
+     - 场景：消息队列、最新列表
+   - Set（集合）：
+     - 无序唯一集合
+     - SADD / SMEMBERS / SISMEMBER / SINTER
+     - 场景：标签、去重、交集
+   - Sorted Set（有序集合）：
+     - 带分数的有序集合
+     - ZADD / ZRANGE / ZRANK / ZINCRBY
+     - 场景：排行榜、延迟队列
+   - 新数据结构简介：
+     - Stream / HyperLogLog / Bitmap / Geo
+
+3）Node.js 客户端
+   - ioredis（推荐）：
+     - 功能完善、性能好
+     - 支持 Cluster、Sentinel
+   - node-redis：官方客户端
+   - 连接配置：
+     - host / port / password
+     - 连接池
+     - 重连策略
+   - 基本操作示例
+
+4）缓存策略 ⭐⭐⭐⭐⭐
+   - Cache Aside（旁路缓存）：
+     - 读：先查缓存，miss 查 DB，写回缓存
+     - 写：更新 DB，删除缓存
+     - 最常用模式
+   - Read Through：
+     - 缓存层负责读 DB
+   - Write Through：
+     - 缓存层同步写 DB
+   - Write Behind（Write Back）：
+     - 缓存层异步写 DB
+   - 各模式对比与选择
+
+5）缓存常见问题 ⭐⭐⭐⭐⭐
+   - 缓存穿透：
+     - 问题：查询不存在的数据，直接打 DB
+     - 解决：
+       - 缓存空对象（设置短过期）
+       - 布隆过滤器
+   - 缓存击穿：
+     - 问题：热点 Key 过期，大量请求打 DB
+     - 解决：
+       - 互斥锁（只允许一个请求查 DB）
+       - 永不过期 + 后台刷新
+   - 缓存雪崩：
+     - 问题：大量 Key 同时过期
+     - 解决：
+       - 随机过期时间
+       - 多级缓存
+       - 熔断降级
+   - 完整代码示例
+
+6）过期与淘汰
+   - TTL 设置：EXPIRE / SETEX
+   - 过期策略：惰性删除 + 定期删除
+   - 淘汰策略：
+     - volatile-lru / allkeys-lru
+     - volatile-ttl / volatile-random
+     - noeviction
+
+7）分布式锁
+   - 场景：防止并发操作
+   - 基本实现：
+     - SET key value NX PX timeout
+     - 释放时验证值
+   - Redlock 算法简介
+   - 完整代码示例
+
+8）Redis 高可用
+   - 主从复制
+   - 哨兵模式（Sentinel）
+   - 集群模式（Cluster）
+   - 在 Node.js 中配置
+
+9）BFF 中的 Redis 实践
+   - 接口缓存
+   - Session 存储
+   - 分布式限流
+   - 发布订阅
+
+10）面试高频问题（至少 8 个问题 + 加分回答）
+   - 缓存穿透、击穿、雪崩分别是什么？怎么解决？
+   - Redis 有哪些数据结构？你用过哪些？
+   - 什么是 Cache Aside 模式？
+   - 如何保证缓存和数据库的一致性？
+   - 如何实现分布式锁？
+   - Redis 的过期策略是什么？
+   - 你们是怎么用 Redis 的？
+   - Redis 和 Memcached 有什么区别？
+
+【输出形式要求：多文件、多格式】
+
+/node-redis-cache/
+├── README.md
+├── docs/
+│   ├── 01-redis-overview.md
+│   ├── 02-data-structures.md
+│   ├── 03-cache-strategies.md
+│   ├── 04-cache-problems.md
+│   ├── 05-distributed-lock.md
+│   └── 06-interview-questions.md
+├── examples/
+│   ├── connection/
+│   │   ├── redis-client.ts
+│   │   └── connection-pool.ts
+│   ├── data-structures/
+│   │   ├── string-demo.ts
+│   │   ├── hash-demo.ts
+│   │   ├── list-demo.ts
+│   │   ├── set-demo.ts
+│   │   └── sorted-set-demo.ts
+│   ├── cache/
+│   │   ├── cache-aside.ts
+│   │   ├── cache-with-lock.ts
+│   │   ├── prevent-penetration.ts
+│   │   └── cache-warmer.ts
+│   └── lock/
+│       ├── simple-lock.ts
+│       └── redlock-example.ts
+└── scripts/
+    └── run-examples.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. 重点是缓存策略和问题处理。
+3. 包含分布式锁实现。
+4. 使用 ioredis + TypeScript。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

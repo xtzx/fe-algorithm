@@ -215,13 +215,14 @@
  * │                        文件索引                             │
  * ├─────────────────────────────────────────────────────────────┤
  * │                                                             │
- * │  index.ts              ─ 前置知识总览                       │
- * │  01-complexity.ts      ─ 复杂度分析                         │
- * │  02-math-basics.ts     ─ 基础数学（位运算、排列组合等）      │
+ * │  index.ts               ─ 前置知识总览                      │
+ * │  01-complexity.ts       ─ 复杂度分析                        │
+ * │  02-math-basics.ts      ─ 基础数学（位运算、排列组合等）     │
  * │  03-problem-modeling.ts ─ 问题建模思维 ⭐ 核心              │
- * │  04-methodology.ts     ─ 解题方法论                         │
- * │  05-interview-tips.ts  ─ 面试技巧                           │
- * │  summary.ts            ─ 本文件，速查表汇总                  │
+ * │  04-methodology.ts      ─ 解题方法论                        │
+ * │  05-interview-tips.ts   ─ 面试技巧                          │
+ * │  06-frontend-scenarios.ts ─ 前端场景关联                    │
+ * │  summary.ts             ─ 本文件，速查表汇总                 │
  * │                                                             │
  * └─────────────────────────────────────────────────────────────┘
  */

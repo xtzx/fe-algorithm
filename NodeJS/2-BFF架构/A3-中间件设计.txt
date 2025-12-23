@@ -1,0 +1,172 @@
+
+================================================================================
+【A3】中间件设计（认证、日志、错误处理、traceId）
+================================================================================
+
+```text
+你现在是「Node.js BFF 架构与中间件设计专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解中间件设计，面向中高级面试。
+
+【本次主题】A3：中间件设计（认证、日志、错误处理、traceId）
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）中间件概念
+   - 什么是中间件：请求处理管道中的处理单元
+   - 中间件的作用：
+     - 横切关注点（Cross-cutting Concerns）
+     - 代码复用
+     - 关注点分离
+   - 中间件执行顺序：注册顺序决定执行顺序
+
+2）中间件执行模型
+   - Express 中间件：
+     - (req, res, next) => {}
+     - 线性执行
+     - next() 调用下一个
+   - Koa 中间件：
+     - async (ctx, next) => {}
+     - 洋葱模型
+     - await next() 可以等待后续中间件
+   - 洋葱模型图解
+
+3）认证中间件 ⭐⭐⭐⭐⭐
+   - JWT 认证：
+     - 从 Header 提取 Token：Authorization: Bearer xxx
+     - 验证 Token
+     - 解析用户信息到 req.user
+     - 处理无效/过期 Token
+   - Session 认证：
+     - Cookie 携带 Session ID
+     - 服务端存储 Session
+   - 可选认证：部分路由需要，部分不需要
+   - 完整代码示例
+
+4）日志中间件 ⭐
+   - 访问日志（Access Log）：
+     - 请求方法、URL、状态码、耗时
+     - 客户端 IP、User-Agent
+   - 日志格式：JSON 结构化
+   - 与 Pino/Winston 集成
+   - 敏感信息过滤：密码、Token
+   - 日志采样：高流量下采样记录
+
+5）traceId 中间件 ⭐⭐⭐⭐⭐
+   - 为什么需要 traceId：
+     - 分布式系统链路追踪
+     - 问题排查
+   - 实现方式：
+     - 从请求头读取或生成 UUID
+     - 注入到请求对象
+     - 透传给下游服务
+     - 记录到日志
+   - AsyncLocalStorage 实现：
+     - 请求级别上下文
+     - 无需显式传递
+   - OpenTelemetry 集成简介
+
+6）错误处理中间件 ⭐⭐⭐⭐⭐
+   - Express 错误处理：
+     - 4 参数中间件：(err, req, res, next)
+     - 必须放在最后
+   - 错误分类：
+     - 业务错误：已知，有错误码
+     - 系统错误：未知，需要告警
+   - 错误响应格式：
+     ```json
+     {
+       "code": "USER_NOT_FOUND",
+       "message": "用户不存在",
+       "traceId": "xxx"
+     }
+     ```
+   - HTTP 状态码 vs 业务错误码
+   - async 函数错误捕获：
+     - Express 需要包装
+     - Koa 原生支持
+   - 错误日志记录
+   - 错误告警
+
+7）其他常用中间件
+   - CORS 中间件：跨域配置
+   - 请求体解析：body-parser
+   - 压缩中间件：compression
+   - 限流中间件：rate-limit
+   - 安全头中间件：helmet
+
+8）中间件注册顺序 ⭐
+   - 推荐顺序：
+     1. 安全头（helmet）
+     2. CORS
+     3. 请求体解析
+     4. traceId
+     5. 日志
+     6. 认证
+     7. 业务路由
+     8. 404 处理
+     9. 错误处理
+   - 顺序错误的后果
+
+9）中间件设计原则
+   - 单一职责
+   - 可配置
+   - 可测试
+   - 避免同步阻塞
+   - 正确使用 next()
+
+10）面试高频问题（至少 6 个问题 + 加分回答）
+   - 什么是中间件？洋葱模型是什么？
+   - 如何实现 JWT 认证中间件？
+   - 如何在分布式系统中追踪请求？
+   - Express 如何处理 async 函数的错误？
+   - 中间件的注册顺序重要吗？
+   - 如何设计统一的错误响应格式？
+
+【输出形式要求：多文件、多格式】
+
+/bff-middleware-design/
+├── README.md
+├── docs/
+│   ├── 01-middleware-concepts.md
+│   ├── 02-auth-middleware.md
+│   ├── 03-logging-middleware.md
+│   ├── 04-traceid-and-context.md
+│   ├── 05-error-handling.md
+│   └── 06-interview-questions.md
+├── examples/
+│   ├── app/
+│   │   ├── app.ts
+│   │   └── middleware-order-demo.ts
+│   ├── middlewares/
+│   │   ├── auth-jwt.ts
+│   │   ├── request-logger.ts
+│   │   ├── trace-id.ts
+│   │   ├── error-handler.ts
+│   │   ├── async-wrapper.ts
+│   │   ├── cors-config.ts
+│   │   └── rate-limiter.ts
+│   ├── utils/
+│   │   ├── async-local-storage.ts
+│   │   └── request-context.ts
+│   └── errors/
+│       ├── app-error.ts
+│       └── error-codes.ts
+├── diagrams/
+│   ├── middleware-flow.txt
+│   └── onion-model.txt
+└── scripts/
+    └── run-app.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. 重点是认证、traceId、错误处理中间件。
+3. 包含 AsyncLocalStorage 实现请求上下文。
+4. 包含 async-wrapper 解决 Express async 问题。
+5. 使用 TypeScript。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

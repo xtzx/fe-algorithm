@@ -1,0 +1,190 @@
+
+================================================================================
+【A4】API 设计（REST 规范、数据聚合、降级策略）
+================================================================================
+
+```text
+你现在是「BFF API 设计与服务编排专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解 BFF 中的 API 设计，面向中高级面试。
+
+【本次主题】A4：API 设计（REST 规范、数据聚合、降级策略）
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）RESTful API 设计原则 ⭐⭐⭐⭐⭐
+   - 资源设计：
+     - 名词而非动词：/users 而非 /getUsers
+     - 复数形式：/users, /orders
+     - 资源层级：/users/:userId/orders/:orderId
+     - 嵌套 vs 扁平的取舍
+   - HTTP 方法语义：
+     - GET：获取资源，幂等，可缓存
+     - POST：创建资源，非幂等
+     - PUT：全量更新，幂等
+     - PATCH：部分更新
+     - DELETE：删除资源
+   - URL 设计示例
+
+2）HTTP 状态码规范
+   - 2xx 成功：
+     - 200 OK：通用成功
+     - 201 Created：创建成功
+     - 204 No Content：删除成功
+   - 4xx 客户端错误：
+     - 400 Bad Request：参数错误
+     - 401 Unauthorized：未认证
+     - 403 Forbidden：无权限
+     - 404 Not Found：资源不存在
+     - 409 Conflict：冲突
+     - 422 Unprocessable Entity：验证失败
+   - 5xx 服务端错误：
+     - 500 Internal Server Error
+     - 502 Bad Gateway
+     - 503 Service Unavailable
+
+3）查询能力设计
+   - 分页：
+     - offset/limit：传统方式
+       - GET /users?offset=0&limit=10
+     - cursor-based：游标分页
+       - GET /users?cursor=xxx&limit=10
+     - 两者对比与选择
+   - 排序：
+     - GET /users?sort=createdAt:desc
+     - 多字段排序
+   - 过滤：
+     - GET /users?status=active&role=admin
+     - 复杂过滤
+   - 字段选择：
+     - GET /users?fields=id,name,email
+     - 减少冗余数据
+   - 关联加载：
+     - GET /users?include=orders,profile
+     - 避免 N+1 查询
+
+4）错误响应格式
+   - 统一格式：
+     ```json
+     {
+       "code": "USER_NOT_FOUND",
+       "message": "用户不存在",
+       "details": { ... },
+       "traceId": "xxx"
+     }
+     ```
+   - RFC 7807 Problem Details 格式
+   - 业务错误码设计
+
+5）数据聚合模式 ⭐⭐⭐⭐⭐
+   - 场景：一个页面需要多个服务的数据
+   - 串行聚合：
+     - 依次调用，等待结果
+     - 适合有依赖的场景
+   - 并行聚合：
+     - Promise.all / Promise.allSettled
+     - 提升性能
+   - 混合聚合：
+     - 部分串行，部分并行
+   - 数据拼装：
+     - 将多个服务响应组装为前端需要的格式
+   - 完整代码示例
+
+6）调用后端服务 ⭐
+   - HTTP 客户端封装：
+     - axios / node-fetch / got
+     - 统一配置：baseURL、timeout、headers
+     - 拦截器：请求/响应处理
+     - traceId 透传
+   - 重试机制：
+     - 何时重试：网络错误、5xx
+     - 不重试：4xx
+     - 重试次数、间隔
+     - 指数退避
+   - 超时控制：
+     - 连接超时
+     - 读取超时
+     - 总超时
+
+7）降级与容错策略 ⭐⭐⭐⭐⭐
+   - 超时降级：
+     - 设置合理超时
+     - 超时返回默认值
+   - 失败降级：
+     - 部分服务失败不影响整体
+     - 使用 Promise.allSettled
+   - 默认值策略：
+     - 返回缓存数据
+     - 返回兜底数据
+   - 熔断器模式（简介）：
+     - 半开/开/关状态
+     - 防止雪崩
+   - 示例：商品详情页的降级
+
+8）API 版本管理
+   - URL 版本：/api/v1/users
+   - Header 版本：Accept: application/vnd.api+json;version=1
+   - 无版本（向后兼容）
+   - 版本迁移策略
+
+9）防御性编程
+   - 输入验证（详见 Q3）
+   - 响应数据校验
+   - 默认值处理
+   - 空值安全
+
+10）面试高频问题（至少 6 个问题 + 加分回答）
+   - RESTful API 设计有哪些原则？
+   - 如何设计分页接口？offset 和 cursor 有什么区别？
+   - BFF 如何聚合多个后端服务的数据？
+   - 后端服务超时或失败时如何处理？
+   - 如何设计统一的 API 错误响应？
+   - 什么时候用 POST，什么时候用 PUT？
+
+【输出形式要求：多文件、多格式】
+
+/bff-api-design/
+├── README.md
+├── docs/
+│   ├── 01-restful-principles.md
+│   ├── 02-http-status-codes.md
+│   ├── 03-query-capabilities.md
+│   ├── 04-data-aggregation.md
+│   ├── 05-degradation-strategies.md
+│   └── 06-interview-questions.md
+├── examples/
+│   ├── app/
+│   │   ├── app.ts
+│   │   └── routes/
+│   │       ├── users.ts
+│   │       └── products.ts
+│   ├── services/
+│   │   ├── user-service.ts
+│   │   ├── product-service.ts
+│   │   └── order-service.ts
+│   ├── aggregation/
+│   │   ├── parallel-aggregation.ts
+│   │   ├── serial-aggregation.ts
+│   │   └── mixed-aggregation.ts
+│   ├── http-client/
+│   │   ├── http-client.ts
+│   │   ├── retry.ts
+│   │   └── timeout.ts
+│   └── degradation/
+│       ├── fallback-example.ts
+│       └── circuit-breaker-simple.ts
+└── scripts/
+    └── run-app.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. 重点是数据聚合和降级策略。
+3. 包含完整的 HTTP 客户端封装。
+4. 包含重试和超时机制。
+5. 使用 TypeScript。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

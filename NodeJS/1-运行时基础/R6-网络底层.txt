@@ -1,0 +1,184 @@
+
+================================================================================
+【R6】网络底层（net / dns / http）
+================================================================================
+
+```text
+你现在是「Node.js 网络编程专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解 Node.js 网络底层模块，面向中高级面试。
+
+【本次主题】R6：网络底层（net / dns / http）
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）网络基础概念
+   - OSI 七层模型 vs TCP/IP 四层模型
+   - TCP vs UDP 的区别
+   - 三次握手 / 四次挥手
+   - Node.js 网络模块层级：
+     - net（TCP）→ http → Express/Koa
+
+2）net 模块（TCP）⭐
+   - 创建 TCP 服务器：
+     - net.createServer(options, connectionListener)
+     - server.listen(port, host, callback)
+     - server.close()
+   - Socket 对象：
+     - 双工流（Readable + Writable）
+     - socket.remoteAddress / socket.remotePort
+     - socket.localAddress / socket.localPort
+     - socket.setEncoding() / socket.setTimeout()
+   - Socket 事件：
+     - 'connect'：连接建立
+     - 'data'：收到数据
+     - 'end'：对端关闭
+     - 'error'：错误
+     - 'close'：关闭
+   - 创建 TCP 客户端：
+     - net.createConnection(port, host)
+     - net.connect(options)
+   - 实战示例：
+     - Echo 服务器
+     - 简单聊天室
+
+3）dns 模块
+   - dns.lookup(hostname, callback)：
+     - 使用操作系统解析器
+     - 遵循系统 hosts 文件
+     - 可能阻塞 libuv 线程池
+   - dns.resolve(hostname, rrtype, callback)：
+     - 直接查询 DNS 服务器
+     - 不使用线程池
+     - 支持多种记录类型
+   - lookup vs resolve 的区别（面试常问）
+   - 记录类型查询：
+     - dns.resolve4()：A 记录（IPv4）
+     - dns.resolve6()：AAAA 记录（IPv6）
+     - dns.resolveMx()：MX 记录（邮件）
+     - dns.resolveTxt()：TXT 记录
+     - dns.resolveCname()：CNAME 记录
+   - dns.reverse()：反向查询
+   - dns.setServers()：自定义 DNS 服务器
+   - dns/promises API
+
+4）http 模块底层 ⭐⭐⭐⭐⭐
+   - 创建 HTTP 服务器：
+     - http.createServer(requestListener)
+     - server.listen(port)
+   - IncomingMessage（req）对象：
+     - req.method / req.url / req.headers
+     - req 是 Readable 流（用于读取 body）
+     - 解析 URL：new URL(req.url, base)
+   - ServerResponse（res）对象：
+     - res.statusCode / res.statusMessage
+     - res.setHeader(name, value)
+     - res.writeHead(statusCode, headers)
+     - res.write(data) / res.end(data)
+     - res 是 Writable 流
+   - 请求体解析：
+     - req.on('data', chunk)
+     - req.on('end', ...)
+     - 完整示例：手动解析 JSON body
+   - 与 Express/Koa 的关系
+
+5）HTTP 客户端
+   - http.request(options, callback)：
+     - method / hostname / port / path / headers
+   - http.get(url, callback)：GET 快捷方式
+   - 响应处理：
+     - res 是 IncomingMessage（Readable 流）
+     - 收集响应数据
+   - 超时设置
+   - 与 axios/node-fetch 的对比
+
+6）http.Agent（连接池）
+   - 作用：管理 HTTP 连接复用
+   - Keep-Alive 机制：
+     - agent.keepAlive：是否复用
+     - agent.keepAliveMsecs：保活时间
+     - agent.maxSockets：最大并发连接
+     - agent.maxFreeSockets：空闲连接
+   - 默认 agent vs 自定义 agent
+   - 为什么需要连接池
+
+7）https 模块
+   - 与 http 模块的区别：TLS/SSL
+   - 创建 HTTPS 服务器：
+     - 证书配置：key、cert、ca
+   - 自签名证书开发环境：
+     - rejectUnauthorized: false（仅开发）
+   - 生产环境证书管理
+
+8）HTTP/2 模块（http2）
+   - HTTP/2 特性：
+     - 多路复用
+     - 头部压缩（HPACK）
+     - 服务端推送
+     - 二进制帧
+   - http2.createSecureServer()
+   - 与 HTTP/1.1 的对比
+   - 适用场景
+
+9）实战示例
+   - 极简静态文件服务器
+   - HTTP 代理服务器
+   - 封装 HTTP 客户端工具
+
+10）面试高频问题（至少 6 个问题 + 加分回答）
+   - net 模块和 http 模块有什么关系？
+   - dns.lookup 和 dns.resolve 有什么区别？
+   - 如何手动解析 HTTP 请求 body？
+   - http.Agent 的作用是什么？
+   - Node.js 如何支持 HTTPS？
+   - TCP 和 HTTP 有什么关系？
+
+【输出形式要求：多文件、多格式】
+
+/node-network-modules/
+├── README.md
+├── docs/
+│   ├── 01-network-basics.md
+│   ├── 02-net-tcp-module.md
+│   ├── 03-dns-module.md
+│   ├── 04-http-module-deep-dive.md
+│   ├── 05-https-and-http2.md
+│   └── 06-interview-questions.md
+├── examples/
+│   ├── net/
+│   │   ├── tcp-server.ts
+│   │   ├── tcp-client.ts
+│   │   ├── echo-server.ts
+│   │   └── simple-chat.ts
+│   ├── dns/
+│   │   ├── dns-lookup.ts
+│   │   ├── dns-resolve.ts
+│   │   └── compare-lookup-resolve.ts
+│   ├── http/
+│   │   ├── simple-server.ts
+│   │   ├── parse-body.ts
+│   │   ├── http-client.ts
+│   │   ├── static-file-server.ts
+│   │   └── http-agent.ts
+│   └── https/
+│       └── https-server.ts
+├── diagrams/
+│   ├── tcp-handshake.txt
+│   └── http-request-flow.txt
+└── scripts/
+    └── run-examples.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. docs 下 04-http-module-deep-dive.md 是重点。
+3. examples 下：
+   - 包含完整的静态文件服务器实现
+   - TCP Echo 服务器
+   - 手动解析 HTTP body
+4. 使用 TypeScript，可运行。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

@@ -1,0 +1,184 @@
+
+================================================================================
+【Q1】日志系统（Pino / Winston / 链路追踪）
+================================================================================
+
+```text
+你现在是「Node.js 可观测性与日志系统专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解日志系统，面向中高级面试。
+
+【本次主题】Q1：日志系统（Pino / Winston / 链路追踪）
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）为什么日志系统重要
+   - 线上问题排查的核心依据
+   - 日志 vs console.log：
+     - 日志级别
+     - 结构化输出
+     - 性能考虑
+     - 持久化
+   - 日志三大作用：
+     - 调试：排查问题
+     - 监控：发现异常
+     - 审计：合规记录
+
+2）日志设计原则 ⭐
+   - 日志级别：
+     - trace：最详细追踪
+     - debug：调试信息
+     - info：正常运行信息
+     - warn：警告
+     - error：错误
+     - fatal：致命错误
+   - 级别设置：
+     - 开发环境：debug
+     - 生产环境：info
+   - 结构化日志：
+     - JSON 格式
+     - 必要字段：timestamp, level, message, traceId, service
+   - 该记什么：
+     - 请求入口/出口
+     - 关键业务操作
+     - 错误和异常
+   - 不该记什么：
+     - 敏感信息（密码、Token）
+     - 过于频繁的日志
+
+3）Pino 深度教程 ⭐⭐⭐⭐⭐
+   - Pino 设计理念：极致性能
+   - 为什么 Pino 快：
+     - JSON 序列化优化
+     - 异步写入
+   - 基础配置：
+     ```typescript
+     import pino from 'pino';
+     const logger = pino({
+       level: 'info',
+       transport: {
+         target: 'pino-pretty', // 开发环境
+       },
+     });
+     ```
+   - 子 Logger（Child Logger）：
+     ```typescript
+     const childLogger = logger.child({ requestId: 'xxx' });
+     ```
+   - 与 Express/Fastify 集成：pino-http
+   - 日志格式化
+   - 生产环境配置
+
+4）Winston 概述
+   - Transport 系统：
+     - Console
+     - File
+     - HTTP
+   - 格式化器：
+     - combine
+     - timestamp
+     - printf
+     - json
+   - 与 Pino 对比：
+     - Pino 更快
+     - Winston 更灵活
+   - 基础示例
+
+5）请求级日志与 traceId ⭐⭐⭐⭐⭐
+   - 为什么需要 traceId：
+     - 串联一次请求的所有日志
+     - 分布式系统追踪
+   - traceId 生成：
+     - UUID / nanoid
+     - 从请求头获取（X-Request-ID）
+   - traceId 透传：
+     - 注入请求对象
+     - 传递给下游服务
+   - AsyncLocalStorage 实现：
+     ```typescript
+     const asyncLocalStorage = new AsyncLocalStorage<{ traceId: string }>();
+
+     function getTraceId() {
+       return asyncLocalStorage.getStore()?.traceId;
+     }
+     ```
+   - 完整中间件示例
+
+6）日志与 Context
+   - 使用 AsyncLocalStorage 实现请求上下文
+   - 自动注入 traceId 到日志
+   - 避免显式传递
+
+7）日志收集与分析
+   - ELK Stack：
+     - Elasticsearch：存储
+     - Logstash：收集处理
+     - Kibana：可视化
+   - 云服务方案：
+     - AWS CloudWatch
+     - 阿里云 SLS
+     - Datadog
+   - 日志格式要求
+
+8）日志告警
+   - 错误率告警
+   - 关键词告警
+   - 日志量异常告警
+   - 与监控系统集成
+
+9）最佳实践
+   - 日志量控制
+   - 日志轮转
+   - 敏感信息脱敏
+   - 采样策略
+
+10）面试高频问题（至少 6 个问题 + 加分回答）
+   - 你们线上日志是怎么做的？
+   - Pino 和 Winston 有什么区别？为什么选 Pino？
+   - 什么是结构化日志？
+   - 如何实现请求级别的日志追踪？
+   - 日志量太大怎么处理？
+   - 什么是 traceId？怎么实现？
+
+【输出形式要求：多文件、多格式】
+
+/node-logging-system/
+├── README.md
+├── docs/
+│   ├── 01-why-logging-matters.md
+│   ├── 02-logging-principles.md
+│   ├── 03-pino-complete-guide.md
+│   ├── 04-winston-overview.md
+│   ├── 05-request-tracing.md
+│   └── 06-interview-questions.md
+├── examples/
+│   ├── pino/
+│   │   ├── basic-pino.ts
+│   │   ├── pino-with-express.ts
+│   │   ├── child-logger.ts
+│   │   ├── pino-transport.ts
+│   │   └── production-config.ts
+│   ├── winston/
+│   │   ├── basic-winston.ts
+│   │   └── winston-with-express.ts
+│   └── tracing/
+│       ├── async-local-storage.ts
+│       ├── request-context.ts
+│       ├── trace-middleware.ts
+│       └── auto-inject-traceid.ts
+├── config/
+│   └── logging-config.ts
+└── scripts/
+    └── run-examples.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. 重点是 Pino 和 AsyncLocalStorage 实现追踪。
+3. 包含完整的 Express 集成示例。
+4. 使用 TypeScript。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

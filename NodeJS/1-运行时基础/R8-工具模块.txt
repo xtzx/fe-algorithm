@@ -1,0 +1,200 @@
+
+================================================================================
+【R8】工具模块（util / os / path / url / timers）
+================================================================================
+
+```text
+你现在是「Node.js 核心模块专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解 Node.js 工具模块，面向中高级面试。
+
+【本次主题】R8：工具模块（util / os / path / url / timers）
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+━━━━━━━━━━━━━━━━━━━━ 第一部分：util 模块 ━━━━━━━━━━━━━━━━━━━━
+
+1）util.promisify() ⭐⭐⭐⭐⭐
+   - 作用：将 callback 风格 API 转为 Promise
+   - 示例：promisify(fs.readFile)
+   - 内部原理：处理 (err, data) 回调
+   - 自定义 promisify 行为：util.promisify.custom
+   - 手写简化版 promisify
+
+2）util.callbackify()
+   - 作用：将 async 函数转为 callback 风格
+   - 使用场景
+
+3）util.inspect()
+   - 作用：格式化对象输出，用于调试
+   - 选项：depth、colors、showHidden、maxArrayLength
+   - console.dir 的底层实现
+   - 自定义 inspect：util.inspect.custom (Symbol)
+
+4）util.format() / util.formatWithOptions()
+   - 格式化字符串：%s、%d、%j、%o、%O
+   - console.log 的底层实现
+
+5）util.types
+   - 类型检查：isPromise、isAsyncFunction、isDate、isRegExp
+   - isArrayBuffer、isTypedArray、isMap、isSet
+   - 与 typeof / instanceof 的区别
+
+6）其他工具
+   - util.deprecate()：标记废弃 API
+   - util.TextEncoder / TextDecoder：字符串编码
+
+━━━━━━━━━━━━━━━━━━━━ 第二部分：os 模块 ━━━━━━━━━━━━━━━━━━━━
+
+7）系统信息
+   - os.platform() / os.type() / os.arch()
+   - os.release() / os.version()
+   - os.hostname()
+
+8）CPU 信息
+   - os.cpus()：CPU 核心数和型号
+   - os.loadavg()：系统负载（Unix）
+   - 根据 CPU 核心数启动 worker
+
+9）内存信息
+   - os.totalmem() / os.freemem()
+   - 计算内存使用率
+
+10）网络接口
+   - os.networkInterfaces()
+   - 获取本机 IP 地址
+
+11）其他
+   - os.userInfo() / os.homedir()
+   - os.tmpdir()：临时目录
+   - os.EOL：行结束符
+
+━━━━━━━━━━━━━━━━━━━━ 第三部分：path 模块 ━━━━━━━━━━━━━━━━━━━━
+
+12）路径拼接 ⭐⭐⭐⭐⭐
+   - path.join(...paths)：智能拼接
+   - path.resolve(...paths)：解析为绝对路径
+   - join vs resolve 的区别（面试高频）
+
+13）路径解析
+   - path.parse(path)：分解为 { root, dir, base, ext, name }
+   - path.format(pathObject)：反向组合
+
+14）路径信息
+   - path.dirname(path)：目录部分
+   - path.basename(path, ext?)：文件名
+   - path.extname(path)：扩展名
+
+15）路径规范化
+   - path.normalize(path)：处理 . 和 ..
+   - path.isAbsolute(path)：是否绝对路径
+
+16）跨平台
+   - path.sep：路径分隔符（/ 或 \）
+   - path.delimiter：环境变量分隔符（: 或 ;）
+   - path.posix / path.win32：强制平台风格
+
+━━━━━━━━━━━━━━━━━━━━ 第四部分：url 模块 ━━━━━━━━━━━━━━━━━━━━
+
+17）URL 类（WHATWG 标准）⭐
+   - new URL(input, base?)
+   - 属性：protocol、host、hostname、port、pathname、search、hash、origin
+   - URLSearchParams：操作查询参数
+     - get / getAll / set / append / delete / has / toString
+     - 遍历：entries / keys / values / forEach
+
+18）旧版 url 模块
+   - url.parse() / url.format() / url.resolve()（已废弃）
+   - 与 URL 类的对比
+
+19）编码
+   - encodeURI() / decodeURI()
+   - encodeURIComponent() / decodeURIComponent()
+
+20）querystring 模块
+   - querystring.parse() / querystring.stringify()
+   - 与 URLSearchParams 的对比（推荐 URLSearchParams）
+
+━━━━━━━━━━━━━━━━━━━━ 第五部分：timers 模块 ━━━━━━━━━━━━━━━━━━━━
+
+21）基础定时器
+   - setTimeout / clearTimeout
+   - setInterval / clearInterval
+   - setImmediate / clearImmediate
+
+22）定时器对象
+   - timeout.ref() / timeout.unref()
+   - timeout.refresh()：重置定时器
+
+23）执行顺序 ⭐
+   - process.nextTick：微任务，最高优先级
+   - Promise.then / queueMicrotask：微任务
+   - setImmediate：check 阶段
+   - setTimeout(fn, 0)：timers 阶段
+   - 代码示例演示执行顺序
+
+24）timers/promises API ⭐
+   - import { setTimeout, setInterval, setImmediate } from 'timers/promises'
+   - 支持 AbortSignal 取消
+   - 更现代的用法
+
+25）面试高频问题（至少 8 个问题 + 加分回答）
+   - util.promisify 的原理是什么？
+   - path.join 和 path.resolve 有什么区别？
+   - 如何在 ES Module 中获取 __dirname？
+   - process.nextTick 和 setImmediate 哪个先执行？
+   - setTimeout(fn, 0) 和 setImmediate 哪个先执行？
+   - 如何获取 Node.js 可用的 CPU 核心数？
+   - timeout.unref() 有什么作用？
+   - URL 和 querystring 该用哪个？
+
+【输出形式要求：多文件、多格式】
+
+/node-utility-modules/
+├── README.md
+├── docs/
+│   ├── 01-util-module.md
+│   ├── 02-os-module.md
+│   ├── 03-path-module.md
+│   ├── 04-url-and-querystring.md
+│   ├── 05-timers-module.md
+│   └── 06-interview-questions.md
+├── examples/
+│   ├── util/
+│   │   ├── promisify.ts
+│   │   ├── promisify-custom.ts
+│   │   ├── inspect-demo.ts
+│   │   ├── types-demo.ts
+│   │   └── format-demo.ts
+│   ├── os/
+│   │   ├── system-info.ts
+│   │   ├── get-local-ip.ts
+│   │   └── resource-monitor.ts
+│   ├── path/
+│   │   ├── join-vs-resolve.ts
+│   │   ├── parse-and-format.ts
+│   │   ├── cross-platform.ts
+│   │   └── esm-dirname.mjs
+│   ├── url/
+│   │   ├── url-basics.ts
+│   │   ├── search-params.ts
+│   │   └── build-api-url.ts
+│   └── timers/
+│       ├── execution-order.ts
+│       ├── promise-timers.ts
+│       ├── abort-timer.ts
+│       └── unref-demo.ts
+└── scripts/
+    └── run-examples.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. 重点展示 promisify 原理和 join vs resolve 对比。
+3. 包含 timers/promises 和执行顺序示例。
+4. 使用 TypeScript（.mjs 除外），可运行。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

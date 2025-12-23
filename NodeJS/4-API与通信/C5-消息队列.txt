@@ -1,0 +1,207 @@
+
+================================================================================
+【C5】消息队列（BullMQ / RabbitMQ / Kafka）
+================================================================================
+
+```text
+你现在是「Node.js 消息队列与异步任务专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解消息队列，面向中高级面试。
+
+【本次主题】C5：消息队列（BullMQ / RabbitMQ / Kafka）
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）为什么需要消息队列
+   - 异步解耦：
+     - 请求不等待任务完成
+     - 服务间松耦合
+   - 削峰填谷：
+     - 处理突发流量
+     - 平滑处理能力
+   - 可靠性：
+     - 消息持久化
+     - 重试机制
+   - 广播：
+     - 一条消息多个消费者
+
+2）消息队列对比 ⭐⭐⭐⭐⭐
+
+   ┌────────────┬─────────────┬─────────────┬─────────────┐
+   │            │ BullMQ      │ RabbitMQ    │ Kafka       │
+   ├────────────┼─────────────┼─────────────┼─────────────┤
+   │ 底层       │ Redis       │ 独立服务    │ 独立服务    │
+   │ 复杂度     │ 低          │ 中          │ 高          │
+   │ 持久化     │ Redis       │ 支持        │ 强          │
+   │ 吞吐量     │ 高          │ 中          │ 非常高      │
+   │ 消息顺序   │ 单队列保证  │ 单队列保证  │ 分区内保证  │
+   │ 适用场景   │ 简单任务    │ 企业集成    │ 日志/流     │
+   │ 运维成本   │ 低          │ 中          │ 高          │
+   └────────────┴─────────────┴─────────────┴─────────────┘
+
+3）BullMQ 深度教程 ⭐⭐⭐⭐⭐
+   - 基于 Redis 的任务队列
+   - 核心概念：
+     - Queue：队列
+     - Worker：消费者
+     - Job：任务
+   - 任务生命周期：
+     - waiting → active → completed/failed
+   - 基础使用：
+     ```typescript
+     const queue = new Queue('my-queue');
+     await queue.add('job-name', { data: 'value' });
+
+     const worker = new Worker('my-queue', async (job) => {
+       console.log(job.data);
+     });
+     ```
+
+4）BullMQ 高级功能
+   - 延迟任务：
+     ```typescript
+     await queue.add('delayed', data, { delay: 60000 });
+     ```
+   - 优先级：
+     ```typescript
+     await queue.add('priority', data, { priority: 1 });
+     ```
+   - 重试策略：
+     ```typescript
+     new Worker('queue', handler, {
+       settings: {
+         backoff: { type: 'exponential', delay: 1000 },
+       },
+     });
+     ```
+   - 速率限制：
+     ```typescript
+     new Queue('limited', {
+       limiter: { max: 100, duration: 1000 },
+     });
+     ```
+   - 任务进度
+   - 死信队列
+
+5）RabbitMQ 概述
+   - AMQP 协议
+   - 核心概念：
+     - Exchange：交换机
+     - Queue：队列
+     - Binding：绑定
+     - Routing Key：路由键
+   - Exchange 类型：
+     - direct：精确匹配
+     - topic：模式匹配
+     - fanout：广播
+     - headers：头部匹配
+   - 消息确认：ACK/NACK
+   - 持久化配置
+   - Node.js 客户端：amqplib
+
+6）Kafka 概述
+   - 核心概念：
+     - Topic：主题
+     - Partition：分区
+     - Consumer Group：消费者组
+     - Offset：偏移量
+   - 特点：
+     - 超高吞吐
+     - 消息保留
+     - 可回溯
+   - Node.js 客户端：kafkajs
+   - 适用场景：
+     - 日志收集
+     - 事件溯源
+     - 流处理
+
+7）消息可靠性保证 ⭐⭐⭐⭐⭐
+   - 生产者可靠性：
+     - 消息确认
+     - 重试
+   - 队列可靠性：
+     - 持久化
+     - 高可用
+   - 消费者可靠性：
+     - 手动 ACK
+     - 失败重试
+     - 死信队列
+   - 语义保证：
+     - At Most Once
+     - At Least Once（常用）
+     - Exactly Once（如何实现）
+
+8）幂等性设计 ⭐
+   - 什么是幂等性：多次执行结果相同
+   - 为什么需要：消息可能重复
+   - 实现方式：
+     - 幂等 Key
+     - 去重表
+     - 状态机
+
+9）BFF 中的应用场景
+   - 发送邮件/短信
+   - 生成报表
+   - 图片处理
+   - 数据同步
+   - 异步通知
+
+10）监控与运维
+   - Bull Board：BullMQ 可视化
+   - 任务状态监控
+   - 告警设置
+
+11）面试高频问题（至少 8 个问题 + 加分回答）
+   - 你们用过消息队列吗？什么场景？
+   - BullMQ 和 RabbitMQ 怎么选？
+   - 如何保证消息不丢失？
+   - 如何保证消息不重复消费？
+   - 什么是幂等性？如何实现？
+   - 消息队列的死信队列是什么？
+   - 如何处理消费失败的消息？
+   - At Least Once 和 Exactly Once 有什么区别？
+
+【输出形式要求：多文件、多格式】
+
+/node-message-queue/
+├── README.md
+├── docs/
+│   ├── 01-why-message-queue.md
+│   ├── 02-queue-comparison.md
+│   ├── 03-bullmq-complete-guide.md
+│   ├── 04-rabbitmq-overview.md
+│   ├── 05-reliability-and-idempotency.md
+│   └── 06-interview-questions.md
+├── examples/
+│   ├── bullmq/
+│   │   ├── queue-setup.ts
+│   │   ├── producer.ts
+│   │   ├── worker.ts
+│   │   ├── delayed-job.ts
+│   │   ├── priority-job.ts
+│   │   ├── retry-strategy.ts
+│   │   ├── rate-limit.ts
+│   │   └── dead-letter.ts
+│   ├── rabbitmq/
+│   │   ├── connection.ts
+│   │   ├── producer.ts
+│   │   └── consumer.ts
+│   └── patterns/
+│       ├── idempotent-consumer.ts
+│       └── task-progress.ts
+├── diagrams/
+│   └── message-flow.txt
+└── scripts/
+    └── run-examples.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. BullMQ 部分要详尽，包含各种高级功能。
+3. 包含可靠性和幂等性示例。
+4. 使用 TypeScript。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

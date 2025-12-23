@@ -1,0 +1,152 @@
+
+================================================================================
+【R3】模块系统（CommonJS / ES Module）
+================================================================================
+
+```text
+你现在是「Node.js 模块系统专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解 Node.js 模块系统，面向中高级面试。
+
+【本次主题】R3：模块系统（CommonJS / ES Module）
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）CommonJS (CJS) 详解
+   - 基本语法：
+     - require(path)：同步加载模块
+     - module.exports：导出模块
+     - exports：module.exports 的引用
+   - module 对象详解：
+     - module.id / module.filename / module.path
+     - module.exports / module.children / module.parent
+     - module.loaded：是否加载完成
+   - require 的解析算法：
+     - 核心模块：直接返回（如 'fs', 'path'）
+     - 相对/绝对路径：按路径查找
+     - node_modules 查找：逐级向上
+   - exports vs module.exports 的坑
+   - 循环依赖的处理方式
+
+2）ES Module (ESM) 详解
+   - 基本语法：
+     - import / export（命名导出）
+     - export default（默认导出）
+     - import * as（命名空间导入）
+     - 动态导入：import()
+   - 启用 ESM 的方式：
+     - 文件扩展名 .mjs
+     - package.json 中 "type": "module"
+   - ESM 的特性：
+     - 静态分析（编译时确定依赖）
+     - 实时绑定（live bindings）
+     - 顶层 await
+     - 严格模式默认开启
+   - ESM 中没有 __dirname / __filename 的解决方案：
+     - import.meta.url
+     - fileURLToPath + dirname
+
+3）CJS vs ESM 对比 ⭐⭐⭐⭐⭐
+
+   ┌─────────────────┬───────────────────┬───────────────────┐
+   │                 │ CommonJS (CJS)    │ ES Module (ESM)   │
+   ├─────────────────┼───────────────────┼───────────────────┤
+   │ 加载时机        │ 运行时            │ 编译时            │
+   │ 加载方式        │ 同步              │ 异步              │
+   │ 导出值          │ 值的拷贝          │ 实时绑定          │
+   │ 循环依赖        │ 可能得到未完成对象│ 可能得到 undefined│
+   │ this           │ 指向 module.exports│ undefined         │
+   │ 全局变量        │ __dirname 等可用  │ 不可用            │
+   │ 使用场景        │ Node.js 传统      │ 现代标准          │
+   └─────────────────┴───────────────────┴───────────────────┘
+
+4）CJS 与 ESM 互操作
+   - ESM 中导入 CJS：
+     - import cjs from 'cjs-module' (只能默认导入)
+     - 命名导入可能失败
+   - CJS 中导入 ESM：
+     - 必须使用 import()（动态导入）
+     - 不能使用 require()
+   - package.json 配置：
+     - "main": CJS 入口
+     - "module": ESM 入口（bundler 用）
+     - "exports": 现代条件导出
+
+5）package.json exports 字段 ⭐
+   - 条件导出：
+     - "import" / "require"：区分模块类型
+     - "node" / "browser"：区分环境
+     - "default"：兜底
+   - 子路径导出：
+     - ".": 主入口
+     - "./utils": 子路径
+   - 私有路径：未列出的路径不可访问
+   - 示例：完整的 exports 配置
+
+6）模块缓存机制
+   - require.cache：CJS 模块缓存
+   - 清除缓存的方式：delete require.cache[path]
+   - ESM 没有类似机制
+   - 热更新与模块缓存
+
+7）常见问题与解决方案
+   - "Cannot use import statement outside a module"
+   - "require is not defined in ES module"
+   - "ERR_REQUIRE_ESM"
+   - ".js 文件被当作 CJS/ESM 的问题"
+   - 发布同时支持 CJS 和 ESM 的包
+
+8）面试高频问题（至少 6 个问题 + 加分回答）
+   - CommonJS 和 ES Module 有什么区别？
+   - 如何在 ES Module 中获取 __dirname？
+   - require 的解析顺序是什么？
+   - exports 和 module.exports 有什么区别？
+   - 如何发布同时支持 CJS 和 ESM 的 npm 包？
+   - 什么是循环依赖？如何处理？
+
+【输出形式要求：多文件、多格式】
+
+/node-module-systems/
+├── README.md
+├── docs/
+│   ├── 01-commonjs-deep-dive.md
+│   ├── 02-esm-deep-dive.md
+│   ├── 03-cjs-vs-esm-comparison.md
+│   ├── 04-interoperability.md
+│   ├── 05-package-json-exports.md
+│   └── 06-interview-questions.md
+├── examples/
+│   ├── commonjs/
+│   │   ├── basic-export.cjs
+│   │   ├── exports-vs-module-exports.cjs
+│   │   ├── require-resolution.cjs
+│   │   └── circular-dependency/
+│   │       ├── a.cjs
+│   │       └── b.cjs
+│   ├── esm/
+│   │   ├── basic-export.mjs
+│   │   ├── named-default.mjs
+│   │   ├── dynamic-import.mjs
+│   │   ├── get-dirname.mjs
+│   │   └── top-level-await.mjs
+│   ├── interop/
+│   │   ├── cjs-from-esm.mjs
+│   │   └── esm-from-cjs.cjs
+│   └── package-exports/
+│       ├── package.json
+│       ├── index.cjs
+│       └── index.mjs
+└── scripts/
+    └── run-examples.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. docs 下 03-cjs-vs-esm-comparison.md 要有详细对比表格。
+3. examples 包含循环依赖的演示。
+4. package-exports 示例展示 dual package 配置。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

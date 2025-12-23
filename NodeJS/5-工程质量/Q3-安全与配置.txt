@@ -1,0 +1,173 @@
+
+================================================================================
+【Q3】安全与配置（OWASP / Helmet / Secrets 管理）
+================================================================================
+
+```text
+你现在是「Node.js 安全与配置管理专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解安全实践与配置管理，面向中高级面试。
+
+【本次主题】Q3：安全与配置（OWASP / Helmet / Secrets 管理）
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）OWASP Top 10 ⭐
+   - 注入攻击（Injection）：
+     - SQL 注入
+     - NoSQL 注入
+     - 命令注入
+     - 防御：参数化查询、输入验证
+   - 认证失败（Broken Authentication）：
+     - 弱密码策略
+     - Session 管理不当
+   - 敏感数据暴露（Sensitive Data Exposure）：
+     - 明文存储密码
+     - 日志泄露敏感信息
+   - 安全配置错误（Security Misconfiguration）：
+     - 默认密码
+     - 详细错误信息
+   - XSS（跨站脚本）：
+     - 防御：输出编码、CSP
+   - CSRF（跨站请求伪造）：
+     - 防御：CSRF Token、SameSite Cookie
+
+2）输入验证 ⭐⭐⭐⭐⭐
+   - Zod 验证：
+     ```typescript
+     const userSchema = z.object({
+       email: z.string().email(),
+       password: z.string().min(8),
+       age: z.number().positive().optional(),
+     });
+     ```
+   - 验证中间件封装
+   - 错误响应格式
+   - Joi / class-validator 对比
+
+3）HTTP 安全头（Helmet）⭐
+   - Helmet 中间件：
+     ```typescript
+     app.use(helmet());
+     ```
+   - 安全头详解：
+     - Content-Security-Policy：限制资源来源
+     - X-Frame-Options：防止点击劫持
+     - X-Content-Type-Options：防止 MIME 嗅探
+     - Strict-Transport-Security：强制 HTTPS
+     - X-XSS-Protection：XSS 过滤器
+   - 自定义配置
+
+4）认证安全 ⭐⭐⭐⭐⭐
+   - JWT 安全：
+     - 签名算法选择：HS256 / RS256 / ES256
+     - Token 有效期：Access Token（短）+ Refresh Token（长）
+     - Token 存储：Cookie（推荐） vs LocalStorage
+     - Token 撤销策略
+   - Cookie 安全：
+     - HttpOnly：防止 JS 访问
+     - Secure：仅 HTTPS
+     - SameSite：防 CSRF（Strict/Lax/None）
+     - 签名 Cookie
+   - Session 安全：
+     - 安全的 Session ID
+     - Session 固定攻击防御
+
+5）配置管理 ⭐⭐⭐⭐⭐
+   - 不要把 secrets commit 到代码库！
+   - 环境变量：
+     - process.env
+     - .env 文件 + dotenv
+     - .env.example（示例文件）
+   - 配置分层：
+     - default.ts
+     - development.ts
+     - production.ts
+   - 环境变量验证：
+     ```typescript
+     const envSchema = z.object({
+       NODE_ENV: z.enum(['development', 'production', 'test']),
+       DATABASE_URL: z.string().url(),
+       JWT_SECRET: z.string().min(32),
+     });
+     ```
+   - config 库使用
+
+6）Secrets 管理
+   - 本地开发：.env（不 commit）
+   - CI/CD：环境变量 / Secrets
+   - 生产环境：
+     - Secrets Manager（AWS / GCP）
+     - HashiCorp Vault
+   - 在 Docker/K8s 中注入
+
+7）依赖安全
+   - npm audit / yarn audit
+   - 依赖更新策略：
+     - Dependabot
+     - Renovate
+   - 锁文件重要性
+   - 供应链攻击防范
+
+8）安全响应头配置示例
+   - 完整的 Helmet 配置
+   - CORS 安全配置
+   - 针对不同场景的配置
+
+9）安全检查清单
+   - 开发阶段
+   - 部署阶段
+   - 定期审计
+
+10）面试高频问题（至少 6 个问题 + 加分回答）
+   - 你们是怎么防止 SQL 注入的？
+   - JWT 和 Session 有什么区别？怎么选？
+   - 如何安全地管理配置和 Secrets？
+   - 你们服务做了哪些安全措施？
+   - Cookie 的 HttpOnly 和 Secure 是什么？
+   - OWASP Top 10 有哪些？
+
+【输出形式要求：多文件、多格式】
+
+/node-security-config/
+├── README.md
+├── docs/
+│   ├── 01-owasp-top-10.md
+│   ├── 02-input-validation.md
+│   ├── 03-http-security-headers.md
+│   ├── 04-authentication-security.md
+│   ├── 05-config-and-secrets.md
+│   └── 06-interview-questions.md
+├── examples/
+│   ├── app/
+│   │   ├── app.ts
+│   │   └── middlewares/
+│   │       ├── helmet-config.ts
+│   │       ├── cors-config.ts
+│   │       ├── validate-request.ts
+│   │       └── auth-jwt.ts
+│   ├── validation/
+│   │   ├── user.schema.ts
+│   │   ├── product.schema.ts
+│   │   └── env.schema.ts
+│   └── config/
+│       ├── index.ts
+│       ├── default.ts
+│       ├── development.ts
+│       └── production.ts
+├── templates/
+│   └── .env.example
+└── scripts/
+    └── run-app.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. 重点是输入验证和配置管理。
+3. 包含完整的 Zod 验证和环境变量验证。
+4. 使用 TypeScript。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

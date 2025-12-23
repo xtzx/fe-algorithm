@@ -1,0 +1,160 @@
+
+================================================================================
+【R7】加密与安全（crypto 模块）
+================================================================================
+
+```text
+你现在是「Node.js 加密与安全方向专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解 crypto 模块，面向中高级面试。
+
+【本次主题】R7：加密与安全（crypto 模块）
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）加密基础概念
+   - 编码 vs 加密：
+     - Base64 是编码，不是加密！
+   - 哈希 vs 加密：
+     - 哈希：单向、不可逆
+     - 加密：双向、可解密
+   - 对称加密 vs 非对称加密：
+     - 对称：加解密用同一密钥
+     - 非对称：公钥加密、私钥解密
+
+2）哈希（Hash）⭐
+   - 特性：单向、固定长度、雪崩效应
+   - crypto.createHash(algorithm)：
+     - hash.update(data)：输入数据
+     - hash.digest(encoding)：输出结果
+   - 常用算法：
+     - MD5：不安全，仅用于校验
+     - SHA-1：不安全
+     - SHA-256 / SHA-512：推荐
+   - 实战场景：
+     - 文件完整性校验
+     - 内容指纹（缓存 key、ETag）
+     - 不要直接用于密码存储！
+
+3）HMAC（带密钥的哈希）
+   - 作用：Hash + 密钥，防止篡改
+   - crypto.createHmac(algorithm, key)
+   - 与普通哈希的区别
+   - 实战场景：
+     - API 签名验证
+     - Webhook 签名（GitHub、Stripe）
+     - JWT HS256 签名
+
+4）密码安全存储 ⭐⭐⭐⭐⭐
+   - 为什么不能直接用 MD5/SHA：
+     - 彩虹表攻击
+     - 暴力破解太快
+   - 盐（Salt）的作用：
+     - 每个密码唯一的随机值
+     - 相同密码产生不同哈希
+   - 慢哈希函数：
+     - crypto.pbkdf2()：Password-Based Key Derivation Function
+     - crypto.scrypt()：更现代，内存硬
+     - bcrypt：专门用于密码（需要第三方库）
+   - 参数选择：
+     - 迭代次数 / 内存 / 并行因子
+   - 完整示例：使用 scrypt 存储和验证密码
+
+5）对称加密（AES）⭐
+   - AES 加密：AES-128/192/256
+   - 加密模式：
+     - ECB：不安全，避免使用
+     - CBC：需要 IV，常用
+     - GCM：认证加密，推荐 ⭐
+   - crypto.createCipheriv(algorithm, key, iv)
+   - crypto.createDecipheriv(algorithm, key, iv)
+   - 关键概念：
+     - 密钥（Key）：必须保密
+     - 初始化向量（IV）：每次加密唯一
+     - 认证标签（Auth Tag）：GCM 模式
+   - 完整示例：AES-256-GCM 加解密
+
+6）非对称加密（RSA）
+   - 公钥加密、私钥解密
+   - 私钥签名、公钥验证
+   - crypto.generateKeyPairSync()：生成密钥对
+   - crypto.publicEncrypt() / crypto.privateDecrypt()
+   - crypto.sign() / crypto.verify()
+   - 实战场景：
+     - 敏感数据传输
+     - 数字签名
+     - JWT RS256 签名
+
+7）随机数生成
+   - crypto.randomBytes(size)：密码学安全随机数
+   - crypto.randomUUID()：UUID v4
+   - crypto.randomInt(min, max)：随机整数
+   - 为什么不能用 Math.random()：
+     - 不是密码学安全的
+     - 可预测
+
+8）Node.js Web Crypto API
+   - 与浏览器兼容的 API
+   - crypto.subtle：SubtleCrypto 对象
+   - 异步加密操作
+   - 适用场景：前后端共用代码
+
+9）实战场景汇总
+   - 用户密码存储与验证
+   - API 请求签名（如：支付 API）
+   - 敏感配置加密存储
+   - 生成安全的 Token / Session ID
+   - 文件加密
+
+10）面试高频问题（至少 6 个问题 + 加分回答）
+   - 如何安全地存储用户密码？
+   - MD5 为什么不安全？
+   - 对称加密和非对称加密有什么区别？
+   - 什么是盐（Salt）？为什么需要？
+   - HMAC 和普通哈希有什么区别？
+   - AES-GCM 和 AES-CBC 有什么区别？
+
+【输出形式要求：多文件、多格式】
+
+/node-crypto-security/
+├── README.md
+├── docs/
+│   ├── 01-crypto-basics.md
+│   ├── 02-hash-and-hmac.md
+│   ├── 03-password-security.md
+│   ├── 04-symmetric-encryption.md
+│   ├── 05-asymmetric-encryption.md
+│   └── 06-interview-questions.md
+├── examples/
+│   ├── hash/
+│   │   ├── string-hash.ts
+│   │   ├── file-hash.ts
+│   │   └── hmac-signature.ts
+│   ├── password/
+│   │   ├── scrypt-password.ts
+│   │   ├── pbkdf2-password.ts
+│   │   └── password-utils.ts
+│   ├── symmetric/
+│   │   ├── aes-gcm.ts
+│   │   └── encrypt-config.ts
+│   ├── asymmetric/
+│   │   ├── generate-keys.ts
+│   │   ├── rsa-encrypt.ts
+│   │   └── digital-signature.ts
+│   └── random/
+│       ├── random-bytes.ts
+│       └── generate-token.ts
+└── scripts/
+    └── run-examples.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. 重点展示密码安全存储（scrypt）和 AES-GCM 加解密。
+3. 包含 API 签名验证示例。
+4. 使用 TypeScript，可运行。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

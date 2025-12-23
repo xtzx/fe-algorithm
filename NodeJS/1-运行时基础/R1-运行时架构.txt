@@ -1,0 +1,176 @@
+
+================================================================================
+【R1】Node.js 运行时架构
+================================================================================
+
+```text
+你现在是「Node.js 运行时与底层原理方向的资深专家 & 面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解 Node.js 运行时架构，面向中高级面试。
+
+【本次主题】R1：Node.js 运行时架构
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）Node.js 整体架构
+   - 架构层次图（ASCII 图）：
+     - 应用层：JavaScript 代码
+     - Node.js Bindings：连接 JS 和 C++
+     - V8 引擎：JS 编译执行
+     - libuv：跨平台异步 I/O
+     - 底层库：c-ares (DNS)、OpenSSL (加密)、zlib (压缩) 等
+   - Node.js 与浏览器 JS 的差异：
+     - 全局对象：global vs window
+     - 模块系统：CommonJS/ESM vs ESM
+     - 可用 API：fs/net/http vs DOM/BOM
+     - 事件循环实现差异
+
+2）V8 引擎
+   - V8 的作用：JS 代码解析、编译、执行
+   - 编译流程：
+     - Parser → AST → Ignition (字节码) → TurboFan (优化编译)
+   - 内存模型：
+     - 新生代（Young Generation）：Scavenge 算法
+     - 老生代（Old Generation）：Mark-Sweep / Mark-Compact
+   - 为什么了解 V8 对 Node 开发有帮助
+   - 隐藏类（Hidden Class）与内联缓存（Inline Cache）
+
+3）libuv 与异步 I/O
+   - libuv 的作用：跨平台异步 I/O 抽象层
+   - 线程池（Thread Pool）：
+     - 默认 4 个线程（UV_THREADPOOL_SIZE 可调）
+     - 哪些操作使用线程池：文件 I/O、DNS 查询、crypto 等
+   - 网络 I/O：
+     - epoll (Linux) / kqueue (macOS) / IOCP (Windows)
+     - 不使用线程池，直接由 OS 处理
+
+4）事件循环（Event Loop）⭐⭐⭐⭐⭐
+   - Node.js 事件循环六个阶段（详细讲解每个阶段）：
+     ┌───────────────────────────┐
+     │         timers           │  ← setTimeout / setInterval 回调
+     └─────────────┬─────────────┘
+                   │
+     ┌─────────────▼─────────────┐
+     │     pending callbacks     │  ← 某些系统操作回调（如 TCP 错误）
+     └─────────────┬─────────────┘
+                   │
+     ┌─────────────▼─────────────┐
+     │       idle, prepare       │  ← 内部使用
+     └─────────────┬─────────────┘
+                   │
+     ┌─────────────▼─────────────┐
+     │           poll            │  ← I/O 回调（大部分回调在这里）
+     └─────────────┬─────────────┘
+                   │
+     ┌─────────────▼─────────────┐
+     │          check            │  ← setImmediate 回调
+     └─────────────┬─────────────┘
+                   │
+     ┌─────────────▼─────────────┐
+     │      close callbacks      │  ← socket.on('close') 等
+     └───────────────────────────┘
+
+   - 每个阶段详解：
+     - timers：执行 setTimeout/setInterval 到期回调
+     - pending callbacks：执行延迟到下一轮的 I/O 回调
+     - idle, prepare：仅内部使用
+     - poll：获取新的 I/O 事件，执行 I/O 回调
+     - check：执行 setImmediate 回调
+     - close callbacks：执行 close 事件回调
+
+5）微任务队列
+   - 两个微任务队列：
+     - nextTick 队列：process.nextTick()
+     - microtask 队列：Promise.then/catch/finally、queueMicrotask()
+   - 执行时机：每个阶段切换之间都会清空微任务队列
+   - 优先级：nextTick > microtask > 宏任务
+   - 示例代码展示执行顺序
+
+6）关键执行顺序题
+   - setTimeout vs setImmediate：
+     - 在主模块中：顺序不确定（取决于进程性能）
+     - 在 I/O 回调中：setImmediate 先执行
+   - process.nextTick vs Promise.then
+   - 综合题目：预测输出顺序
+
+7）单线程模型
+   - Node.js 是「单线程 JS 执行 + 多线程 I/O」
+   - 优势：
+     - 无锁编程，避免死锁
+     - 高并发 I/O 处理
+   - 局限：
+     - 单核 CPU 利用
+     - CPU 密集型任务阻塞
+   - 如何突破单线程限制（预告：R9-并发模型）
+
+8）Node.js 版本与特性
+   - LTS vs Current
+   - 重要版本特性：
+     - Node 12+：ES Module 支持
+     - Node 14+：可选链、空值合并
+     - Node 16+：V8 9.x、fs/promises 稳定
+     - Node 18+：Fetch API、Test Runner
+     - Node 20+：权限模型、单文件可执行
+
+9）面试高频问题（至少 8 个问题 + 加分回答）
+   - Node.js 事件循环有几个阶段？每个阶段做什么？
+   - setTimeout(fn, 0) 和 setImmediate(fn) 哪个先执行？
+   - process.nextTick 和 Promise.then 哪个先执行？
+   - Node.js 是单线程吗？那它怎么处理并发？
+   - V8 的垃圾回收机制是什么？
+   - libuv 的线程池有什么作用？
+   - Node.js 和浏览器的事件循环有什么区别？
+   - 为什么 Node.js 适合 I/O 密集型而不适合 CPU 密集型？
+
+【输出形式要求：多文件、多格式】
+
+请构建一个学习项目：
+
+/node-runtime-architecture/
+├── README.md
+├── docs/
+│   ├── 01-node-architecture-overview.md
+│   ├── 02-v8-engine.md
+│   ├── 03-libuv-and-async-io.md
+│   ├── 04-event-loop-deep-dive.md
+│   ├── 05-microtasks-and-execution-order.md
+│   └── 06-interview-questions.md
+├── examples/
+│   ├── event-loop/
+│   │   ├── phases-demo.ts
+│   │   ├── setTimeout-vs-setImmediate.ts
+│   │   ├── nextTick-vs-promise.ts
+│   │   └── comprehensive-order.ts
+│   ├── libuv/
+│   │   ├── threadpool-demo.ts
+│   │   └── check-threadpool-size.ts
+│   └── v8/
+│       ├── memory-usage.ts
+│       └── gc-observe.ts
+├── diagrams/
+│   ├── node-architecture.txt
+│   ├── event-loop.txt
+│   └── v8-compilation.txt
+└── scripts/
+    └── run-examples.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. docs 下每篇 .md：
+   - 有清晰的大纲
+   - 有「概念说明 + 代码示例 + 常见坑 + 面试问答」
+   - 04-event-loop-deep-dive.md 是重点，要非常详细
+3. examples 下：
+   - 使用 TypeScript
+   - 每个示例要能独立运行，展示特定概念
+   - comprehensive-order.ts 要有多种情况的组合题
+4. diagrams：
+   - 使用 ASCII 图展示架构和流程
+5. scripts：
+   - 提供运行示例的脚本
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

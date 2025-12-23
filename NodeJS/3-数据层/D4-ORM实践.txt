@@ -1,0 +1,167 @@
+
+================================================================================
+【D4】ORM 实践（Prisma / TypeORM）
+================================================================================
+
+```text
+你现在是「Node.js ORM 与数据库操作专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解 ORM 使用，面向中高级面试。
+
+【本次主题】D4：ORM 实践（Prisma / TypeORM）
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）为什么需要 ORM
+   - 原生 SQL 的问题：
+     - SQL 注入风险
+     - 类型不安全
+     - 手动映射麻烦
+   - ORM 的优势：
+     - 类型安全
+     - 自动映射
+     - 迁移管理
+     - 查询构建器
+   - ORM 的劣势：
+     - 性能开销
+     - 复杂查询困难
+     - 学习成本
+   - 何时用 ORM，何时用原生 SQL
+
+2）Prisma 深度教程 ⭐⭐⭐⭐⭐
+   - Prisma 架构：
+     - Prisma Client：类型安全的查询客户端
+     - Prisma Migrate：数据库迁移
+     - Prisma Studio：可视化数据管理
+   - schema.prisma 语法：
+     - datasource：数据源配置
+     - generator：生成器配置
+     - model：模型定义
+   - 字段类型与修饰符：
+     - String, Int, Boolean, DateTime, Json
+     - @id, @unique, @default, @updatedAt
+     - 可选字段：?
+   - 关系定义：
+     - 一对一：@relation
+     - 一对多：[]
+     - 多对多：隐式/显式
+   - 枚举：enum
+
+3）Prisma CRUD 操作
+   - 创建：
+     - create()
+     - createMany()
+   - 查询：
+     - findUnique()
+     - findFirst()
+     - findMany()
+   - 更新：
+     - update()
+     - updateMany()
+     - upsert()
+   - 删除：
+     - delete()
+     - deleteMany()
+
+4）Prisma 查询进阶
+   - 条件查询：where
+     - equals, not, in, contains, startsWith
+     - AND, OR, NOT
+   - 排序：orderBy
+   - 分页：skip, take
+   - 选择字段：select
+   - 关联查询：include
+   - 聚合：aggregate, groupBy
+
+5）Prisma 迁移管理 ⭐
+   - prisma migrate dev：开发环境迁移
+   - prisma migrate deploy：生产环境部署
+   - prisma migrate reset：重置数据库
+   - 迁移文件管理
+   - 迁移最佳实践
+
+6）Prisma 事务
+   - $transaction([])：批量操作
+   - 交互式事务：prisma.$transaction(async (tx) => {})
+   - 事务隔离级别
+
+7）TypeORM 概述
+   - 装饰器风格的 Entity 定义
+   - DataSource 配置
+   - Repository 模式
+   - 基础 CRUD
+
+8）Prisma vs TypeORM ⭐⭐⭐⭐⭐
+
+   ┌─────────────────┬───────────────────┬───────────────────┐
+   │                 │ Prisma            │ TypeORM           │
+   ├─────────────────┼───────────────────┼───────────────────┤
+   │ 设计理念        │ Schema First      │ Code First        │
+   │ Schema 定义     │ .prisma 文件      │ 装饰器            │
+   │ 类型安全        │ 自动生成，极强    │ 需要手动配置      │
+   │ 学习曲线        │ 较平缓            │ 较陡峭            │
+   │ 迁移管理        │ 内置，易用        │ 内置，功能丰富    │
+   │ 查询 API        │ 链式，类型安全    │ QueryBuilder      │
+   │ 性能            │ 优秀              │ 良好              │
+   │ 适用场景        │ TypeScript 项目   │ 传统 OOP 风格     │
+   └─────────────────┴───────────────────┴───────────────────┘
+
+9）数据库迁移最佳实践
+   - 迁移的意义：版本化数据库结构
+   - 向前兼容原则：
+     - 先加列，再删除旧列
+     - 不要直接改名
+   - 生产环境注意事项：
+     - 备份数据
+     - 小步迭代
+     - 可回滚
+
+10）面试高频问题（至少 6 个问题 + 加分回答）
+   - 你用过什么 ORM？为什么选它？
+   - Prisma 和 TypeORM 有什么区别？
+   - ORM 的优缺点是什么？
+   - 如何处理数据库迁移？
+   - 什么情况下你会用原生 SQL？
+   - 如何保证 ORM 查询的性能？
+
+【输出形式要求：多文件、多格式】
+
+/node-orm-practice/
+├── README.md
+├── docs/
+│   ├── 01-why-orm.md
+│   ├── 02-prisma-complete-guide.md
+│   ├── 03-prisma-advanced.md
+│   ├── 04-typeorm-overview.md
+│   ├── 05-prisma-vs-typeorm.md
+│   └── 06-interview-questions.md
+├── examples/
+│   ├── prisma/
+│   │   ├── schema.prisma
+│   │   ├── prisma-client.ts
+│   │   ├── crud-operations.ts
+│   │   ├── relations-example.ts
+│   │   ├── advanced-queries.ts
+│   │   └── transaction-example.ts
+│   └── typeorm/
+│       ├── data-source.ts
+│       ├── user.entity.ts
+│       ├── order.entity.ts
+│       └── typeorm-crud.ts
+├── migrations/
+│   └── migration-example.md
+└── scripts/
+    ├── setup-prisma.sh
+    └── run-examples.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. Prisma 部分要详尽，包含关系和事务。
+3. 包含 Prisma vs TypeORM 对比。
+4. 使用 TypeScript。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

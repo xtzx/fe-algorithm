@@ -1,0 +1,191 @@
+
+================================================================================
+【Q4】性能与稳定（内存管理 / Profiling / 压测）
+================================================================================
+
+```text
+你现在是「Node.js 性能优化与稳定性保障专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解性能与稳定性，面向中高级面试。
+
+【本次主题】Q4：性能与稳定（内存管理 / Profiling / 压测）
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）V8 内存管理 ⭐
+   - V8 堆内存结构：
+     - 新生代（Young Generation）：
+       - From / To 空间
+       - Scavenge 算法
+     - 老生代（Old Generation）：
+       - Mark-Sweep
+       - Mark-Compact
+   - 内存限制：
+     - 默认限制（约 1.4GB）
+     - 调整：--max-old-space-size
+   - 垃圾回收触发时机
+
+2）内存泄漏场景 ⭐⭐⭐⭐⭐
+   - 常见泄漏场景：
+     - 全局变量累积
+     - 未移除的事件监听器
+     - 闭包持有引用
+     - 定时器未清理
+     - 缓存无限增长
+   - 代码示例：泄漏 vs 修复
+
+3）内存泄漏排查 ⭐⭐⭐⭐⭐
+   - process.memoryUsage()：
+     ```typescript
+     const usage = process.memoryUsage();
+     // rss: 常驻内存
+     // heapTotal: 堆总大小
+     // heapUsed: 堆已用
+     // external: C++ 对象
+     ```
+   - --inspect 调试：
+     - node --inspect app.js
+     - 连接 Chrome DevTools
+   - Heap Snapshot：
+     - 采集堆快照
+     - 对比两次快照找泄漏
+   - Allocation Timeline：
+     - 实时观察内存分配
+   - 排查流程：
+     1. 发现内存持续增长
+     2. 采集多个快照
+     3. 对比分析
+     4. 定位泄漏点
+     5. 修复验证
+
+4）CPU Profiling ⭐
+   - 问题：哪段代码消耗 CPU？
+   - 使用 --prof：
+     ```bash
+     node --prof app.js
+     node --prof-process isolate-*.log
+     ```
+   - Chrome DevTools CPU Profiler：
+     - 火焰图分析
+     - 热点函数定位
+   - 常见 CPU 问题：
+     - 同步阻塞操作
+     - 大 JSON 解析
+     - 正则回溯
+     - 过度计算
+
+5）压力测试 ⭐⭐⭐⭐⭐
+   - 工具选择：
+     - autocannon：Node.js 编写，功能丰富
+     - wrk：高性能，简单
+     - ab：Apache Benchmark
+   - autocannon 使用：
+     ```bash
+     autocannon -c 100 -d 30 http://localhost:3000/api
+     # -c: 并发连接数
+     # -d: 持续时间（秒）
+     ```
+   - 关键指标：
+     - QPS（每秒请求数）
+     - 延迟（P50, P95, P99）
+     - 错误率
+   - 压测最佳实践：
+     - 隔离环境
+     - 预热
+     - 多次测试取平均
+     - 逐步增加压力
+
+6）性能优化手段
+   - 异步化：
+     - 避免同步 I/O
+     - 使用 Stream 处理大数据
+   - 缓存：
+     - 内存缓存
+     - Redis 缓存
+   - 减少序列化：
+     - 避免大 JSON 解析
+     - 使用 fast-json-stringify
+   - 连接池：
+     - 数据库连接池
+     - HTTP Agent
+   - 代码优化：
+     - 避免闭包陷阱
+     - 避免过度创建对象
+
+7）稳定性保障
+   - 优雅退出（参考 R2）
+   - 健康检查：
+     - /health 接口
+     - liveness / readiness
+   - 熔断与降级（简述）
+   - 超时控制
+   - 重试策略
+
+8）监控指标
+   - 核心指标：
+     - 内存使用
+     - CPU 使用
+     - Event Loop 延迟
+     - 活跃连接数
+   - prom-client 暴露指标
+   - Prometheus + Grafana
+
+9）案例分析
+   - 案例：内存泄漏线上排查
+   - 案例：接口响应慢优化
+   - 从发现 → 定位 → 修复 → 验证
+
+10）面试高频问题（至少 8 个问题 + 加分回答）
+   - 如何排查 Node.js 内存泄漏？
+   - 常见的内存泄漏场景有哪些？
+   - 如何做性能优化？
+   - 你们服务的 QPS 是多少？怎么压测的？
+   - Event Loop 阻塞怎么排查？
+   - V8 的垃圾回收机制是什么？
+   - 如何监控 Node.js 服务的性能？
+   - 遇到过什么性能问题？怎么解决的？
+
+【输出形式要求：多文件、多格式】
+
+/node-performance-stability/
+├── README.md
+├── docs/
+│   ├── 01-v8-memory-management.md
+│   ├── 02-memory-leak-detection.md
+│   ├── 03-cpu-profiling.md
+│   ├── 04-load-testing.md
+│   ├── 05-optimization-techniques.md
+│   └── 06-interview-questions.md
+├── examples/
+│   ├── memory/
+│   │   ├── memory-usage.ts
+│   │   ├── leak-example.ts
+│   │   ├── leak-fixed.ts
+│   │   └── memory-monitor.ts
+│   ├── profiling/
+│   │   ├── cpu-blocking.ts
+│   │   └── profiling-guide.md
+│   ├── benchmark/
+│   │   ├── benchmark-server.ts
+│   │   └── load-test.sh
+│   └── optimization/
+│       ├── stream-processing.ts
+│       ├── caching-example.ts
+│       └── fast-json.ts
+├── diagrams/
+│   └── v8-memory.txt
+└── scripts/
+    ├── run-with-inspect.sh
+    └── run-load-test.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. 重点是内存泄漏排查和压测。
+3. 包含泄漏示例和修复版本。
+4. 使用 TypeScript。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

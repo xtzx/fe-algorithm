@@ -1,0 +1,229 @@
+
+================================================================================
+【O2】Kubernetes 基础
+================================================================================
+
+```text
+你现在是「Kubernetes 与容器编排专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」讲解 K8s 核心概念，面向中高级面试。
+
+【本次主题】O2：Kubernetes 基础
+
+说明：从应用开发者视角理解 K8s，不需要运维/SRE 深度，但要能读懂配置和面试应答。
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）Kubernetes 概述
+   - 什么是 K8s：容器编排平台
+   - 核心功能：
+     - 自动部署和回滚
+     - 自动扩缩容
+     - 服务发现和负载均衡
+     - 自愈能力
+   - K8s 架构：
+     - Control Plane：API Server, Scheduler, Controller Manager, etcd
+     - Node：Kubelet, Kube-proxy, Container Runtime
+
+2）核心资源概念 ⭐⭐⭐⭐⭐
+   - Pod：
+     - 最小调度单位
+     - 可包含多个容器
+     - 共享网络和存储
+   - Deployment：
+     - 管理 Pod 的副本
+     - 声明式更新
+     - 滚动更新
+   - Service：
+     - Pod 的访问入口
+     - 负载均衡
+     - 类型：ClusterIP / NodePort / LoadBalancer
+   - Ingress：
+     - HTTP 路由
+     - 基于域名/路径分发
+   - ConfigMap / Secret：
+     - 配置注入
+     - 敏感信息管理
+   - 其他：
+     - StatefulSet：有状态应用
+     - DaemonSet：每节点一个 Pod
+     - Job / CronJob：任务
+
+3）Deployment 详解 ⭐
+   - YAML 结构：
+     ```yaml
+     apiVersion: apps/v1
+     kind: Deployment
+     metadata:
+       name: node-app
+     spec:
+       replicas: 3
+       selector:
+         matchLabels:
+           app: node-app
+       template:
+         metadata:
+           labels:
+             app: node-app
+         spec:
+           containers:
+             - name: node-app
+               image: my-app:v1.0.0
+               ports:
+                 - containerPort: 3000
+               resources:
+                 requests:
+                   cpu: "100m"
+                   memory: "128Mi"
+                 limits:
+                   cpu: "500m"
+                   memory: "512Mi"
+     ```
+   - replicas：副本数
+   - selector：标签选择
+   - 滚动更新策略
+
+4）Service 与服务发现
+   - ClusterIP：集群内部访问
+   - NodePort：节点端口暴露
+   - LoadBalancer：云负载均衡器
+   - 服务发现：DNS 方式
+   - Service YAML 示例
+
+5）Ingress ⭐
+   - HTTP 路由：
+     ```yaml
+     apiVersion: networking.k8s.io/v1
+     kind: Ingress
+     metadata:
+       name: node-app-ingress
+     spec:
+       rules:
+         - host: api.example.com
+           http:
+             paths:
+               - path: /
+                 pathType: Prefix
+                 backend:
+                   service:
+                     name: node-app
+                     port:
+                       number: 3000
+     ```
+   - TLS 配置
+   - Ingress Controller：Nginx Ingress
+
+6）健康检查 ⭐⭐⭐⭐⭐
+   - livenessProbe：存活探针
+     - 失败：重启容器
+   - readinessProbe：就绪探针
+     - 失败：从 Service 移除
+   - startupProbe：启动探针
+     - 适合启动慢的应用
+   - 配置示例：
+     ```yaml
+     livenessProbe:
+       httpGet:
+         path: /health
+         port: 3000
+       initialDelaySeconds: 15
+       periodSeconds: 10
+     readinessProbe:
+       httpGet:
+         path: /ready
+         port: 3000
+       initialDelaySeconds: 5
+       periodSeconds: 5
+     ```
+
+7）资源管理
+   - requests：最小资源需求
+   - limits：最大资源限制
+   - QoS 等级：
+     - Guaranteed
+     - Burstable
+     - BestEffort
+
+8）自动扩缩容（HPA）⭐
+   - Horizontal Pod Autoscaler：
+     ```yaml
+     apiVersion: autoscaling/v2
+     kind: HorizontalPodAutoscaler
+     metadata:
+       name: node-app-hpa
+     spec:
+       scaleTargetRef:
+         apiVersion: apps/v1
+         kind: Deployment
+         name: node-app
+       minReplicas: 2
+       maxReplicas: 10
+       metrics:
+         - type: Resource
+           resource:
+             name: cpu
+             target:
+               type: Utilization
+               averageUtilization: 70
+     ```
+
+9）ConfigMap 与 Secret
+   - ConfigMap：
+     - 非敏感配置
+     - 环境变量或文件挂载
+   - Secret：
+     - 敏感信息（base64 编码）
+     - TLS 证书、密码
+   - 使用方式：env / volume
+
+10）常用命令
+   - kubectl get / describe / logs
+   - kubectl apply / delete
+   - kubectl exec / port-forward
+   - kubectl rollout status / undo
+
+11）面试高频问题（至少 6 个问题 + 加分回答）
+   - K8s 的 Pod 和 Deployment 有什么区别？
+   - livenessProbe 和 readinessProbe 有什么区别？
+   - Service 有哪些类型？
+   - 如何实现自动扩缩容？
+   - ConfigMap 和 Secret 有什么区别？
+   - 滚动更新是怎么工作的？
+
+【输出形式要求：多文件、多格式】
+
+/node-kubernetes/
+├── README.md
+├── docs/
+│   ├── 01-k8s-overview.md
+│   ├── 02-core-resources.md
+│   ├── 03-service-and-ingress.md
+│   ├── 04-health-checks.md
+│   ├── 05-hpa-and-resources.md
+│   └── 06-interview-questions.md
+├── manifests/
+│   ├── namespace.yaml
+│   ├── configmap.yaml
+│   ├── secret.yaml
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   ├── ingress.yaml
+│   └── hpa.yaml
+├── diagrams/
+│   ├── k8s-architecture.txt
+│   └── request-flow.txt
+└── scripts/
+    ├── deploy.sh
+    └── rollback.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. 包含完整的 K8s 资源 YAML。
+3. 重点是 Deployment、健康检查、HPA。
+4. manifests 要可直接应用。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

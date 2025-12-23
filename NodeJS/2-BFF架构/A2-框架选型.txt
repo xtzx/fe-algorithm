@@ -1,0 +1,192 @@
+
+================================================================================
+【A2】框架选型（Express / Koa / Fastify / NestJS）
+================================================================================
+
+```text
+你现在是「Node.js Web 框架方向专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解 Node.js Web 框架选型，面向中高级面试。
+
+【本次主题】A2：框架选型（Express / Koa / Fastify / NestJS）
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）Node.js Web 框架概览
+   - 为什么需要框架：
+     - 路由管理
+     - 中间件机制
+     - 请求/响应处理
+     - 错误处理
+   - 主流框架发展历程
+
+2）Express ⭐⭐⭐⭐⭐
+   - 特点：
+     - 最流行、生态最丰富
+     - 简单灵活
+     - 中间件模式
+   - 核心概念：
+     - app.use(middleware)
+     - app.get/post/put/delete(path, handler)
+     - req / res / next
+   - 中间件执行流程：洋葱模型（线性）
+   - 路由：express.Router()
+   - 静态文件：express.static()
+   - 错误处理：4 参数中间件
+   - 优点：生态、社区、学习资源
+   - 缺点：
+     - 没有内置 async/await 支持（需要包装）
+     - 性能一般
+     - 类型支持不够好
+
+3）Koa
+   - 特点：
+     - Express 原班人马打造
+     - 更轻量、更现代
+     - 原生 async/await 支持
+   - 核心概念：
+     - app.use(async (ctx, next) => {})
+     - ctx：Context 对象
+     - 洋葱模型（真正的）
+   - 与 Express 的区别：
+     - ctx vs req/res
+     - 中间件执行顺序
+     - 更少的内置功能
+   - 常用中间件：
+     - koa-router
+     - koa-bodyparser
+     - koa-static
+   - 优点：轻量、现代、洋葱模型
+   - 缺点：需要自己组装
+
+4）Fastify ⭐
+   - 特点：
+     - 高性能（声称最快）
+     - Schema 验证
+     - 插件系统
+     - TypeScript 友好
+   - 核心概念：
+     - fastify.register(plugin)
+     - fastify.get(path, handler)
+     - JSON Schema 验证
+   - 性能优势来源：
+     - JSON 序列化优化
+     - Schema 编译
+     - 高效路由匹配
+   - 与 Express 对比：
+     - 性能：Fastify >> Express
+     - 生态：Express > Fastify
+     - 学习曲线：相当
+   - 优点：高性能、类型安全
+   - 缺点：生态相对小
+
+5）NestJS ⭐⭐⭐⭐⭐
+   - 特点：
+     - 企业级框架
+     - 装饰器 + 依赖注入
+     - 类 Angular 架构
+     - TypeScript 原生
+   - 核心概念：
+     - 模块（Module）
+     - 控制器（Controller）
+     - 服务（Service/Provider）
+     - 装饰器：@Controller, @Get, @Post, @Injectable
+   - 依赖注入（DI）：
+     - 为什么需要 DI
+     - 如何工作
+     - 好处：解耦、可测试
+   - 底层框架：
+     - 默认 Express
+     - 可切换 Fastify
+   - 优点：
+     - 架构清晰
+     - 高度可测试
+     - TypeScript 原生
+     - 企业级功能
+   - 缺点：
+     - 学习曲线陡峭
+     - 小项目 overkill
+     - 装饰器魔法
+
+6）框架对比表 ⭐⭐⭐⭐⭐
+
+   ┌────────────┬─────────────┬─────────────┬─────────────┬─────────────┐
+   │            │ Express     │ Koa         │ Fastify     │ NestJS      │
+   ├────────────┼─────────────┼─────────────┼─────────────┼─────────────┤
+   │ 性能       │ 中等        │ 中等        │ 高          │ 中等(可配)  │
+   │ 学习曲线   │ 低          │ 低          │ 中          │ 高          │
+   │ TypeScript │ 需配置      │ 需配置      │ 友好        │ 原生        │
+   │ 生态       │ 最丰富      │ 丰富        │ 较少        │ 丰富        │
+   │ 架构约束   │ 无          │ 无          │ 轻度        │ 强          │
+   │ 适用场景   │ 小中型      │ 中型        │ 性能敏感    │ 大型企业    │
+   │ 中间件     │ 函数式      │ 洋葱模型    │ 插件        │ 装饰器+DI   │
+   └────────────┴─────────────┴─────────────┴─────────────┴─────────────┘
+
+7）选型指南
+   - 初创/小项目：Express 或 Fastify
+   - 中型项目：Koa 或 Fastify
+   - 大型企业项目：NestJS
+   - 性能敏感：Fastify
+   - 前端团队快速上手：Express
+
+8）项目结构设计
+   - 分层架构：
+     - routes/controllers：路由处理
+     - services：业务逻辑
+     - repositories：数据访问
+     - middlewares：中间件
+     - utils：工具函数
+   - 关注点分离的意义
+
+9）面试高频问题（至少 6 个问题 + 加分回答）
+   - Express 和 Koa 有什么区别？
+   - 你们为什么选择 Express/Koa/NestJS？
+   - NestJS 的依赖注入是什么？
+   - Fastify 为什么快？
+   - Express 中如何处理 async 错误？
+   - 如何设计 Node.js 项目结构？
+
+【输出形式要求：多文件、多格式】
+
+/node-framework-selection/
+├── README.md
+├── docs/
+│   ├── 01-framework-overview.md
+│   ├── 02-express-deep-dive.md
+│   ├── 03-koa-essentials.md
+│   ├── 04-fastify-performance.md
+│   ├── 05-nestjs-enterprise.md
+│   ├── 06-comparison-and-selection.md
+│   └── 07-interview-questions.md
+├── examples/
+│   ├── express/
+│   │   ├── app.ts
+│   │   ├── router-example.ts
+│   │   └── error-handling.ts
+│   ├── koa/
+│   │   ├── app.ts
+│   │   └── middleware-order.ts
+│   ├── fastify/
+│   │   ├── app.ts
+│   │   └── schema-validation.ts
+│   └── nestjs/
+│       ├── app.module.ts
+│       ├── users.controller.ts
+│       └── users.service.ts
+├── benchmark/
+│   └── performance-comparison.md
+└── templates/
+    └── project-structure.md
+
+要求：
+
+1. 先输出完整目录树。
+2. 每个框架都要有基础示例代码。
+3. 包含性能对比分析。
+4. NestJS 示例要展示 DI。
+5. 使用 TypeScript。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

@@ -1,0 +1,176 @@
+
+================================================================================
+【C2】GraphQL
+================================================================================
+
+```text
+你现在是「Node.js GraphQL 专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解 GraphQL，面向中高级面试。
+
+【本次主题】C2：GraphQL
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）GraphQL 概述
+   - 什么是 GraphQL：查询语言 + 运行时
+   - 与 REST 的区别：
+     - 单端点 vs 多端点
+     - 按需查询 vs 固定结构
+     - 强类型 vs 弱类型
+   - 优势：
+     - 避免过度获取
+     - 减少请求次数
+     - 强类型系统
+     - 自描述文档
+   - 劣势：
+     - 学习曲线
+     - 缓存复杂
+     - 文件上传麻烦
+     - 性能优化难
+
+2）Schema 定义语言（SDL）⭐⭐⭐⭐⭐
+   - 标量类型：String, Int, Float, Boolean, ID
+   - 对象类型（Object Type）：
+     ```graphql
+     type User {
+       id: ID!
+       name: String!
+       email: String
+       posts: [Post!]!
+     }
+     ```
+   - 非空标记：!
+   - 列表：[]
+   - 枚举（Enum）
+   - 输入类型（Input Type）
+   - 接口（Interface）
+   - 联合类型（Union）
+
+3）Query / Mutation / Subscription
+   - Query：读取数据
+     ```graphql
+     type Query {
+       user(id: ID!): User
+       users(limit: Int): [User!]!
+     }
+     ```
+   - Mutation：修改数据
+     ```graphql
+     type Mutation {
+       createUser(input: CreateUserInput!): User!
+       updateUser(id: ID!, input: UpdateUserInput!): User
+     }
+     ```
+   - Subscription：实时订阅
+     ```graphql
+     type Subscription {
+       userCreated: User!
+     }
+     ```
+
+4）Resolver 编写 ⭐
+   - Resolver 的作用：解析字段值
+   - Resolver 签名：(parent, args, context, info)
+   - 嵌套 Resolver
+   - Context 传递：认证信息、数据库连接
+   - 示例实现
+
+5）N+1 问题与 DataLoader ⭐⭐⭐⭐⭐
+   - N+1 问题：
+     - 查询 N 个用户的帖子，导致 N+1 次数据库查询
+   - DataLoader 解决方案：
+     - 批量加载
+     - 请求级缓存
+   - 使用示例
+
+6）分页设计
+   - Offset 分页
+   - Relay Cursor Connection：
+     - edges / node / cursor
+     - pageInfo: hasNextPage, hasPreviousPage
+   - 为什么 Cursor 更好
+
+7）认证与授权
+   - Context 中传递用户信息
+   - 字段级权限
+   - 指令（Directive）实现权限
+
+8）错误处理
+   - GraphQL 错误格式
+   - 自定义错误
+   - 部分错误返回
+
+9）Node.js GraphQL 实现
+   - Apollo Server：
+     - 最流行的 GraphQL 服务端
+     - 与 Express/Fastify 集成
+     - 插件系统
+   - type-graphql：
+     - TypeScript 装饰器风格
+     - 类型安全
+   - graphql-yoga：
+     - 简单易用
+
+10）GraphQL Subscriptions
+   - WebSocket 实现
+   - PubSub 机制
+   - Apollo Server Subscriptions
+   - 适用场景
+
+11）安全考虑
+   - 查询深度限制
+   - 查询复杂度分析
+   - 超时设置
+   - 持久化查询
+
+12）面试高频问题（至少 6 个问题 + 加分回答）
+   - GraphQL 和 REST 有什么区别？
+   - 什么是 N+1 问题？如何解决？
+   - GraphQL 的 Resolver 是什么？
+   - GraphQL 如何处理认证？
+   - GraphQL 有什么缺点？
+   - Subscription 是怎么实现的？
+
+【输出形式要求：多文件、多格式】
+
+/node-graphql/
+├── README.md
+├── docs/
+│   ├── 01-graphql-overview.md
+│   ├── 02-schema-and-types.md
+│   ├── 03-resolvers.md
+│   ├── 04-n-plus-one-and-dataloader.md
+│   ├── 05-authentication.md
+│   └── 06-interview-questions.md
+├── examples/
+│   ├── apollo-server/
+│   │   ├── server.ts
+│   │   ├── schema.ts
+│   │   ├── resolvers/
+│   │   │   ├── user.resolver.ts
+│   │   │   └── post.resolver.ts
+│   │   ├── dataloaders/
+│   │   │   └── user.loader.ts
+│   │   └── context.ts
+│   ├── type-graphql/
+│   │   ├── user.type.ts
+│   │   └── user.resolver.ts
+│   └── subscriptions/
+│       └── subscription-server.ts
+├── schema/
+│   └── schema.graphql
+└── scripts/
+    └── run-server.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. 重点是 Resolver 和 N+1 问题。
+3. 包含 DataLoader 示例。
+4. 使用 Apollo Server + TypeScript。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

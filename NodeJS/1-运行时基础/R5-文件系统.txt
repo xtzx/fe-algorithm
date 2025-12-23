@@ -1,0 +1,167 @@
+
+================================================================================
+【R5】文件系统（fs 模块）
+================================================================================
+
+```text
+你现在是「Node.js 文件系统专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解 fs 模块，面向中高级面试。
+
+【本次主题】R5：文件系统（fs 模块）
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）fs 模块三种 API 风格
+   - 同步 API（fs.readFileSync）：
+     - 阻塞事件循环
+     - 适用场景：启动时读取配置、CLI 工具
+   - 回调 API（fs.readFile）：
+     - 传统异步方式
+     - error-first callback
+   - Promise API（fs/promises）：⭐推荐
+     - import { readFile } from 'fs/promises'
+     - 支持 async/await
+   - 三种 API 对比表格
+
+2）文件读写操作
+   - 读取文件：
+     - fs.readFile(path, options)
+     - 编码参数：'utf8' 返回字符串，不传返回 Buffer
+   - 写入文件：
+     - fs.writeFile(path, data, options)：覆盖写入
+     - fs.appendFile(path, data)：追加写入
+   - flag 参数详解：
+     - 'r'：读取，文件不存在报错
+     - 'w'：写入，文件不存在创建，存在清空
+     - 'a'：追加，文件不存在创建
+     - 'wx'：写入，文件存在报错（独占创建）
+     - 'r+'：读写
+
+3）文件描述符操作（底层 API）
+   - fs.open(path, flags)：打开文件，返回 fd
+   - fs.read(fd, buffer, offset, length, position)：读取
+   - fs.write(fd, buffer, offset, length, position)：写入
+   - fs.close(fd)：关闭
+   - 使用场景：精确控制、大文件分块读写
+   - FileHandle（Promise 版本）
+
+4）目录操作
+   - 创建目录：
+     - fs.mkdir(path, { recursive: true })
+   - 读取目录：
+     - fs.readdir(path)：返回文件名数组
+     - fs.readdir(path, { withFileTypes: true })：返回 Dirent 对象
+   - 删除：
+     - fs.rmdir(path)：删除空目录（旧 API）
+     - fs.rm(path, { recursive: true, force: true })：递归删除（推荐）
+   - 递归遍历目录的实现
+
+5）文件信息与权限
+   - fs.stat(path)：获取文件信息
+   - Stats 对象：
+     - size：文件大小
+     - mtime：修改时间
+     - isFile()、isDirectory()、isSymbolicLink()
+   - fs.stat vs fs.lstat：符号链接的区别
+   - fs.access(path, mode)：检查权限
+     - fs.constants.F_OK / R_OK / W_OK / X_OK
+   - 判断文件是否存在的正确方式：
+     - 错误：fs.existsSync()（已废弃思想）
+     - 正确：try { await fs.access(path) } catch { 不存在 }
+
+6）文件监听
+   - fs.watch(path, options, callback)：
+     - 事件类型：'rename'、'change'
+     - 使用 AbortController 取消
+     - 跨平台行为不一致
+   - fs.watchFile(path, options, callback)：
+     - 基于轮询
+     - 资源消耗大，但兼容性好
+   - watch vs watchFile 的选择
+   - chokidar 库：生产环境推荐
+
+7）文件复制、移动、链接
+   - fs.copyFile(src, dest, mode)：复制文件
+   - fs.rename(oldPath, newPath)：移动/重命名
+   - fs.link(src, dest)：硬链接
+   - fs.symlink(target, path)：符号链接
+   - 跨分区移动的处理：复制 + 删除
+
+8）原子写入 ⭐
+   - 什么是原子写入？为什么重要？
+     - 防止写入中断导致文件损坏
+   - 实现方式：
+     1. 写入临时文件
+     2. fs.rename() 替换目标文件
+   - rename 是原子操作（同文件系统下）
+   - 示例：配置文件安全更新
+
+9）大文件处理
+   - 为什么不能用 readFile 读大文件
+   - 使用 Stream：
+     - fs.createReadStream(path, options)
+     - fs.createWriteStream(path, options)
+   - 参考 R4-Buffer与Stream
+
+10）实战示例
+   - 实现 rm -rf（递归删除）
+   - 实现 cp -r（递归复制）
+   - 配置文件热更新
+   - 日志文件轮转
+
+11）面试高频问题（至少 6 个问题 + 加分回答）
+   - fs.readFile 和 fs.createReadStream 什么时候用哪个？
+   - 如何判断文件是否存在？
+   - fs.watch 和 fs.watchFile 有什么区别？
+   - 如何实现原子写入？
+   - fs 同步和异步 API 怎么选择？
+   - 如何递归遍历目录？
+
+【输出形式要求：多文件、多格式】
+
+/node-filesystem/
+├── README.md
+├── docs/
+│   ├── 01-three-api-styles.md
+│   ├── 02-read-write-operations.md
+│   ├── 03-directory-operations.md
+│   ├── 04-file-info-and-watch.md
+│   ├── 05-atomic-write-and-advanced.md
+│   └── 06-interview-questions.md
+├── examples/
+│   ├── basics/
+│   │   ├── read-write.ts
+│   │   ├── promise-api.ts
+│   │   └── sync-vs-async.ts
+│   ├── directory/
+│   │   ├── mkdir-recursive.ts
+│   │   ├── readdir-with-types.ts
+│   │   ├── recursive-traverse.ts
+│   │   └── rm-recursive.ts
+│   ├── file-info/
+│   │   ├── stat-example.ts
+│   │   ├── check-exists.ts
+│   │   └── file-watcher.ts
+│   ├── advanced/
+│   │   ├── atomic-write.ts
+│   │   ├── copy-recursive.ts
+│   │   ├── file-descriptor.ts
+│   │   └── temp-file.ts
+│   └── practical/
+│       ├── hot-reload-config.ts
+│       └── log-rotation.ts
+└── scripts/
+    └── run-examples.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. 重点展示 Promise API 的使用。
+3. 包含原子写入和递归操作的完整实现。
+4. 使用 TypeScript，可运行。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

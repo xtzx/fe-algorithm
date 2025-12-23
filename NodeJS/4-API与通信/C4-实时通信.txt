@@ -1,0 +1,171 @@
+
+================================================================================
+【C4】实时通信（WebSocket / SSE / gRPC Streaming）
+================================================================================
+
+```text
+你现在是「Node.js 实时通信专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解实时通信技术，面向中高级面试。
+
+【本次主题】C4：实时通信（WebSocket / SSE / gRPC Streaming）
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）实时通信技术对比 ⭐⭐⭐⭐⭐
+
+   ┌────────────────┬─────────────┬─────────────┬─────────────┐
+   │                │ 轮询        │ SSE         │ WebSocket   │
+   ├────────────────┼─────────────┼─────────────┼─────────────┤
+   │ 连接方向       │ 客户端发起  │ 服务端推送  │ 双向        │
+   │ 持久连接       │ 否          │ 是          │ 是          │
+   │ 协议           │ HTTP        │ HTTP        │ WS          │
+   │ 浏览器支持     │ 全部        │ 全部(除IE)  │ 全部        │
+   │ 代理兼容       │ 好          │ 中          │ 需配置      │
+   │ 复杂度         │ 低          │ 低          │ 中          │
+   │ 适用场景       │ 简单场景    │ 服务端推送  │ 双向通信    │
+   └────────────────┴─────────────┴─────────────┴─────────────┘
+
+2）轮询模式
+   - 短轮询（Short Polling）：
+     - 定时请求服务器
+     - 简单但效率低
+   - 长轮询（Long Polling）：
+     - 服务器保持连接直到有数据
+     - 减少请求次数
+   - 实现示例
+
+3）SSE（Server-Sent Events）⭐
+   - 协议：Content-Type: text/event-stream
+   - 事件格式：
+     ```
+     event: message
+     data: {"text": "Hello"}
+     id: 123
+     retry: 3000
+
+     ```
+   - Node.js 实现：
+     - 设置响应头
+     - 保持连接
+     - 发送事件
+   - 自动重连：Last-Event-ID
+   - 客户端使用：EventSource
+   - 适用场景：
+     - 通知推送
+     - 股票行情
+     - AI 流式输出
+
+4）WebSocket 深度 ⭐⭐⭐⭐⭐
+   - WebSocket 协议：
+     - 握手：HTTP Upgrade
+     - 帧格式：opcode, mask, payload
+     - 控制帧：ping/pong/close
+   - ws 库：
+     - 轻量、高性能
+     - 服务端实现
+   - socket.io：
+     - 自动重连
+     - 房间/命名空间
+     - 自动降级
+     - 二进制支持
+   - ws vs socket.io 选择
+
+5）WebSocket 最佳实践
+   - 心跳检测：
+     - ping/pong 机制
+     - 超时检测
+   - 断线重连：
+     - 指数退避
+     - 最大重试次数
+   - 连接状态管理
+   - 认证：Token in handshake
+   - 消息格式设计
+
+6）多实例广播 ⭐
+   - 问题：多个 Node 实例，如何广播？
+   - 解决方案：
+     - Redis Pub/Sub
+     - Socket.IO Redis Adapter
+   - 实现示例
+
+7）gRPC Streaming
+   - gRPC 四种模式：
+     - Unary：普通请求响应
+     - Server Streaming：服务端流
+     - Client Streaming：客户端流
+     - Bidirectional Streaming：双向流
+   - Protocol Buffers 简介
+   - Node.js gRPC 实现
+   - 适用场景：微服务间通信
+
+8）技术选型指南
+   - 纯服务端推送 → SSE
+   - 简单双向通信 → WebSocket (ws)
+   - 需要房间/命名空间 → Socket.IO
+   - 微服务间 → gRPC Streaming
+   - AI 流式输出 → SSE
+
+9）Nginx 代理配置
+   - WebSocket 代理配置
+   - SSE 代理配置（关闭 buffering）
+   - 超时设置
+
+10）面试高频问题（至少 6 个问题 + 加分回答）
+   - WebSocket 和 SSE 有什么区别？什么时候用哪个？
+   - WebSocket 如何实现心跳检测？
+   - 多实例下 WebSocket 怎么广播？
+   - 短轮询和长轮询有什么区别？
+   - WebSocket 的握手过程是什么？
+   - gRPC 的 Streaming 是什么？
+
+【输出形式要求：多文件、多格式】
+
+/node-realtime-communication/
+├── README.md
+├── docs/
+│   ├── 01-realtime-patterns.md
+│   ├── 02-sse-implementation.md
+│   ├── 03-websocket-deep-dive.md
+│   ├── 04-multi-instance-broadcast.md
+│   ├── 05-grpc-streaming.md
+│   └── 06-interview-questions.md
+├── examples/
+│   ├── polling/
+│   │   ├── short-polling.ts
+│   │   └── long-polling.ts
+│   ├── sse/
+│   │   ├── sse-server.ts
+│   │   ├── sse-with-auth.ts
+│   │   └── client.html
+│   ├── websocket/
+│   │   ├── ws-server.ts
+│   │   ├── ws-client.ts
+│   │   ├── heartbeat.ts
+│   │   └── client.html
+│   ├── socketio/
+│   │   ├── socketio-server.ts
+│   │   ├── redis-adapter.ts
+│   │   └── client.html
+│   └── grpc/
+│       ├── protos/
+│       │   └── stream.proto
+│       ├── server.ts
+│       └── client.ts
+├── nginx/
+│   ├── websocket.conf
+│   └── sse.conf
+└── scripts/
+    └── run-examples.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. 包含 SSE、WebSocket、gRPC 示例。
+3. 包含心跳检测和 Redis 广播。
+4. 使用 TypeScript。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

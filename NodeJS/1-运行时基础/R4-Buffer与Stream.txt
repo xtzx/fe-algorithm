@@ -1,0 +1,179 @@
+
+================================================================================
+【R4】Buffer 与 Stream
+================================================================================
+
+```text
+你现在是「Node.js I/O 与底层数据处理专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解 Buffer 和 Stream，面向中高级面试。
+
+【本次主题】R4：Buffer 与 Stream
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）Buffer 基础
+   - 什么是 Buffer：二进制数据的固定长度序列
+   - 为什么需要 Buffer：
+     - JS 原生没有二进制处理能力
+     - 处理文件、网络数据、加密等
+   - Buffer 与 TypedArray 的关系：
+     - Buffer 是 Uint8Array 的子类
+     - 额外提供便捷 API
+
+2）Buffer 创建方式
+   - Buffer.alloc(size)：创建指定大小，初始化为 0
+   - Buffer.allocUnsafe(size)：不初始化，可能包含旧数据
+   - Buffer.from(array)：从数组创建
+   - Buffer.from(string, encoding)：从字符串创建
+   - Buffer.concat([buf1, buf2])：拼接多个 Buffer
+   - 为什么不推荐 new Buffer()：安全问题（已废弃）
+
+3）Buffer 编码与转换
+   - 支持的编码：utf8、base64、hex、binary、latin1、ascii
+   - buf.toString(encoding)：Buffer 转字符串
+   - 中文字符处理：
+     - UTF-8 中文占 3 字节
+     - 多字节字符截断问题
+     - StringDecoder 解决方案
+   - Base64 编解码示例
+
+4）Buffer 操作 API
+   - 读写：buf[index]、buf.write()
+   - 切片：buf.slice()（共享内存）、buf.subarray()
+   - 复制：buf.copy()、Buffer.from(buf)
+   - 比较：buf.equals()、buf.compare()、Buffer.compare()
+   - 查找：buf.indexOf()、buf.includes()
+   - 填充：buf.fill()
+
+5）Buffer 内存机制
+   - Buffer 使用堆外内存（C++ 侧）
+   - Buffer Pool（小 Buffer 复用池）：
+     - 小于 8KB 使用 Pool
+     - 大于 8KB 直接分配
+   - process.memoryUsage() 中的 external 字段
+
+6）Stream 基础概念 ⭐⭐⭐⭐⭐
+   - 什么是 Stream：处理数据的抽象接口
+   - 为什么使用 Stream：
+     - 内存效率：不需要一次性加载所有数据
+     - 时间效率：可以边读边处理
+   - Stream 与 EventEmitter 的关系
+
+7）四种 Stream 类型
+   - Readable：可读流
+     - 常见：fs.createReadStream、http 响应体、process.stdin
+     - 事件：data、end、error、close
+   - Writable：可写流
+     - 常见：fs.createWriteStream、http 请求体、process.stdout
+     - 方法：write()、end()
+     - 事件：drain、finish、error
+   - Duplex：双工流
+     - 常见：net.Socket、TCP 连接
+     - 可读可写，相互独立
+   - Transform：转换流
+     - 常见：zlib.createGzip、crypto.createCipher
+     - 可读可写，输出是输入的转换
+
+8）流的两种模式
+   - Flowing 模式：
+     - 数据自动流动
+     - 通过 'data' 事件接收
+     - 调用 pipe() 或 resume() 进入
+   - Paused 模式：
+     - 需要显式调用 read() 获取数据
+     - 默认模式
+     - 调用 pause() 切换
+
+9）背压（Backpressure）⭐⭐⭐⭐⭐
+   - 什么是背压：写入速度 > 消费速度
+   - 危害：内存持续增长
+   - 信号机制：
+     - writable.write() 返回 false → 暂停读取
+     - writable 'drain' 事件 → 恢复读取
+   - highWaterMark：缓冲区大小（默认 16KB）
+   - 示例：手动处理背压
+
+10）pipe 与 pipeline
+   - readable.pipe(writable)：
+     - 自动处理背压
+     - 链式调用：a.pipe(b).pipe(c)
+     - 错误不会自动传播
+   - stream.pipeline(source, ...transforms, dest, callback)：
+     - 自动错误处理
+     - 自动清理资源
+     - 推荐使用
+   - 使用 util.promisify(pipeline)
+
+11）自定义 Stream
+   - 继承 Readable：实现 _read()
+   - 继承 Writable：实现 _write()
+   - 继承 Transform：实现 _transform()
+   - 示例：创建大写转换流
+
+12）实战场景
+   - 按行读取大文件（readline + createReadStream）
+   - 文件压缩（createReadStream → gzip → createWriteStream）
+   - HTTP 响应流式传输
+   - 多文件合并
+
+13）面试高频问题（至少 8 个问题 + 加分回答）
+   - Buffer 和 String 有什么区别？
+   - 为什么大文件要用 Stream？
+   - 什么是背压？如何处理？
+   - pipe 和 pipeline 有什么区别？
+   - 如何实现一个 Transform 流？
+   - Buffer.alloc 和 Buffer.allocUnsafe 有什么区别？
+   - 如何处理 Buffer 中的多字节字符截断？
+   - Stream 的 flowing 和 paused 模式有什么区别？
+
+【输出形式要求：多文件、多格式】
+
+/node-buffer-stream/
+├── README.md
+├── docs/
+│   ├── 01-buffer-basics.md
+│   ├── 02-buffer-encoding-and-operations.md
+│   ├── 03-stream-types-and-concepts.md
+│   ├── 04-backpressure-deep-dive.md
+│   ├── 05-pipe-and-pipeline.md
+│   ├── 06-custom-streams.md
+│   └── 07-interview-questions.md
+├── examples/
+│   ├── buffer/
+│   │   ├── create-buffer.ts
+│   │   ├── encoding-demo.ts
+│   │   ├── multibyte-char-issue.ts
+│   │   ├── base64-example.ts
+│   │   └── buffer-operations.ts
+│   ├── stream/
+│   │   ├── readable-demo.ts
+│   │   ├── writable-demo.ts
+│   │   ├── duplex-demo.ts
+│   │   ├── transform-uppercase.ts
+│   │   ├── backpressure-demo.ts
+│   │   ├── pipeline-error-handling.ts
+│   │   └── line-by-line-reader.ts
+│   └── practical/
+│       ├── file-compression.ts
+│       ├── http-stream-response.ts
+│       └── large-file-copy.ts
+├── diagrams/
+│   ├── stream-types.txt
+│   └── backpressure-flow.txt
+└── scripts/
+    └── run-examples.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. docs 下 04-backpressure-deep-dive.md 是重点，要有详细图解。
+3. examples 下：
+   - backpressure-demo.ts 要演示背压处理
+   - transform-uppercase.ts 展示自定义 Transform
+4. 使用 TypeScript，可运行。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

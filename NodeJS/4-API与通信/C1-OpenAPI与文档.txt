@@ -1,0 +1,168 @@
+
+================================================================================
+【C1】OpenAPI 与文档（Swagger）
+================================================================================
+
+```text
+你现在是「Node.js API 设计与文档化专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解 OpenAPI 和 API 文档，面向中高级面试。
+
+【本次主题】C1：OpenAPI 与文档（Swagger）
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）为什么需要 API 文档
+   - 前后端协作痛点
+   - 文档的作用：
+     - 接口约定
+     - 自动生成代码
+     - 接口测试
+     - Mock 服务
+   - 文档优先 vs 代码优先
+
+2）OpenAPI 规范 ⭐⭐⭐⭐⭐
+   - 什么是 OpenAPI：API 描述的行业标准
+   - OpenAPI vs Swagger：
+     - OpenAPI：规范
+     - Swagger：工具集
+   - 规范结构：
+     - openapi：版本号（3.0.x）
+     - info：API 元信息
+     - servers：服务器地址
+     - paths：路径定义
+     - components：可复用组件
+     - security：安全定义
+     - tags：分组标签
+
+3）OpenAPI 路径定义
+   - paths 结构：
+     ```yaml
+     /users/{id}:
+       get:
+         summary: 获取用户
+         parameters:
+           - name: id
+             in: path
+             required: true
+             schema:
+               type: string
+         responses:
+           200:
+             description: 成功
+             content:
+               application/json:
+                 schema:
+                   $ref: '#/components/schemas/User'
+     ```
+   - 参数位置：path, query, header, cookie
+   - 请求体：requestBody
+   - 响应：responses
+
+4）Components 复用
+   - schemas：数据模型
+   - parameters：可复用参数
+   - responses：可复用响应
+   - $ref 引用机制
+   - 组合模式：allOf, oneOf, anyOf
+
+5）安全定义
+   - API Key
+   - HTTP Basic / Bearer
+   - OAuth2
+   - 在操作中应用安全
+
+6）Swagger 工具链
+   - Swagger UI：可视化文档
+   - Swagger Editor：在线编辑
+   - swagger-jsdoc：从注释生成
+   - swagger-ui-express：Express 集成
+
+7）Express + Swagger 集成 ⭐
+   - 安装配置
+   - JSDoc 注释语法：
+     ```javascript
+     /**
+      * @openapi
+      * /users:
+      *   get:
+      *     summary: 获取用户列表
+      *     responses:
+      *       200:
+      *         description: 成功
+      */
+     ```
+   - 自动生成文档
+   - 完整示例
+
+8）NestJS + Swagger
+   - @nestjs/swagger
+   - 装饰器：@ApiTags, @ApiOperation, @ApiResponse
+   - DTO 自动生成 Schema
+   - CLI 插件
+
+9）代码生成 ⭐
+   - 从 OpenAPI 生成 TypeScript 类型：
+     - openapi-typescript
+   - 从 OpenAPI 生成客户端 SDK：
+     - openapi-generator
+   - 类型同步的价值
+
+10）Mock 服务
+   - Prism：基于 OpenAPI 的 Mock
+   - 用于前端开发和测试
+
+11）最佳实践
+   - 保持文档与代码同步
+   - 版本管理
+   - CI 验证
+   - 变更日志
+
+12）面试高频问题（至少 5 个问题 + 加分回答）
+   - 你们的 API 文档是怎么管理的？
+   - OpenAPI 和 Swagger 有什么区别？
+   - 如何从 OpenAPI 生成代码？
+   - 前后端如何基于 API 文档协作？
+   - 如何保证文档和代码一致？
+
+【输出形式要求：多文件、多格式】
+
+/node-openapi-swagger/
+├── README.md
+├── docs/
+│   ├── 01-why-api-docs.md
+│   ├── 02-openapi-specification.md
+│   ├── 03-swagger-toolchain.md
+│   ├── 04-code-generation.md
+│   └── 05-interview-questions.md
+├── examples/
+│   ├── express-swagger/
+│   │   ├── app.ts
+│   │   ├── swagger.ts
+│   │   └── routes/
+│   │       ├── users.ts
+│   │       └── products.ts
+│   ├── openapi/
+│   │   ├── api-spec.yaml
+│   │   └── generate-types.ts
+│   └── mock/
+│       └── prism-setup.md
+├── templates/
+│   ├── openapi-template.yaml
+│   └── component-schemas.yaml
+└── scripts/
+    ├── start-with-swagger.sh
+    └── generate-types.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. 包含完整的 OpenAPI 规范示例。
+3. 包含 Express + swagger-jsdoc 集成。
+4. 包含代码生成示例。
+5. 使用 TypeScript。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

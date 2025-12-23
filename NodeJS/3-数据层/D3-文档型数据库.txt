@@ -1,0 +1,158 @@
+
+================================================================================
+【D3】文档型数据库（MongoDB）
+================================================================================
+
+```text
+你现在是「Node.js NoSQL 数据库专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」从 BFF 视角讲解 MongoDB 基础，面向中高级面试。
+
+【本次主题】D3：文档型数据库（MongoDB）
+
+说明：从 BFF 开发者视角理解文档数据库，重点是使用和选型，不需要运维级别深度。
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）MongoDB 概述
+   - 什么是文档型数据库
+   - 核心概念：
+     - Database：数据库
+     - Collection：集合（类似表）
+     - Document：文档（类似行，JSON 格式）
+     - _id：自动生成的唯一标识（ObjectId）
+   - 特点：
+     - Schema-less（灵活结构）
+     - JSON 原生
+     - 水平扩展
+     - 适合快速迭代
+
+2）适用场景
+   - ✅ 适合：
+     - 灵活 Schema
+     - 半结构化数据
+     - 日志、埋点数据
+     - 快速迭代的业务
+     - 文档/内容管理
+   - ❌ 不适合：
+     - 复杂事务
+     - 强关系数据
+     - 需要复杂 JOIN
+
+3）基础 CRUD 操作
+   - 插入：
+     - insertOne(doc)
+     - insertMany(docs)
+   - 查询：
+     - find(filter)
+     - findOne(filter)
+     - 查询操作符：$eq, $gt, $lt, $in, $regex
+   - 更新：
+     - updateOne(filter, update)
+     - updateMany(filter, update)
+     - 更新操作符：$set, $inc, $push, $pull
+   - 删除：
+     - deleteOne(filter)
+     - deleteMany(filter)
+
+4）查询进阶
+   - 投影：只返回需要的字段
+   - 排序：sort()
+   - 分页：skip() + limit()
+   - 聚合管道（Aggregation）简介：
+     - $match, $group, $sort, $project
+
+5）索引
+   - 为什么需要索引
+   - 创建索引：createIndex()
+   - 索引类型：
+     - 单字段索引
+     - 复合索引
+     - 唯一索引
+     - 文本索引
+   - 查看执行计划：explain()
+
+6）Node.js 客户端
+   - mongodb 官方驱动：
+     - MongoClient.connect()
+     - db.collection(name)
+   - Mongoose ODM：
+     - Schema 定义
+     - Model
+     - 验证
+   - 选择：原生驱动 vs Mongoose
+   - 连接配置
+
+7）MySQL vs MongoDB 对比 ⭐⭐⭐⭐⭐
+
+   ┌─────────────────┬───────────────────┬───────────────────┐
+   │                 │ MySQL             │ MongoDB           │
+   ├─────────────────┼───────────────────┼───────────────────┤
+   │ 数据模型        │ 关系表            │ 文档              │
+   │ Schema          │ 固定              │ 灵活              │
+   │ 查询语言        │ SQL               │ 查询对象          │
+   │ JOIN            │ 支持              │ 有限支持          │
+   │ 事务            │ 完善              │ 支持（4.0+）      │
+   │ 扩展方式        │ 垂直扩展          │ 水平扩展          │
+   │ 适用场景        │ 结构化、强关系    │ 灵活、快速迭代    │
+   └─────────────────┴───────────────────┴───────────────────┘
+
+8）选型指南
+   - 什么时候用 MySQL：
+     - 强关系数据
+     - 复杂事务
+     - 结构稳定
+   - 什么时候用 MongoDB：
+     - 灵活 Schema
+     - 文档结构
+     - 快速迭代
+   - 混合使用
+
+9）BFF 中的 MongoDB 实践
+   - 日志存储
+   - 配置存储
+   - 用户行为数据
+   - 临时数据
+
+10）面试高频问题（至少 5 个问题 + 加分回答）
+   - MySQL 和 MongoDB 怎么选？
+   - MongoDB 适合什么场景？
+   - MongoDB 的 _id 是什么？
+   - MongoDB 支持事务吗？
+   - 你们用过 MongoDB 吗？怎么用的？
+
+【输出形式要求：多文件、多格式】
+
+/node-mongodb-basics/
+├── README.md
+├── docs/
+│   ├── 01-mongodb-overview.md
+│   ├── 02-crud-operations.md
+│   ├── 03-query-and-aggregation.md
+│   ├── 04-mysql-vs-mongodb.md
+│   └── 05-interview-questions.md
+├── examples/
+│   ├── connection/
+│   │   └── mongo-client.ts
+│   ├── native-driver/
+│   │   ├── crud-operations.ts
+│   │   ├── query-examples.ts
+│   │   └── aggregation.ts
+│   └── mongoose/
+│       ├── user-schema.ts
+│       ├── mongoose-crud.ts
+│       └── validation.ts
+└── scripts/
+    └── run-examples.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. 重点是 MySQL vs MongoDB 对比。
+3. 包含原生驱动和 Mongoose 示例。
+4. 使用 TypeScript。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

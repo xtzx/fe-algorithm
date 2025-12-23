@@ -1,0 +1,160 @@
+
+================================================================================
+【A5】安全与限流（XSS/CSRF、签名校验、IP限流）
+================================================================================
+
+```text
+你现在是「BFF 安全与限流方向专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解 BFF 层面的安全与限流，面向中高级面试。
+
+【本次主题】A5：安全与限流（入门级）
+
+说明：本单元聚焦 BFF 层面的安全入门，更深入的安全实践见 Q3-安全与配置。
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）Web 安全概述
+   - BFF 面临的安全威胁
+   - 安全的分层防御思想
+   - OWASP Top 10 简介
+
+2）常见 Web 安全问题
+   - XSS（跨站脚本攻击）：
+     - 存储型 / 反射型 / DOM型
+     - 攻击示例
+     - 防御：输出编码、CSP、HttpOnly Cookie
+   - CSRF（跨站请求伪造）：
+     - 攻击原理
+     - 防御：CSRF Token、SameSite Cookie
+   - 注入攻击：
+     - SQL 注入
+     - NoSQL 注入
+     - 命令注入
+     - 防御：参数化查询、输入验证
+
+3）输入验证 ⭐
+   - 为什么需要输入验证：
+     - 防止注入
+     - 保证数据质量
+   - 验证内容：
+     - 类型验证
+     - 长度限制
+     - 格式校验
+     - 白名单过滤
+   - 验证库：
+     - Zod（推荐）
+     - Joi
+     - class-validator
+   - 验证中间件封装
+
+4）HTTP 安全头 ⭐
+   - Helmet 中间件：
+     - 一键设置多种安全头
+   - 常用安全头：
+     - Content-Security-Policy：CSP
+     - X-Frame-Options：防止点击劫持
+     - X-Content-Type-Options：防止 MIME 嗅探
+     - Strict-Transport-Security：强制 HTTPS
+     - X-XSS-Protection：浏览器 XSS 过滤
+   - 配置示例
+
+5）CORS 配置 ⭐
+   - 什么是 CORS
+   - 简单请求 vs 预检请求
+   - cors 中间件配置：
+     - origin：允许的源
+     - methods：允许的方法
+     - credentials：是否携带凭证
+     - allowedHeaders：允许的请求头
+   - 常见问题与解决
+
+6）接口签名校验
+   - 场景：防止请求篡改、防重放
+   - 签名方案：
+     - 请求参数 + 时间戳 + 密钥 → HMAC
+     - 验证签名和时间有效性
+   - Webhook 签名验证：
+     - GitHub / Stripe 等平台的签名机制
+   - 完整代码示例
+
+7）限流（Rate Limiting）⭐⭐⭐⭐⭐
+   - 为什么需要限流：
+     - 防止 DDoS
+     - 防止滥用
+     - 保护后端服务
+   - 限流维度：
+     - IP 限流
+     - 用户限流
+     - 接口限流
+   - 限流算法：
+     - 固定窗口
+     - 滑动窗口
+     - 令牌桶
+     - 漏桶
+   - 实现方式：
+     - express-rate-limit
+     - 基于 Redis 的分布式限流
+   - 响应策略：
+     - 429 Too Many Requests
+     - Retry-After 头
+
+8）简单防刷策略
+   - 验证码
+   - 行为分析
+   - 黑名单
+   - 设备指纹
+
+9）安全配置清单
+   - 开发环境 vs 生产环境
+   - 常见安全配置检查
+
+10）面试高频问题（至少 6 个问题 + 加分回答）
+   - 如何防止 XSS 攻击？
+   - CSRF 是什么？如何防御？
+   - 如何实现接口限流？
+   - CORS 是什么？怎么配置？
+   - 如何验证 Webhook 签名？
+   - 你们 BFF 做了哪些安全措施？
+
+【输出形式要求：多文件、多格式】
+
+/bff-security-ratelimit/
+├── README.md
+├── docs/
+│   ├── 01-web-security-overview.md
+│   ├── 02-common-vulnerabilities.md
+│   ├── 03-input-validation.md
+│   ├── 04-http-security-headers.md
+│   ├── 05-rate-limiting.md
+│   └── 06-interview-questions.md
+├── examples/
+│   ├── app/
+│   │   └── app.ts
+│   ├── middlewares/
+│   │   ├── helmet-config.ts
+│   │   ├── cors-config.ts
+│   │   ├── rate-limiter.ts
+│   │   ├── validate-request.ts
+│   │   └── signature-verify.ts
+│   ├── validation/
+│   │   ├── user-schema.ts
+│   │   └── product-schema.ts
+│   └── signature/
+│       ├── create-signature.ts
+│       └── verify-webhook.ts
+└── scripts/
+    └── run-app.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. 包含 Zod 验证示例。
+3. 包含限流中间件实现。
+4. 包含 Webhook 签名验证。
+5. 使用 TypeScript。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

@@ -1,0 +1,243 @@
+
+================================================================================
+【O4】监控与可观测性 & 面试问题汇总
+================================================================================
+
+```text
+你现在是「Node.js 可观测性专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解监控体系和面试准备，面向中高级面试。
+
+【本次主题】O4：监控与可观测性 & 面试问题汇总
+
+必须覆盖以下内容：
+
+━━━━━━━━━━━━━━━━━━━━ 第一部分：监控与可观测性 ━━━━━━━━━━━━━━━━━━━━
+
+1）可观测性三支柱
+   - Metrics（指标）：
+     - 数值型数据
+     - 时间序列
+     - 如：QPS、延迟、错误率
+   - Logging（日志）：
+     - 事件记录
+     - 结构化 JSON
+     - 详见 Q1
+   - Tracing（链路追踪）：
+     - 请求链路
+     - 服务间调用
+     - 性能瓶颈定位
+
+2）Prometheus + Node.js ⭐⭐⭐⭐⭐
+   - Prometheus 简介：
+     - 时序数据库
+     - Pull 模式采集
+     - PromQL 查询语言
+   - prom-client：
+     ```typescript
+     import client from 'prom-client';
+
+     // 默认指标
+     client.collectDefaultMetrics();
+
+     // 自定义指标
+     const httpRequestCounter = new client.Counter({
+       name: 'http_requests_total',
+       help: 'Total HTTP requests',
+       labelNames: ['method', 'path', 'status'],
+     });
+
+     const httpRequestDuration = new client.Histogram({
+       name: 'http_request_duration_seconds',
+       help: 'HTTP request duration',
+       labelNames: ['method', 'path'],
+       buckets: [0.1, 0.3, 0.5, 1, 3, 5, 10],
+     });
+     ```
+   - 暴露 /metrics 端点
+   - 常用指标类型：
+     - Counter：只增计数器
+     - Gauge：可增可减
+     - Histogram：分布统计
+     - Summary：百分位统计
+
+3）Node.js 核心监控指标
+   - HTTP 指标：
+     - 请求量（QPS）
+     - 延迟（P50, P95, P99）
+     - 错误率
+     - 状态码分布
+   - 运行时指标：
+     - 内存使用（heapUsed, rss）
+     - CPU 使用
+     - Event Loop 延迟
+     - 活跃连接数
+     - GC 信息
+
+4）Grafana 可视化
+   - 仪表盘设计
+   - 常用面板：
+     - 时间序列图
+     - 饼图
+     - Stat 面板
+   - 变量和模板
+
+5）告警（Alertmanager）⭐
+   - 告警规则：
+     - 错误率 > 5%
+     - 延迟 P99 > 3s
+     - 内存使用 > 80%
+   - 告警级别：
+     - Critical / Warning / Info
+   - 告警收敛：
+     - 分组
+     - 抑制
+     - 静默
+   - 告警通知：
+     - 钉钉/飞书
+     - 邮件
+     - PagerDuty
+
+6）APM（Application Performance Monitoring）
+   - 商业方案：
+     - New Relic
+     - Datadog
+     - Elastic APM
+   - 开源方案：
+     - SkyWalking
+     - Jaeger
+   - 功能：
+     - 自动追踪
+     - 错误追踪
+     - 性能分析
+
+7）Nginx 监控
+   - Nginx 状态模块
+   - 访问日志分析
+   - 与 Prometheus 集成
+
+━━━━━━━━━━━━━━━━━━━━ 第二部分：面试问题汇总 ━━━━━━━━━━━━━━━━━━━━
+
+8）Node.js 基础与运行时（7 个问题）⭐⭐⭐⭐⭐
+   - Node.js 是单线程吗？
+   - 事件循环有几个阶段？
+   - setImmediate 和 setTimeout(fn, 0) 哪个先执行？
+   - Buffer 和 String 有什么区别？
+   - 什么是背压？如何处理？
+   - CommonJS 和 ES Module 有什么区别？
+   - process.nextTick 和 Promise.then 哪个先执行？
+
+9）异步与并发（7 个问题）⭐⭐⭐⭐⭐
+   - Node.js 如何利用多核 CPU？
+   - child_process 和 worker_threads 有什么区别？
+   - 如何排查 Node.js 内存泄漏？
+   - PM2 的 cluster 模式原理是什么？
+   - 什么是 CPU 密集型任务？如何处理？
+   - 如何实现优雅退出？
+   - 你们服务的 QPS 是多少？怎么压测的？
+
+10）BFF 架构（7 个问题）⭐⭐⭐⭐⭐
+   - 什么是 BFF？为什么需要 BFF？
+   - BFF 和 API Gateway 有什么区别？
+   - 你们的 BFF 做了哪些事情？
+   - BFF 如何处理多个后端服务的聚合？
+   - 如何保证 BFF 的稳定性？
+   - BFF 的反模式有哪些？
+   - 如何处理后端服务超时？
+
+11）数据层与缓存（7 个问题）⭐⭐⭐⭐⭐
+   - 缓存穿透、击穿、雪崩分别是什么？
+   - Redis 有哪些数据结构？你用过哪些？
+   - 什么是 Cache Aside 模式？
+   - MySQL 和 MongoDB 怎么选？
+   - Prisma 和 TypeORM 有什么区别？
+   - 如何设计一个缓存策略？
+   - 分布式锁怎么实现？
+
+12）安全与质量（7 个问题）⭐⭐⭐⭐⭐
+   - 你们是怎么防止 SQL 注入的？
+   - JWT 和 Session 有什么区别？
+   - 如何安全地管理 Secrets？
+   - 你们服务做了哪些安全措施？
+   - 单元测试和集成测试的区别？
+   - 你们的测试覆盖率是多少？
+   - 如何 Mock 外部依赖？
+
+13）基础设施与 DevOps（5 个问题）⭐⭐⭐⭐⭐
+   - Docker 镜像如何优化体积？
+   - K8s 的 livenessProbe 和 readinessProbe 有什么区别？
+   - 蓝绿部署和金丝雀发布有什么区别？
+   - 你们的 CI/CD 流程是怎样的？
+   - 如何监控 Node.js 服务？
+
+━━━━━━━━━━━━━━━━━━━━ 第三部分：回答技巧 ━━━━━━━━━━━━━━━━━━━━
+
+14）面试回答框架
+   - STAR 法则：
+     - Situation：背景
+     - Task：任务
+     - Action：行动
+     - Result：结果
+   - 技术问题回答结构：
+     - 是什么
+     - 为什么
+     - 怎么做
+     - 有什么坑
+
+15）如何展示架构能力
+   - 讲清楚为什么这样设计
+   - 有什么 trade-off
+   - 有什么可改进的地方
+
+16）如何展示线上经验
+   - 遇到过什么问题
+   - 如何定位
+   - 如何解决
+   - 后续如何预防
+
+【输出形式要求：多文件、多格式】
+
+/node-monitoring-interview/
+├── README.md
+├── docs/
+│   ├── 01-observability-overview.md
+│   ├── 02-prometheus-and-metrics.md
+│   ├── 03-grafana-and-alerting.md
+│   ├── 04-apm-and-tracing.md
+│   └── 05-interview-mega-collection.md
+├── examples/
+│   ├── prometheus/
+│   │   ├── metrics.ts
+│   │   ├── http-metrics-middleware.ts
+│   │   └── metrics-endpoint.ts
+│   └── grafana/
+│       └── dashboard.json
+├── interview/
+│   ├── 01-runtime-questions.md
+│   ├── 02-concurrency-questions.md
+│   ├── 03-bff-questions.md
+│   ├── 04-data-layer-questions.md
+│   ├── 05-security-quality-questions.md
+│   ├── 06-devops-questions.md
+│   └── 07-answer-techniques.md
+├── cheatsheets/
+│   ├── interview-quick-answers.md
+│   ├── common-commands.md
+│   └── concepts-summary.md
+└── scripts/
+    └── run-metrics-demo.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. 包含 Prometheus 指标采集完整示例。
+3. 面试问题每个都要有：
+   - 标准答案
+   - 加分回答
+   - 可能的追问
+4. 使用 TypeScript。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

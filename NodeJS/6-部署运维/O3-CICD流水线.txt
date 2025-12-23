@@ -1,0 +1,193 @@
+
+================================================================================
+【O3】CI/CD 流水线
+================================================================================
+
+```text
+你现在是「DevOps 与 CI/CD 专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解 CI/CD 流水线，面向中高级面试。
+
+【本次主题】O3：CI/CD 流水线
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）CI/CD 概念
+   - 持续集成（CI）：
+     - 代码提交 → 自动构建 → 自动测试
+     - 尽早发现问题
+   - 持续交付（CD）：
+     - 自动部署到各环境
+     - 可随时发布
+   - 持续部署：
+     - 自动部署到生产
+     - 无人工干预
+   - CI/CD 的价值
+
+2）GitHub Actions ⭐⭐⭐⭐⭐
+   - 核心概念：
+     - Workflow：工作流
+     - Job：作业
+     - Step：步骤
+     - Action：可复用动作
+   - 触发条件：
+     - push / pull_request
+     - schedule（定时）
+     - workflow_dispatch（手动）
+   - 基础结构：
+     ```yaml
+     name: CI
+     on:
+       push:
+         branches: [main]
+       pull_request:
+         branches: [main]
+     jobs:
+       build:
+         runs-on: ubuntu-latest
+         steps:
+           - uses: actions/checkout@v4
+           - uses: actions/setup-node@v4
+             with:
+               node-version: '20'
+           - run: npm ci
+           - run: npm run lint
+           - run: npm test
+     ```
+
+3）完整 Node.js CI 流程 ⭐
+   - 代码检查：
+     - Lint（ESLint）
+     - Type Check（TypeScript）
+     - Format Check（Prettier）
+   - 测试：
+     - 单元测试
+     - 集成测试
+     - 覆盖率报告
+   - 构建：
+     - TypeScript 编译
+     - Docker 镜像构建
+   - 安全扫描：
+     - npm audit
+     - 依赖漏洞扫描
+
+4）Docker 镜像 CI/CD ⭐
+   - 构建镜像
+   - 推送到镜像仓库：
+     - Docker Hub
+     - GitHub Container Registry
+     - 私有仓库
+   - 完整示例：
+     ```yaml
+     - name: Build and push Docker image
+       uses: docker/build-push-action@v5
+       with:
+         context: .
+         push: true
+         tags: |
+           ghcr.io/user/app:latest
+           ghcr.io/user/app:${{ github.sha }}
+     ```
+
+5）部署到 Kubernetes ⭐
+   - 更新镜像版本
+   - kubectl apply
+   - 等待 rollout 完成
+   - 部署验证
+
+6）环境管理
+   - 多环境：
+     - development
+     - staging
+     - production
+   - 环境变量：
+     - GitHub Secrets
+     - 环境特定变量
+   - 分支策略：
+     - main → production
+     - develop → staging
+
+7）质量门禁（Quality Gates）⭐⭐⭐⭐⭐
+   - 测试覆盖率阈值：
+     ```yaml
+     - name: Check coverage
+       run: npm run test:coverage
+       env:
+         COVERAGE_THRESHOLD: 80
+     ```
+   - 代码扫描：
+     - CodeQL
+     - SonarCloud
+   - 安全扫描
+   - 门禁失败阻止合并
+
+8）部署策略 ⭐⭐⭐⭐⭐
+   - 滚动更新（Rolling Update）：
+     - K8s 默认
+     - 逐步替换 Pod
+   - 蓝绿部署（Blue-Green）：
+     - 两套环境
+     - 切换流量
+     - 快速回滚
+   - 金丝雀发布（Canary）：
+     - 逐步放量
+     - 监控验证
+     - 渐进式部署
+   - A/B 测试：
+     - 按用户特征分流
+     - 与金丝雀的区别
+
+9）GitLab CI 对比
+   - .gitlab-ci.yml
+   - stages / jobs / scripts
+   - 与 GitHub Actions 对比
+
+10）回滚策略
+   - 自动回滚
+   - 手动回滚
+   - 回滚验证
+
+11）面试高频问题（至少 6 个问题 + 加分回答）
+   - 你们的 CI/CD 流程是怎样的？
+   - 蓝绿部署和金丝雀发布有什么区别？
+   - 如何做到自动化部署？
+   - 如何设置质量门禁？
+   - 如何处理部署失败？
+   - GitHub Actions 和 GitLab CI 有什么区别？
+
+【输出形式要求：多文件、多格式】
+
+/node-cicd/
+├── README.md
+├── docs/
+│   ├── 01-cicd-concepts.md
+│   ├── 02-github-actions.md
+│   ├── 03-docker-cicd.md
+│   ├── 04-deployment-strategies.md
+│   └── 05-interview-questions.md
+├── .github/
+│   └── workflows/
+│       ├── ci.yml
+│       ├── cd-staging.yml
+│       ├── cd-production.yml
+│       └── security-scan.yml
+├── gitlab/
+│   └── .gitlab-ci.yml
+├── scripts/
+│   ├── deploy.sh
+│   └── rollback.sh
+└── diagrams/
+    ├── cicd-pipeline.txt
+    └── deployment-strategies.txt
+
+要求：
+
+1. 先输出完整目录树。
+2. 包含完整的 GitHub Actions 配置。
+3. 包含 Docker 构建和 K8s 部署步骤。
+4. 包含部署策略图解。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+

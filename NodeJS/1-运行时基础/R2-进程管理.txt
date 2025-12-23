@@ -1,0 +1,177 @@
+
+================================================================================
+【R2】process 对象与进程管理
+================================================================================
+
+```text
+你现在是「Node.js 运行时专家 & 资深面试官」，
+要为一位「7-8 年资深前端工程师」深入讲解 process 对象与进程管理，面向中高级面试。
+
+【本次主题】R2：process 对象与进程管理
+
+必须覆盖以下内容（每项都要有详细讲解 + 代码示例）：
+
+1）process 对象基础
+   - 全局可用：无需 require
+   - process.version / process.versions：Node 和依赖版本
+   - process.platform / process.arch：操作系统和架构
+   - process.pid / process.ppid：进程 ID / 父进程 ID
+   - process.title：进程标题（可修改，ps 命令中显示）
+   - process.uptime()：进程运行时间（秒）
+
+2）环境变量（process.env）⭐
+   - 读取环境变量：process.env.NODE_ENV
+   - 设置环境变量的几种方式：
+     - 命令行：NODE_ENV=production node app.js
+     - .env 文件 + dotenv
+     - cross-env 跨平台设置
+   - 环境变量的类型问题（始终是字符串）
+   - 敏感信息处理：
+     - 不要 commit 到代码库
+     - 使用 secrets manager
+   - 示例：根据环境切换配置
+
+3）命令行参数（process.argv）
+   - process.argv 结构：[node路径, 脚本路径, ...用户参数]
+   - 手动解析参数
+   - 解析库：minimist / yargs / commander
+   - 示例：实现一个简单的 CLI 工具
+
+4）标准输入输出流
+   - process.stdin：可读流（Readable）
+     - 接收用户输入
+     - pipe 到其他流
+   - process.stdout：可写流（Writable）
+     - console.log 底层实现
+   - process.stderr：可写流（Writable）
+     - console.error 底层实现
+     - 与 stdout 的区别
+   - 示例：实现交互式命令行问答
+
+5）工作目录与路径
+   - process.cwd()：当前工作目录（可变）
+   - __dirname / __filename：脚本所在目录/文件（固定）
+   - process.chdir(dir)：切换工作目录
+   - 三者的区别与使用场景（面试高频）
+   - ES Module 中获取 __dirname 的方式
+
+6）进程控制
+   - process.exit(code)：退出进程
+     - 0：正常退出
+     - 非 0：异常退出（1 常用）
+   - process.exitCode：设置退出码（推荐方式）
+   - process.abort()：立即终止（生成 core dump）
+   - 为什么不建议在异步操作中直接 exit
+
+7）信号处理 ⭐⭐⭐⭐⭐
+   - 常见信号：
+     - SIGINT (2)：Ctrl+C
+     - SIGTERM (15)：kill 命令默认信号
+     - SIGHUP (1)：终端关闭
+     - SIGKILL (9)：强制杀死（不可捕获）
+   - process.on('SIGINT', handler)
+   - process.on('SIGTERM', handler)
+   - 为什么不能捕获 SIGKILL / SIGSTOP
+
+8）优雅退出（Graceful Shutdown）⭐⭐⭐⭐⭐
+   - 什么是优雅退出？为什么重要？
+   - 实现步骤：
+     1. 监听 SIGTERM / SIGINT
+     2. 停止接收新请求
+     3. 等待进行中的请求完成
+     4. 关闭数据库连接、消息队列等
+     5. 设置超时强制退出
+   - 完整代码示例：HTTP 服务优雅退出
+   - 在 K8s 中的重要性：Pod 终止前有 terminationGracePeriodSeconds
+
+9）事件与异常处理
+   - process.on('exit', handler)：进程退出前（同步代码）
+   - process.on('beforeExit', handler)：事件循环清空时
+   - process.on('uncaughtException', handler)：
+     - 未捕获异常
+     - 风险：进程可能处于未知状态
+     - 最佳实践：记录日志后退出
+   - process.on('unhandledRejection', handler)：
+     - 未处理的 Promise 拒绝
+     - Node 15+ 默认会抛出错误并退出
+   - 这些事件的触发顺序
+
+10）内存与资源监控
+   - process.memoryUsage()：
+     - rss（Resident Set Size）：进程总内存
+     - heapTotal：V8 堆总大小
+     - heapUsed：V8 堆已用
+     - external：C++ 对象占用
+     - arrayBuffers：ArrayBuffer 占用
+   - process.cpuUsage()：CPU 使用时间
+   - process.resourceUsage()：更详细的资源使用
+
+11）process.nextTick()
+   - 作用：在当前操作完成后立即执行
+   - 优先级：高于 Promise.then
+   - 与 setImmediate 的区别
+   - 递归 nextTick 的风险（I/O 饥饿）
+   - 使用场景：初始化后立即执行、保证顺序
+
+12）面试高频问题（至少 8 个问题 + 加分回答）
+   - process.cwd() 和 __dirname 有什么区别？
+   - 如何实现 Node.js 服务的优雅退出？
+   - process.nextTick 和 setImmediate 哪个先执行？
+   - 如何获取 Node.js 进程的内存使用情况？
+   - uncaughtException 里应该做什么？
+   - process.exit() 和 process.exitCode 有什么区别？
+   - 如何安全地管理环境变量？
+   - SIGTERM 和 SIGKILL 有什么区别？
+
+【输出形式要求：多文件、多格式】
+
+/node-process-management/
+├── README.md
+├── docs/
+│   ├── 01-process-basics.md
+│   ├── 02-env-and-argv.md
+│   ├── 03-stdio-streams.md
+│   ├── 04-signals-and-graceful-shutdown.md
+│   ├── 05-error-events-and-exceptions.md
+│   ├── 06-memory-and-resources.md
+│   └── 07-interview-questions.md
+├── examples/
+│   ├── basics/
+│   │   ├── process-info.ts
+│   │   └── cwd-vs-dirname.ts
+│   ├── env/
+│   │   ├── read-env.ts
+│   │   ├── env-config.ts
+│   │   └── .env.example
+│   ├── argv/
+│   │   ├── parse-args.ts
+│   │   └── simple-cli.ts
+│   ├── stdio/
+│   │   ├── interactive-prompt.ts
+│   │   └── pipe-demo.ts
+│   ├── signals/
+│   │   ├── signal-handler.ts
+│   │   └── graceful-shutdown-server.ts
+│   ├── errors/
+│   │   ├── uncaught-exception.ts
+│   │   └── unhandled-rejection.ts
+│   └── memory/
+│       ├── memory-usage.ts
+│       └── memory-monitor.ts
+└── scripts/
+    └── run-examples.sh
+
+要求：
+
+1. 先输出完整目录树。
+2. docs 下重点是 04-signals-and-graceful-shutdown.md，要有完整的生产级示例。
+3. examples 下：
+   - graceful-shutdown-server.ts 要模拟完整的优雅退出流程
+   - 使用 TypeScript，包含类型标注
+4. 每个示例要能独立运行。
+
+请从项目结构开始，然后依次输出每个文件的完整内容。
+```
+
+================================================================================
+
