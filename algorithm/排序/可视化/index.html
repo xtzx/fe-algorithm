@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>排序算法可视化</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- 头部 -->
+    <header class="header">
+      <h1>🔢 排序算法可视化</h1>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <!-- 画布区域 -->
+      <div class="canvas-container">
+        <h2>可视化区域</h2>
+        <canvas id="visualization-canvas"></canvas>
+      </div>
+
+      <!-- 控制面板 -->
+      <aside class="controls-container">
+        <div id="controls"></div>
+
+        <!-- 图例 -->
+        <div class="legend">
+          <div class="legend-item">
+            <span class="legend-color default"></span>
+            <span>默认</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color comparing"></span>
+            <span>比较中</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color swapping"></span>
+            <span>交换中</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color sorted"></span>
+            <span>已排序</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color pivot"></span>
+            <span>Pivot</span>
+          </div>
+        </div>
+
+        <!-- 快捷键 -->
+        <div class="shortcuts">
+          <h3>⌨️ 快捷键</h3>
+          <div class="shortcut-item">
+            <span>播放/暂停</span>
+            <span class="shortcut-key">Space</span>
+          </div>
+          <div class="shortcut-item">
+            <span>步进</span>
+            <span class="shortcut-key">→</span>
+          </div>
+          <div class="shortcut-item">
+            <span>重置</span>
+            <span class="shortcut-key">R</span>
+          </div>
+          <div class="shortcut-item">
+            <span>加速/减速</span>
+            <span class="shortcut-key">+ / -</span>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <!-- 内联脚本：避免模块化带来的复杂性 -->
+  <script>
+    // ========================================================================
+    // 类型和常量
+    // ========================================================================
+
+    const COLORS = {
+      default: '#4A90D9',
+      comparing: '#F5A623',
+      swapping: '#D0021B',
+      sorted: '#7ED321',
+      pivot: '#9013FE',
+      background: '#1a1a2e',
+    };
+
+    const ALGORITHMS = {
+      bubble: { name: '冒泡排序', fn: bubbleSortSteps },
+      quick: { name: '快速排序', fn: quickSortSteps },
+      merge: { name: '归并排序', fn: mergeSortSteps },
+      heap: { name: '堆排序', fn: heapSortSteps },
+    };
+
+    // ========================================================================
+    // 算法实现（生成器版本）
+    // ========================================================================
+
+    function* bubbleSortSteps(arr) {
+      const n = arr.length;
+      for (let i = 0; i < n - 1; i++) {
+        let swapped = false;
+        for (let j = 0; j < n - i - 1; j++) {
+          yield { type: 'compare', indices: [j, j + 1] };
+          if (arr[j] > arr[j + 1]) {
+            yield { type: 'swap', indices: [j, j + 1] };
+            [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+            swapped = true;
+          }
+        }
+        yield { type: 'sorted', indices: [n - i - 1] };
+        if (!swapped) {
+          const remaining = [];
+          for (let k = 0; k < n - i - 1; k++) remaining.push(k);
+          if (remaining.length) yield { type: 'sorted', indices: remaining };
+          break;
+        }
+      }
+      yield { type: 'sorted', indices: [0] };
+    }
+
+    function* quickSortSteps(arr) {
+      yield* quickSortHelper(arr, 0, arr.length - 1);
+    }
+
+    function* quickSortHelper(arr, low, high) {
+      if (low >= high) {
+        if (low === high) yield { type: 'sorted', indices: [low] };
+        return;
+      }
+      const pivotIndex = yield* partition(arr, low, high);
+      yield { type: 'sorted', indices: [pivotIndex] };
+      yield* quickSortHelper(arr, low, pivotIndex - 1);
+      yield* quickSortHelper(arr, pivotIndex + 1, high);
+    }
+
+    function* partition(arr, low, high) {
+      const pivot = arr[high];
+      yield { type: 'pivot', indices: [high] };
+      let i = low - 1;
+      for (let j = low; j < high; j++) {
+        yield { type: 'compare', indices: [j, high] };
+        if (arr[j] <= pivot) {
+          i++;
+          if (i !== j) {
+            yield { type: 'swap', indices: [i, j] };
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+          }
+        }
+      }
+      const pivotPos = i + 1;
+      if (pivotPos !== high) {
+        yield { type: 'swap', indices: [pivotPos, high] };
+        [arr[pivotPos], arr[high]] = [arr[high], arr[pivotPos]];
+      }
+      return pivotPos;
+    }
+
+    function* mergeSortSteps(arr) {
+      const temp = new Array(arr.length);
+      yield* mergeSortHelper(arr, temp, 0, arr.length - 1);
+    }
+
+    function* mergeSortHelper(arr, temp, left, right) {
+      if (left >= right) {
+        if (left === right) yield { type: 'sorted', indices: [left] };
+        return;
+      }
+      const mid = Math.floor((left + right) / 2);
+      yield* mergeSortHelper(arr, temp, left, mid);
+      yield* mergeSortHelper(arr, temp, mid + 1, right);
+      yield* merge(arr, temp, left, mid, right);
+    }
+
+    function* merge(arr, temp, left, mid, right) {
+      for (let i = left; i <= right; i++) temp[i] = arr[i];
+      let i = left, j = mid + 1, k = left;
+      while (i <= mid && j <= right) {
+        yield { type: 'compare', indices: [i, j] };
+        if (temp[i] <= temp[j]) {
+          arr[k] = temp[i++];
+        } else {
+          arr[k] = temp[j++];
+        }
+        yield { type: 'highlight', indices: [k] };
+        k++;
+      }
+      while (i <= mid) {
+        arr[k] = temp[i++];
+        yield { type: 'highlight', indices: [k++] };
+      }
+      while (j <= right) {
+        arr[k] = temp[j++];
+        yield { type: 'highlight', indices: [k++] };
+      }
+      if (left === 0 && right === arr.length - 1) {
+        const indices = [];
+        for (let x = left; x <= right; x++) indices.push(x);
+        yield { type: 'sorted', indices };
+      }
+    }
+
+    function* heapSortSteps(arr) {
+      const n = arr.length;
+      for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+        yield* heapify(arr, n, i);
+      }
+      for (let i = n - 1; i > 0; i--) {
+        yield { type: 'swap', indices: [0, i] };
+        [arr[0], arr[i]] = [arr[i], arr[0]];
+        yield { type: 'sorted', indices: [i] };
+        yield* heapify(arr, i, 0);
+      }
+      yield { type: 'sorted', indices: [0] };
+    }
+
+    function* heapify(arr, n, i) {
+      let largest = i;
+      const left = 2 * i + 1, right = 2 * i + 2;
+      if (left < n) {
+        yield { type: 'compare', indices: [left, largest] };
+        if (arr[left] > arr[largest]) largest = left;
+      }
+      if (right < n) {
+        yield { type: 'compare', indices: [right, largest] };
+        if (arr[right] > arr[largest]) largest = right;
+      }
+      if (largest !== i) {
+        yield { type: 'swap', indices: [i, largest] };
+        [arr[i], arr[largest]] = [arr[largest], arr[i]];
+        yield* heapify(arr, n, largest);
+      }
+    }
+
+    // ========================================================================
+    // 数据生成
+    // ========================================================================
+
+    function generateArray(size, distribution) {
+      const arr = [];
+      switch (distribution) {
+        case 'random':
+          for (let i = 0; i < size; i++) arr.push(Math.floor(Math.random() * size) + 1);
+          break;
+        case 'sorted':
+          for (let i = 0; i < size; i++) arr.push(i + 1);
+          break;
+        case 'reversed':
+          for (let i = size; i > 0; i--) arr.push(i);
+          break;
+        case 'nearlySorted':
+          for (let i = 0; i < size; i++) arr.push(i + 1);
+          for (let i = 0; i < size * 0.1; i++) {
+            const a = Math.floor(Math.random() * size);
+            const b = Math.floor(Math.random() * size);
+            [arr[a], arr[b]] = [arr[b], arr[a]];
+          }
+          break;
+        case 'duplicates':
+          const values = [1, 2, 3, 4, 5].map(v => v * (size / 5));
+          for (let i = 0; i < size; i++) {
+            arr.push(values[Math.floor(Math.random() * values.length)]);
+          }
+          break;
+      }
+      return arr;
+    }
+
+    // ========================================================================
+    // 可视化引擎
+    // ========================================================================
+
+    class Visualizer {
+      constructor(canvas) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d');
+        this.array = [];
+        this.generator = null;
+        this.state = {
+          comparing: [],
+          swapping: [],
+          sorted: [],
+          pivot: null,
+          stats: { comparisons: 0, swaps: 0, startTime: 0, elapsedTime: 0 }
+        };
+        this.isPlaying = false;
+        this.speed = 1;
+        this.onStep = null;
+        this.onComplete = null;
+        this.setupCanvas();
+        window.addEventListener('resize', () => this.setupCanvas());
+      }
+
+      setupCanvas() {
+        const rect = this.canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        this.canvas.width = rect.width * dpr;
+        this.canvas.height = rect.height * dpr;
+        this.ctx.scale(dpr, dpr);
+        this.width = rect.width;
+        this.height = rect.height;
+        this.render();
+      }
+
+      setAlgorithm(algorithmFn) {
+        this.algorithmFn = algorithmFn;
+        this.reset();
+      }
+
+      setArray(arr) {
+        this.array = [...arr];
+        this.reset();
+      }
+
+      setSpeed(speed) {
+        this.speed = speed;
+      }
+
+      reset() {
+        this.stop();
+        this.state = {
+          array: [...this.array],
+          comparing: [],
+          swapping: [],
+          sorted: [],
+          pivot: null,
+          stats: { comparisons: 0, swaps: 0, startTime: 0, elapsedTime: 0 }
+        };
+        if (this.algorithmFn) {
+          this.generator = this.algorithmFn([...this.array]);
+        }
+        this.render();
+        this.onStep?.(this.state);
+      }
+
+      async play() {
+        if (!this.generator) return;
+        if (this.isPlaying) return;
+        this.isPlaying = true;
+        if (!this.state.stats.startTime) {
+          this.state.stats.startTime = performance.now();
+        }
+        while (this.isPlaying) {
+          const hasNext = this.step();
+          if (!hasNext) break;
+          await this.sleep(100 / this.speed);
+        }
+      }
+
+      pause() {
+        this.isPlaying = false;
+      }
+
+      stop() {
+        this.isPlaying = false;
+      }
+
+      step() {
+        if (!this.generator) return false;
+        const result = this.generator.next();
+        if (result.done) {
+          this.complete();
+          return false;
+        }
+        this.processStep(result.value);
+        return true;
+      }
+
+      processStep(step) {
+        this.state.comparing = [];
+        this.state.swapping = [];
+
+        switch (step.type) {
+          case 'compare':
+            this.state.comparing = step.indices;
+            this.state.stats.comparisons++;
+            break;
+          case 'swap':
+            this.state.swapping = step.indices;
+            this.state.stats.swaps++;
+            const [i, j] = step.indices;
+            [this.state.array[i], this.state.array[j]] =
+              [this.state.array[j], this.state.array[i]];
+            break;
+          case 'sorted':
+            this.state.sorted = [...this.state.sorted, ...step.indices];
+            break;
+          case 'pivot':
+            this.state.pivot = step.indices[0];
+            break;
+          case 'highlight':
+            this.state.comparing = step.indices;
+            break;
+        }
+
+        this.state.stats.elapsedTime = performance.now() - this.state.stats.startTime;
+        this.render();
+        this.onStep?.(this.state);
+      }
+
+      complete() {
+        this.isPlaying = false;
+        this.state.comparing = [];
+        this.state.swapping = [];
+        this.state.pivot = null;
+        this.state.sorted = this.state.array.map((_, i) => i);
+        this.render();
+        this.onComplete?.(this.state.stats);
+      }
+
+      render() {
+        const { ctx, width, height } = this;
+        const { array, comparing, swapping, sorted, pivot } = this.state;
+
+        // 清空
+        ctx.fillStyle = COLORS.background;
+        ctx.fillRect(0, 0, width, height);
+
+        if (!array || array.length === 0) return;
+
+        const padding = 20;
+        const gap = 2;
+        const availableWidth = width - padding * 2;
+        const availableHeight = height - padding * 2;
+        const barWidth = (availableWidth - gap * (array.length - 1)) / array.length;
+        const maxValue = Math.max(...array);
+
+        array.forEach((value, index) => {
+          const x = padding + index * (barWidth + gap);
+          const barHeight = (value / maxValue) * availableHeight;
+          const y = height - padding - barHeight;
+
+          let color = COLORS.default;
+          if (sorted.includes(index)) color = COLORS.sorted;
+          else if (swapping.includes(index)) color = COLORS.swapping;
+          else if (comparing.includes(index)) color = COLORS.comparing;
+          else if (index === pivot) color = COLORS.pivot;
+
+          ctx.fillStyle = color;
+          ctx.fillRect(x, y, barWidth, barHeight);
+
+          // 数值
+          if (barWidth > 15) {
+            ctx.fillStyle = '#fff';
+            ctx.font = `${Math.min(barWidth * 0.6, 12)}px monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(String(value), x + barWidth / 2, y - 2);
+          }
+        });
+      }
+
+      sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+      }
+    }
+
+    // ========================================================================
+    // 控制面板
+    // ========================================================================
+
+    function createControls(container, callbacks) {
+      container.innerHTML = `
+        <div class="controls-panel">
+          <div class="controls-row">
+            <div class="control-group">
+              <label>算法</label>
+              <select id="algorithm-select">
+                <option value="bubble">冒泡排序</option>
+                <option value="quick">快速排序</option>
+                <option value="merge">归并排序</option>
+                <option value="heap">堆排序</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <label>数据量: <span id="size-label">50</span></label>
+              <input type="range" id="size-slider" min="10" max="200" value="50" step="10">
+            </div>
+          </div>
+
+          <div class="controls-row">
+            <div class="control-group distribution-group">
+              <label>数据分布</label>
+              <div class="radio-group">
+                <label><input type="radio" name="distribution" value="random" checked> 随机</label>
+                <label><input type="radio" name="distribution" value="sorted"> 有序</label>
+                <label><input type="radio" name="distribution" value="reversed"> 逆序</label>
+                <label><input type="radio" name="distribution" value="nearlySorted"> 近乎有序</label>
+                <label><input type="radio" name="distribution" value="duplicates"> 重复多</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="controls-row">
+            <div class="control-group">
+              <label>速度: <span id="speed-label">1x</span></label>
+              <input type="range" id="speed-slider" min="0.5" max="4" value="1" step="0.5">
+            </div>
+          </div>
+
+          <div class="controls-row buttons-group">
+            <button id="play-btn" class="btn btn-primary">▶ 播放</button>
+            <button id="pause-btn" class="btn btn-secondary" disabled>⏸ 暂停</button>
+            <button id="step-btn" class="btn btn-secondary">⏭ 步进</button>
+            <button id="reset-btn" class="btn btn-secondary">🔄 重置</button>
+          </div>
+
+          <div class="controls-row stats-row">
+            <div class="stat">
+              <span class="stat-label">比较次数</span>
+              <span id="comparisons" class="stat-value">0</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">交换次数</span>
+              <span id="swaps" class="stat-value">0</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">耗时</span>
+              <span id="time" class="stat-value">0ms</span>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // 事件绑定
+      const algorithmSelect = container.querySelector('#algorithm-select');
+      const sizeSlider = container.querySelector('#size-slider');
+      const sizeLabel = container.querySelector('#size-label');
+      const speedSlider = container.querySelector('#speed-slider');
+      const speedLabel = container.querySelector('#speed-label');
+      const playBtn = container.querySelector('#play-btn');
+      const pauseBtn = container.querySelector('#pause-btn');
+      const stepBtn = container.querySelector('#step-btn');
+      const resetBtn = container.querySelector('#reset-btn');
+      const radios = container.querySelectorAll('input[name="distribution"]');
+
+      algorithmSelect.addEventListener('change', () => callbacks.onAlgorithmChange(algorithmSelect.value));
+
+      sizeSlider.addEventListener('input', () => {
+        sizeLabel.textContent = sizeSlider.value;
+        callbacks.onSizeChange(parseInt(sizeSlider.value));
+      });
+
+      speedSlider.addEventListener('input', () => {
+        speedLabel.textContent = speedSlider.value + 'x';
+        callbacks.onSpeedChange(parseFloat(speedSlider.value));
+      });
+
+      radios.forEach(radio => {
+        radio.addEventListener('change', () => {
+          if (radio.checked) callbacks.onDistributionChange(radio.value);
+        });
+      });
+
+      playBtn.addEventListener('click', () => {
+        playBtn.disabled = true;
+        pauseBtn.disabled = false;
+        stepBtn.disabled = true;
+        callbacks.onPlay();
+      });
+
+      pauseBtn.addEventListener('click', () => {
+        playBtn.disabled = false;
+        pauseBtn.disabled = true;
+        stepBtn.disabled = false;
+        callbacks.onPause();
+      });
+
+      stepBtn.addEventListener('click', callbacks.onStep);
+
+      resetBtn.addEventListener('click', () => {
+        playBtn.disabled = false;
+        pauseBtn.disabled = true;
+        stepBtn.disabled = false;
+        callbacks.onReset();
+      });
+
+      // 键盘快捷键
+      document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        switch (e.key) {
+          case ' ':
+            e.preventDefault();
+            if (!playBtn.disabled) playBtn.click();
+            else pauseBtn.click();
+            break;
+          case 'ArrowRight':
+            e.preventDefault();
+            if (!stepBtn.disabled) stepBtn.click();
+            break;
+          case 'r':
+          case 'R':
+            e.preventDefault();
+            resetBtn.click();
+            break;
+          case '+':
+          case '=':
+            e.preventDefault();
+            speedSlider.value = Math.min(4, parseFloat(speedSlider.value) + 0.5);
+            speedSlider.dispatchEvent(new Event('input'));
+            break;
+          case '-':
+            e.preventDefault();
+            speedSlider.value = Math.max(0.5, parseFloat(speedSlider.value) - 0.5);
+            speedSlider.dispatchEvent(new Event('input'));
+            break;
+        }
+      });
+
+      return {
+        updateStats(comparisons, swaps, time) {
+          container.querySelector('#comparisons').textContent = comparisons;
+          container.querySelector('#swaps').textContent = swaps;
+          container.querySelector('#time').textContent = Math.round(time) + 'ms';
+        },
+        resetButtons() {
+          playBtn.disabled = false;
+          pauseBtn.disabled = true;
+          stepBtn.disabled = false;
+        },
+        getConfig() {
+          const checkedRadio = container.querySelector('input[name="distribution"]:checked');
+          return {
+            algorithm: algorithmSelect.value,
+            size: parseInt(sizeSlider.value),
+            speed: parseFloat(speedSlider.value),
+            distribution: checkedRadio?.value || 'random'
+          };
+        }
+      };
+    }
+
+    // ========================================================================
+    // 初始化
+    // ========================================================================
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const canvas = document.getElementById('visualization-canvas');
+      const controlsContainer = document.getElementById('controls');
+
+      const visualizer = new Visualizer(canvas);
+
+      let currentConfig = {
+        algorithm: 'bubble',
+        size: 50,
+        speed: 1,
+        distribution: 'random'
+      };
+
+      const controls = createControls(controlsContainer, {
+        onAlgorithmChange(algo) {
+          currentConfig.algorithm = algo;
+          initVisualization();
+        },
+        onSizeChange(size) {
+          currentConfig.size = size;
+          initVisualization();
+        },
+        onSpeedChange(speed) {
+          currentConfig.speed = speed;
+          visualizer.setSpeed(speed);
+        },
+        onDistributionChange(dist) {
+          currentConfig.distribution = dist;
+          initVisualization();
+        },
+        onPlay() {
+          visualizer.play();
+        },
+        onPause() {
+          visualizer.pause();
+        },
+        onStep() {
+          visualizer.step();
+        },
+        onReset() {
+          initVisualization();
+        }
+      });
+
+      visualizer.onStep = (state) => {
+        controls.updateStats(
+          state.stats.comparisons,
+          state.stats.swaps,
+          state.stats.elapsedTime
+        );
+      };
+
+      visualizer.onComplete = () => {
+        controls.resetButtons();
+      };
+
+      function initVisualization() {
+        const { algorithm, size, speed, distribution } = currentConfig;
+        const arr = generateArray(size, distribution);
+        visualizer.setArray(arr);
+        visualizer.setSpeed(speed);
+        visualizer.setAlgorithm(ALGORITHMS[algorithm].fn);
+        controls.updateStats(0, 0, 0);
+      }
+
+      initVisualization();
+    });
+  </script>
+</body>
+</html>
+

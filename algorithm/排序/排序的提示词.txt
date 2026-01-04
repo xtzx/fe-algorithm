@@ -644,3 +644,503 @@ algorithm/排序/
 │
 └── 基准测试/
 ```
+
+
+
+===============================================================================
+## 补充阶段：深度拓展（S5-S7）
+===============================================================================
+
+> 以下为在 S0-S4 基础上的深度补充，适合追求深入理解的学习者。
+
+
+
+---
+
+
+
+
+## S5.prompt.md（底层实现 + LeetCode 题目映射）
+
+你现在是「排序算法深度研究员 + 算法面试辅导专家」。
+
+【本次任务】S5：补充"底层实现分析"与"LeetCode 题目映射"，让读者：
+- 理解 V8/Python/Java 等语言的排序实现细节
+- 将排序知识与算法面试题目关联起来
+
+【必须新增的文件】
+```
+algorithm/排序/
+├── 文档/
+│   ├── 08-底层实现深度剖析.md
+│   └── 09-LeetCode题目映射.md
+│
+└── 算法包/
+    └── 公共库/src/
+        └── 链表排序.ts          # 链表场景的排序实现
+```
+
+【08-底层实现深度剖析.md 要求】
+
+1) **V8 TimSort 源码分析**（重点）
+   - 源码位置：v8/src/third_party/v8/builtins/array-sort.tq
+   - run 检测的具体实现
+   - minrun 的计算公式（32-64 之间，目标是让 run 数接近 2 的幂）
+   - galloping 模式触发条件（MIN_GALLOP = 7）
+   - 合并栈的不变式（timsort invariant）
+   - 与 Python 原版 TimSort 的差异
+
+2) **各语言标准库对比**
+   | 语言 | 算法 | 稳定性 | 特点 |
+   |------|------|--------|------|
+   | JavaScript (V8) | TimSort | ✅ | ES2019 后规范要求稳定 |
+   | Python | TimSort | ✅ | TimSort 的发源地 |
+   | Java | 双轴快排(primitive) / TimSort(Object) | ❌/✅ | 区分基本类型和对象 |
+   | C++ STL | Introsort | ❌ | 快排+堆排+插入 |
+   | Rust | 改进的归并 | ✅ | 稳定版本是默认 |
+   | Go | pdqsort | ❌ | 模式检测快排 |
+
+3) **为什么 TimSort 成为主流**
+   - 现实数据的特点：部分有序、存在 run
+   - 稳定性在业务场景的重要性
+   - 对近乎有序数据的性能优势
+
+4) **Mermaid 图**
+   - TimSort 合并栈的维护流程
+   - Introsort 的深度切换决策图
+   - galloping 模式的触发与退出
+
+【09-LeetCode题目映射.md 要求】
+
+1) **按算法分类的题目表**
+
+   | 算法 | 题目 | 难度 | 核心考点 |
+   |------|------|------|---------|
+   | 快速排序 | 912. 排序数组 | M | 基础实现 |
+   | 快速选择 | 215. 第K大元素 | M | TopK 问题 |
+   | 归并排序 | 148. 排序链表 | M | 链表 + 分治 |
+   | 归并排序 | 剑指51. 逆序对 | H | 归并计数 |
+   | 堆排序 | 347. 前K高频元素 | M | 堆 + 哈希 |
+   | 计数排序 | 274. H指数 | M | 计数技巧 |
+   | 桶排序 | 164. 最大间距 | H | 桶 + 鸽巢原理 |
+   | 基数排序 | 179. 最大数 | M | 自定义比较 |
+   | 拓扑排序 | 207. 课程表 | M | 图 + 排序 |
+
+2) **按题型分类**
+   - TopK 系列：215, 347, 692, 973
+   - 排序变形：56(合并区间), 57(插入区间)
+   - 自定义比较：179, 406, 452
+   - 排序 + 双指针：15(三数之和), 18(四数之和)
+   - 排序 + 贪心：435, 452, 646
+
+3) **每道题给出**
+   - 链接
+   - 推荐解法
+   - 关键技巧
+   - 关联章节
+
+4) **链表排序专题**
+   - 为什么链表适合归并排序（不需要随机访问）
+   - 为什么链表不适合快排（partition 困难）
+   - 148. 排序链表 的详细解析
+
+【链表排序.ts 要求】
+```typescript
+// 链表节点定义
+interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
+}
+
+// 归并排序（适合链表）
+export function mergeSortLinkedList<T>(
+  head: ListNode<T> | null,
+  cmp: (a: T, b: T) => number
+): ListNode<T> | null;
+
+// 插入排序（适合近乎有序的小链表）
+export function insertionSortLinkedList<T>(
+  head: ListNode<T> | null,
+  cmp: (a: T, b: T) => number
+): ListNode<T> | null;
+```
+
+【输出顺序】
+- 目录树（本次新增）
+- 逐文件完整内容
+- 不要生成任何工程配置文件
+
+---
+
+
+
+
+## S6.prompt.md（可视化动画 + React 最佳实践）
+
+你现在是「前端可视化工程师 + React 性能优化专家」。
+
+【本次任务】S6：创建"排序可视化"和"React 排序最佳实践"模块。
+
+【必须新增的文件】
+```
+algorithm/排序/
+├── 文档/
+│   ├── 10-React排序最佳实践.md
+│   └── 11-可视化资源汇总.md
+│
+├── 可视化/
+│   ├── README.md
+│   ├── index.html                 # 入口页面
+│   ├── src/
+│   │   ├── visualizer.ts          # 核心可视化引擎
+│   │   ├── algorithms/            # 各算法的可视化版本
+│   │   │   ├── bubble.ts
+│   │   │   ├── quick.ts
+│   │   │   ├── merge.ts
+│   │   │   └── heap.ts
+│   │   ├── renderer.ts            # Canvas/SVG 渲染器
+│   │   └── controls.ts            # 控制面板（速度、暂停、步进）
+│   └── styles.css
+│
+└── 示例应用/
+    └── React排序组件/
+        ├── README.md
+        ├── src/
+        │   ├── hooks/
+        │   │   ├── useSortedData.ts      # 排序数据 Hook
+        │   │   └── useVirtualList.ts     # 虚拟列表 Hook
+        │   ├── components/
+        │   │   ├── SortableTable.tsx     # 可排序表格组件
+        │   │   └── VirtualSortedList.tsx # 虚拟滚动排序列表
+        │   ├── utils/
+        │   │   ├── webWorkerSort.ts      # Web Worker 排序
+        │   │   └── comparators.ts        # 比较器工具
+        │   └── demo.tsx
+        └── test/index.test.ts
+```
+
+【10-React排序最佳实践.md 要求】
+
+1) **useMemo 缓存排序结果**
+   ```typescript
+   const sortedData = useMemo(() => {
+     return [...data].sort(comparator);
+   }, [data, comparator]);
+   ```
+   - 何时用 useMemo
+   - 依赖数组的正确写法
+   - 避免每次渲染都排序
+
+2) **大数据量优化策略**
+   - 虚拟滚动 + 排序：只渲染可见区域
+   - Web Worker 排序：避免阻塞主线程
+   - 分页 vs 虚拟滚动的选择
+
+3) **Web Worker 排序实现**
+   - Worker 文件结构
+   - 主线程与 Worker 的通信
+   - Transferable Objects 优化大数组传输
+   - 示例代码
+
+4) **表格组件的排序状态管理**
+   - 单列排序 vs 多列排序
+   - 排序状态的数据结构设计
+   - 点击表头切换排序的 UX
+
+5) **Mermaid 图**
+   - Web Worker 排序流程图
+   - 虚拟滚动 + 排序的数据流
+
+6) **性能对比表**
+   | 数据量 | 直接排序 | useMemo | Web Worker |
+   |--------|---------|---------|------------|
+   | 1,000 | 即时 | 即时 | 不值得 |
+   | 10,000 | ~50ms | 缓存后即时 | 可选 |
+   | 100,000 | ~500ms | 缓存后即时 | 推荐 |
+   | 1,000,000 | 卡顿 | 首次慢 | 必须 |
+
+【11-可视化资源汇总.md 要求】
+
+1) **推荐的在线可视化网站**
+   | 网站 | 链接 | 特点 |
+   |------|------|------|
+   | VisuAlgo | https://visualgo.net/sorting | 最全面，支持步进 |
+   | Sorting.at | https://sorting.at/ | 美观，对比多算法 |
+   | Algorithm Visualizer | https://algorithm-visualizer.org/ | 支持代码编辑 |
+   | USF | https://www.cs.usfca.edu/~galles/visualization/ | 经典教学 |
+
+2) **本项目可视化使用说明**
+   - 如何运行本地可视化
+   - 支持的算法列表
+   - 控制面板使用
+
+【可视化模块要求】
+
+1) **visualizer.ts 核心设计**
+   ```typescript
+   interface SortStep {
+     type: 'compare' | 'swap' | 'highlight' | 'sorted';
+     indices: number[];
+     values?: number[];
+   }
+
+   // 生成排序步骤的生成器
+   function* bubbleSortSteps(arr: number[]): Generator<SortStep>;
+   ```
+
+2) **渲染器要求**
+   - 使用 Canvas 绘制柱状图
+   - 支持：比较高亮（黄色）、交换（红色）、已排序（绿色）
+   - 支持速度调节（1x/2x/4x/慢动作）
+   - 支持暂停、继续、步进
+
+3) **index.html 功能**
+   - 算法选择下拉框
+   - 数据规模滑块（10-200）
+   - 数据分布选择（随机/近乎有序/逆序/重复多）
+   - 播放控制按钮
+   - 当前算法信息展示
+
+【React 排序组件要求】
+
+1) **useSortedData Hook**
+   ```typescript
+   function useSortedData<T>(
+     data: T[],
+     sortConfig: SortConfig<T> | null,
+     options?: { useWorker?: boolean }
+   ): {
+     sortedData: T[];
+     isLoading: boolean;
+   };
+   ```
+
+2) **SortableTable 组件**
+   - 点击表头排序
+   - 显示排序方向指示器
+   - 支持多列排序（Shift+点击）
+   - 加载状态显示
+
+【输出顺序】
+- 目录树（本次新增）
+- 逐文件完整内容
+- 不要生成任何工程配置文件
+
+---
+
+
+
+
+## S7.prompt.md（进阶话题：并行排序 + 流式排序）
+
+你现在是「高性能计算 + 实时系统」算法专家。
+
+【本次任务】S7：补充进阶话题，覆盖特殊场景下的排序需求。
+
+【必须新增的文件】
+```
+algorithm/排序/
+├── 文档/
+│   ├── 12-并行排序.md
+│   └── 13-流式与增量排序.md
+│
+└── 算法包/
+    ├── 并行归并排序/
+    │   ├── README.md
+    │   ├── src/
+    │   │   ├── index.ts           # 主线程调度
+    │   │   └── worker.ts          # Worker 文件
+    │   └── test/index.test.ts
+    │
+    └── 流式排序/
+        ├── README.md
+        ├── src/
+        │   ├── index.ts           # 流式排序接口
+        │   ├── sortedWindow.ts    # 维护有序窗口
+        │   └── onlineMedian.ts    # 在线中位数
+        └── test/index.test.ts
+```
+
+【12-并行排序.md 要求】
+
+1) **Web Worker 并行排序原理**
+   - 分块 → 并行排序 → 多路归并
+   - 通信开销 vs 并行收益
+   - 何时值得使用并行排序（数据量阈值）
+
+2) **实现方案**
+   ```
+   主线程                 Worker 1              Worker 2
+      │                      │                     │
+      ├──── chunk1 ─────────►│                     │
+      ├──── chunk2 ──────────┼────────────────────►│
+      │                      │                     │
+      │◄──── sorted1 ────────┤                     │
+      │◄──── sorted2 ────────┼─────────────────────┤
+      │                      │                     │
+      ├── k-way merge ───────┴─────────────────────┘
+      │
+      ▼
+   final sorted array
+   ```
+
+3) **性能测试结果**
+   - 单线程 vs 2 Worker vs 4 Worker
+   - 不同数据规模的加速比
+   - 通信开销占比分析
+
+4) **Mermaid 图**
+   - 并行排序数据流图
+   - Worker 生命周期管理
+
+【13-流式与增量排序.md 要求】
+
+1) **流式数据场景**
+   - 日志实时排序
+   - 搜索结果增量更新
+   - 股票行情排序
+
+2) **维护有序窗口**
+   - 问题：数据持续到来，维护最新 K 条有序数据
+   - 方案：插入排序 + 二分查找插入位置
+   - 复杂度：O(K) 插入，O(1) 访问
+
+3) **在线中位数（经典问题）**
+   - 双堆方案（最大堆 + 最小堆）
+   - 与 LeetCode 295 的关联
+   - 代码实现
+
+4) **增量更新排序**
+   - 新增元素：二分插入
+   - 删除元素：标记删除 + 惰性清理
+   - 修改元素：删除 + 插入
+
+5) **Mermaid 图**
+   - 双堆维护中位数流程图
+   - 有序窗口更新流程
+
+【并行归并排序实现要求】
+
+```typescript
+// index.ts
+export interface ParallelSortOptions {
+  workerCount?: number;      // 默认 navigator.hardwareConcurrency
+  chunkSize?: number;        // 每块大小，默认自动计算
+}
+
+export async function parallelMergeSort<T>(
+  arr: readonly T[],
+  cmp: (a: T, b: T) => number,
+  options?: ParallelSortOptions
+): Promise<T[]>;
+
+// 判断是否值得并行
+export function shouldUseParallel(dataSize: number): boolean;
+```
+
+【流式排序实现要求】
+
+```typescript
+// sortedWindow.ts
+export class SortedWindow<T> {
+  constructor(
+    capacity: number,
+    cmp: (a: T, b: T) => number
+  );
+
+  // 插入新元素，超出容量时淘汰
+  add(item: T): void;
+
+  // 获取有序数组
+  toArray(): T[];
+
+  // 获取第 k 个元素
+  get(k: number): T | undefined;
+}
+
+// onlineMedian.ts
+export class OnlineMedian {
+  add(value: number): void;
+  getMedian(): number;
+}
+```
+
+【输出顺序】
+- 目录树（本次新增）
+- 逐文件完整内容
+- 不要生成任何工程配置文件
+
+---
+
+
+
+
+## 📊 补充阶段总览
+
+| 步骤 | 内容 | 预估文件数 | 难度 |
+|:---:|------|:---------:|:----:|
+| S5 | 底层实现 + LeetCode 映射 | ~5 | ⭐⭐⭐ |
+| S6 | 可视化 + React 最佳实践 | ~15 | ⭐⭐⭐⭐ |
+| S7 | 并行排序 + 流式排序 | ~10 | ⭐⭐⭐⭐ |
+
+## 📁 补充后的完整目录结构
+
+```
+algorithm/排序/
+├── README.md
+│
+├── 文档/
+│   ├── 00-总览.md
+│   ├── 01-选型决策树.md
+│   ├── 02-复杂度对比表.md
+│   ├── 03-JS原生sort陷阱.md
+│   ├── 04-测试与基准指南.md
+│   ├── 05-表格排序实战.md
+│   ├── 06-搜索结果与TopK.md
+│   ├── 07-自测清单.md
+│   ├── 08-底层实现深度剖析.md      ← S5 新增
+│   ├── 09-LeetCode题目映射.md      ← S5 新增
+│   ├── 10-React排序最佳实践.md     ← S6 新增
+│   ├── 11-可视化资源汇总.md        ← S6 新增
+│   ├── 12-并行排序.md              ← S7 新增
+│   ├── 13-流式与增量排序.md        ← S7 新增
+│   │
+│   └── 算法详解/
+│       ├── 比较类排序/（11 个算法）
+│       ├── 非比较排序/（3 个算法）
+│       └── 外部排序/（1 个算法）
+│
+├── 算法包/
+│   ├── 公共库/
+│   │   └── src/
+│   │       ├── ...（原有文件）
+│   │       └── 链表排序.ts         ← S5 新增
+│   ├── 冒泡排序/ ~ 外部归并排序/（原有 15 个）
+│   ├── 并行归并排序/               ← S7 新增
+│   └── 流式排序/                   ← S7 新增
+│
+├── 示例应用/
+│   ├── 表格排序/
+│   ├── 搜索结果排序/
+│   └── React排序组件/              ← S6 新增
+│
+├── 可视化/                          ← S6 新增
+│   ├── README.md
+│   ├── index.html
+│   ├── src/
+│   │   ├── visualizer.ts
+│   │   ├── algorithms/
+│   │   ├── renderer.ts
+│   │   └── controls.ts
+│   └── styles.css
+│
+└── 基准测试/
+```
+
+## 🎯 执行建议
+
+1. **S5 底层实现**：适合想深入理解"为什么这么设计"的读者
+2. **S6 可视化**：对初学者帮助最大，建议优先
+3. **S7 进阶话题**：适合有实际需求的工程场景
+
+推荐执行顺序：**S6 → S5 → S7**

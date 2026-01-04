@@ -1,0 +1,377 @@
+/**
+ * 排序可视化样式
+ */
+
+/* ============================================================================
+   变量
+   ============================================================================ */
+
+:root {
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --bg-tertiary: #0f3460;
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0a0;
+  --accent: #4A90D9;
+  --accent-hover: #5ba0e9;
+  --success: #7ED321;
+  --warning: #F5A623;
+  --danger: #D0021B;
+  --purple: #9013FE;
+  --border-radius: 8px;
+  --transition: 0.2s ease;
+}
+
+/* ============================================================================
+   基础样式
+   ============================================================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* ============================================================================
+   布局
+   ============================================================================ */
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 20px;
+  gap: 20px;
+}
+
+.header {
+  text-align: center;
+}
+
+.header h1 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  background: linear-gradient(90deg, var(--accent), var(--purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.main-content {
+  display: flex;
+  flex: 1;
+  gap: 20px;
+  min-height: 0;
+}
+
+.canvas-container {
+  flex: 1;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.canvas-container h2 {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+#visualization-canvas {
+  flex: 1;
+  width: 100%;
+  border-radius: var(--border-radius);
+}
+
+.controls-container {
+  width: 320px;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
+  padding: 20px;
+}
+
+/* ============================================================================
+   控制面板
+   ============================================================================ */
+
+.controls-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.controls-row {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 120px;
+}
+
+.control-group label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* 下拉框 */
+select {
+  padding: 10px 12px;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--bg-tertiary);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+select:hover {
+  border-color: var(--accent);
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.2);
+}
+
+/* 滑块 */
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  background: var(--accent-hover);
+  transform: scale(1.1);
+}
+
+/* 单选按钮组 */
+.distribution-group {
+  flex: 100%;
+}
+
+.radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  padding: 6px 12px;
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+}
+
+.radio-group label:hover {
+  background: var(--bg-primary);
+}
+
+.radio-group input[type="radio"] {
+  accent-color: var(--accent);
+}
+
+/* 按钮 */
+.buttons-group {
+  flex-direction: row !important;
+  flex-wrap: wrap;
+  flex: 100%;
+}
+
+.btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.btn-secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--bg-primary);
+}
+
+/* 统计信息 */
+.stats-row {
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+  padding: 15px;
+  justify-content: space-around;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--accent);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ============================================================================
+   图例
+   ============================================================================ */
+
+.legend {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  padding: 15px;
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+  margin-top: 15px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+}
+
+.legend-color.default { background: var(--accent); }
+.legend-color.comparing { background: var(--warning); }
+.legend-color.swapping { background: var(--danger); }
+.legend-color.sorted { background: var(--success); }
+.legend-color.pivot { background: var(--purple); }
+
+/* ============================================================================
+   快捷键提示
+   ============================================================================ */
+
+.shortcuts {
+  margin-top: 15px;
+  padding: 15px;
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.shortcuts h3 {
+  font-size: 0.85rem;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+}
+
+.shortcut-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.shortcut-key {
+  background: var(--bg-primary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+/* ============================================================================
+   响应式
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .main-content {
+    flex-direction: column;
+  }
+
+  .controls-container {
+    width: 100%;
+  }
+
+  .canvas-container {
+    min-height: 300px;
+  }
+}
+
+/* ============================================================================
+   动画
+   ============================================================================ */
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.loading {
+  animation: pulse 1s infinite;
+}
+
