@@ -1,0 +1,73 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "storage-lab"
+version = "0.1.0"
+description = "存储与缓存学习项目"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Python Learner" }]
+keywords = ["sqlalchemy", "redis", "cache", "database"]
+
+dependencies = [
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.12.0",
+    "redis>=5.0.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "aiosqlite>=0.19.0",  # 异步 SQLite
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.0",
+    "fakeredis>=2.20.0",  # Redis Mock
+    "ruff>=0.1.0",
+    "pyright>=1.1.0",
+]
+
+postgres = [
+    "psycopg2-binary>=2.9.0",
+    "asyncpg>=0.29.0",
+]
+
+[project.scripts]
+storage-cli = "storage_lab.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/storage_lab"]
+
+[tool.ruff]
+src = ["src"]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["storage_lab"]
+
+[tool.pyright]
+include = ["src"]
+pythonVersion = "3.11"
+typeCheckingMode = "basic"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_functions = "test_*"
+addopts = "-v --tb=short"
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["src/storage_lab"]
+branch = true
+
+

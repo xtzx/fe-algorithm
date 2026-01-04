@@ -1,0 +1,90 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "file-automation"
+version = "0.1.0"
+description = "文件批处理自动化工具 - 支持 dry-run、断点续跑、回滚"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Python Learner" }]
+keywords = ["automation", "batch", "file-processing"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "tqdm>=4.66.0",      # 进度条
+    "tenacity>=8.2.0",   # 重试库
+    "pydantic>=2.0.0",   # 数据模型
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.1.0",
+    "pyright>=1.1.0",
+]
+
+[project.scripts]
+file-auto = "file_automation.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/file_automation"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/file_automation"]
+
+# Ruff 配置
+[tool.ruff]
+src = ["src"]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = ["E501"]  # line too long
+
+[tool.ruff.lint.isort]
+known-first-party = ["file_automation"]
+
+# Pyright 配置
+[tool.pyright]
+include = ["src"]
+pythonVersion = "3.11"
+typeCheckingMode = "basic"
+
+# Pytest 配置
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_functions = "test_*"
+addopts = "-v --tb=short"
+
+# Coverage 配置
+[tool.coverage.run]
+source = ["src/file_automation"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+

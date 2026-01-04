@@ -1,0 +1,41 @@
+# 博客聚合器配置文件
+
+[general]
+# 数据存储目录
+data_dir = "data"
+# 全局最大并发数
+max_concurrent = 10
+# 每秒请求数限制
+rate_limit = 2.0
+# 请求超时（秒）
+timeout = 30.0
+# 用户代理
+user_agent = "BlogAggregator/1.0 (Educational; +https://github.com/example)"
+
+[sources.dev_to]
+# DEV.to 技术博客
+enabled = true
+base_url = "https://dev.to"
+api_url = "https://dev.to/api"
+per_page = 30
+# 每站点并发限制
+per_host_limit = 3
+# 抓取的标签
+tags = ["python", "javascript", "webdev"]
+
+[sources.hashnode]
+# Hashnode 技术博客
+enabled = true
+base_url = "https://hashnode.com"
+api_url = "https://gql.hashnode.com"
+per_page = 20
+per_host_limit = 3
+
+[sources.hackernews]
+# Hacker News（示例）
+enabled = true
+base_url = "https://news.ycombinator.com"
+api_url = "https://hacker-news.firebaseio.com/v0"
+per_page = 30
+per_host_limit = 5
+

@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "User",
+  "type": "object",
+  "required": ["name", "email"],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "description": "用户 ID"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "用户姓名"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "description": "邮箱地址"
+    },
+    "age": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 150,
+      "description": "年龄"
+    },
+    "phone": {
+      "type": "string",
+      "pattern": "^\\d{10,11}$",
+      "description": "电话号码（10-11 位数字）"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "inactive", "pending"],
+      "default": "active",
+      "description": "用户状态"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "标签列表"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "创建时间"
+    }
+  },
+  "additionalProperties": false
+}
+

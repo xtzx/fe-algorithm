@@ -1,0 +1,71 @@
+# Pre-commit 配置
+# 等价于 JavaScript 的 husky + lint-staged
+#
+# 安装: pre-commit install
+# 手动运行: pre-commit run --all-files
+
+# 仓库配置
+repos:
+  # Ruff - Linting 和格式化
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.9
+    hooks:
+      # Linter
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      # Formatter（替代 black）
+      - id: ruff-format
+
+  # Black - 代码格式化（可选，与 ruff-format 二选一）
+  # - repo: https://github.com/psf/black
+  #   rev: 23.12.1
+  #   hooks:
+  #     - id: black
+
+  # Pyright - 类型检查
+  - repo: https://github.com/RobertCraiworthy/pyright-python
+    rev: v1.1.341
+    hooks:
+      - id: pyright
+        additional_dependencies: []
+
+  # 通用钩子
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # 检查 YAML 语法
+      - id: check-yaml
+      # 检查 TOML 语法
+      - id: check-toml
+      # 检查 JSON 语法
+      - id: check-json
+        exclude: ".vscode/"
+      # 确保文件以换行符结尾
+      - id: end-of-file-fixer
+      # 删除尾随空格
+      - id: trailing-whitespace
+      # 检查大文件
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      # 检查合并冲突标记
+      - id: check-merge-conflict
+      # 检查调试语句
+      - id: debug-statements
+      # 混合行尾
+      - id: mixed-line-ending
+
+  # 检查敏感信息
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: [--baseline, .secrets.baseline]
+        exclude: package.lock.json
+
+# CI 配置
+ci:
+  autofix_commit_msg: "style: auto-fix by pre-commit hooks"
+  autofix_prs: true
+  autoupdate_commit_msg: "chore: update pre-commit hooks"
+  autoupdate_schedule: weekly
+

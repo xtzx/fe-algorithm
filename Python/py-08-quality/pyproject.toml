@@ -1,0 +1,155 @@
+[project]
+name = "quality-demo"
+version = "0.1.0"
+description = "Python 工程质量工具链演示"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.1",
+    "black>=23.0",
+    "pyright>=1.1",
+    "mypy>=1.0",
+    "pre-commit>=3.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# ============================================================
+# Ruff 配置 - 替代 Flake8 + isort + 部分 pylint
+# ============================================================
+[tool.ruff]
+# 目标 Python 版本
+target-version = "py312"
+
+# 行长度（与 black 保持一致）
+line-length = 88
+
+# 排除目录
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+]
+
+# Lint 规则配置
+[tool.ruff.lint]
+# 选择的规则集
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "SIM",    # flake8-simplify
+    "RUF",    # Ruff-specific rules
+]
+
+# 忽略的规则
+ignore = [
+    "E501",   # 行太长（由 formatter 处理）
+]
+
+# 允许自动修复
+fixable = ["ALL"]
+unfixable = []
+
+# isort 配置
+[tool.ruff.lint.isort]
+known-first-party = ["quality_demo"]
+
+# 每个文件的规则覆盖
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]  # 允许 assert
+"sample_bad.py" = ["ALL"]  # 故意有问题的文件
+
+# Ruff Formatter 配置（替代 black）
+[tool.ruff.format]
+# 字符串引号风格
+quote-style = "double"
+
+# 缩进风格
+indent-style = "space"
+
+# 跳过魔术尾随逗号
+skip-magic-trailing-comma = false
+
+# 行尾
+line-ending = "auto"
+
+# ============================================================
+# Black 配置 - 代码格式化（可选，ruff format 可替代）
+# ============================================================
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+    | \.venv
+    | __pycache__
+    | build
+    | dist
+)/
+'''
+
+# ============================================================
+# Pyright 配置 - 类型检查（推荐）
+# ============================================================
+[tool.pyright]
+pythonVersion = "3.12"
+pythonPlatform = "All"
+
+# 类型检查模式: off, basic, standard, strict, all
+typeCheckingMode = "standard"
+
+# 包含的路径
+include = ["src"]
+
+# 排除的路径
+exclude = [
+    ".venv",
+    "**/__pycache__",
+]
+
+# 报告设置
+reportMissingImports = true
+reportMissingTypeStubs = false
+reportUnusedImport = true
+reportUnusedVariable = true
+
+# ============================================================
+# MyPy 配置 - 类型检查（备选）
+# ============================================================
+[tool.mypy]
+python_version = "3.12"
+
+# 严格模式选项
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+# 忽略缺少类型的导入
+ignore_missing_imports = true
+
+# 排除
+exclude = [
+    "sample_bad.py",
+]
+
+# ============================================================
+# pytest 配置
+# ============================================================
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+

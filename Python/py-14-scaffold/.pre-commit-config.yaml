@@ -1,0 +1,104 @@
+# ============================================================================
+# Pre-commit 配置
+# ============================================================================
+# 安装: pre-commit install
+# 手动运行: pre-commit run --all-files
+# 更新 hooks: pre-commit autoupdate
+# ============================================================================
+
+# 默认阶段
+default_stages: [commit]
+
+# 失败时快速退出
+fail_fast: false
+
+repos:
+  # --------------------------------------------------------------------------
+  # 通用检查
+  # --------------------------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # 文件格式
+      - id: trailing-whitespace
+        name: Trim trailing whitespace
+      - id: end-of-file-fixer
+        name: Fix end of files
+      - id: mixed-line-ending
+        name: Check mixed line ending
+        args: [--fix=lf]
+
+      # 语法检查
+      - id: check-yaml
+        name: Check YAML syntax
+      - id: check-toml
+        name: Check TOML syntax
+      - id: check-json
+        name: Check JSON syntax
+
+      # 安全检查
+      - id: detect-private-key
+        name: Detect private keys
+
+      # 其他
+      - id: check-merge-conflict
+        name: Check merge conflicts
+      - id: check-added-large-files
+        name: Check large files
+        args: [--maxkb=1000]
+
+  # --------------------------------------------------------------------------
+  # Ruff - Linting
+  # --------------------------------------------------------------------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.9
+    hooks:
+      # Linting
+      - id: ruff
+        name: Ruff linting
+        args: [--fix, --exit-non-zero-on-fix]
+
+      # Formatting
+      - id: ruff-format
+        name: Ruff formatting
+
+  # --------------------------------------------------------------------------
+  # Pyright - 类型检查
+  # --------------------------------------------------------------------------
+  - repo: local
+    hooks:
+      - id: pyright
+        name: Pyright type checking
+        entry: pyright
+        language: system
+        types: [python]
+        pass_filenames: false
+        # 可选：只在 push 时运行（commit 时跳过以加快速度）
+        # stages: [push]
+
+  # --------------------------------------------------------------------------
+  # Pytest - 快速测试（可选）
+  # --------------------------------------------------------------------------
+  # - repo: local
+  #   hooks:
+  #     - id: pytest-fast
+  #       name: Pytest (fast)
+  #       entry: pytest
+  #       language: system
+  #       args: [-x, --tb=short, -q]
+  #       pass_filenames: false
+  #       stages: [push]
+
+# ============================================================================
+# CI 配置说明
+# ============================================================================
+# 在 CI 中运行:
+#   pre-commit run --all-files
+#
+# 或者分开运行各个工具:
+#   ruff check .
+#   ruff format --check .
+#   pyright
+#   pytest
+# ============================================================================
+

@@ -1,0 +1,17 @@
+name,email,age,phone,status
+  Alice  ,ALICE@EXAMPLE.COM,30,123-456-7890,active
+Bob,bob@example.com,25,,active
+,invalid-email,abc,,pending
+Charlie,charlie@example.com,35,9876543210,active
+  David Smith  ,david@test.org,28,(555) 123-4567,inactive
+,,,,
+Emily,EMILY@COMPANY.NET,invalid,111-222-3333,active
+Frank,frank@email.com,-5,4567890123,pending
+Grace,grace@domain.com,150,1234567890,active
+  henry  ,N/A,42,null,
+Ivan,ivan@test.com,33,9998887777,ACTIVE
+Jane,jane@example.com,27,5554443333,active
+null,kate@test.org,31,1112223333,pending
+Leo,leo@company.com,45,7778889999,active
+  Maria Garcia  ,maria@email.net,29,6665554444,inactive
+

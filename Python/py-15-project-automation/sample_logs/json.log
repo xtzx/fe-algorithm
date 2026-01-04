@@ -1,0 +1,16 @@
+{"timestamp": "2024-01-15T08:00:00Z", "level": "INFO", "message": "User logged in", "user_id": 1001, "ip": "192.168.1.1"}
+{"timestamp": "2024-01-15T08:01:00Z", "level": "INFO", "message": "User viewed dashboard", "user_id": 1001, "page": "/dashboard"}
+{"timestamp": "2024-01-15T08:02:00Z", "level": "INFO", "message": "User created order", "user_id": 1001, "order_id": 5001, "amount": 99.99}
+{"timestamp": "2024-01-15T08:03:00Z", "level": "WARNING", "message": "Payment retry required", "order_id": 5001, "attempt": 1}
+{"timestamp": "2024-01-15T08:03:30Z", "level": "INFO", "message": "Payment successful", "order_id": 5001, "payment_id": "pay_abc123"}
+{"timestamp": "2024-01-15T08:10:00Z", "level": "ERROR", "message": "API request failed", "endpoint": "/api/inventory", "status_code": 503, "error": "Service unavailable"}
+{"timestamp": "2024-01-15T08:15:00Z", "level": "INFO", "message": "User logged out", "user_id": 1001}
+{"timestamp": "2024-01-15T09:00:00Z", "level": "INFO", "message": "User logged in", "user_id": 1002, "ip": "192.168.1.2"}
+{"timestamp": "2024-01-15T09:05:00Z", "level": "ERROR", "message": "Validation error", "user_id": 1002, "field": "email", "reason": "Invalid format"}
+{"timestamp": "2024-01-15T09:10:00Z", "level": "WARNING", "message": "Rate limit approaching", "user_id": 1002, "requests": 95, "limit": 100}
+{"timestamp": "2024-01-15T09:15:00Z", "level": "CRITICAL", "message": "Database connection pool exhausted", "pool_size": 20, "waiting": 15}
+{"timestamp": "2024-01-15T09:15:05Z", "level": "INFO", "message": "Connection pool expanded", "new_size": 30}
+{"timestamp": "2024-01-15T10:00:00Z", "level": "INFO", "message": "Scheduled task started", "task": "cleanup_old_sessions"}
+{"timestamp": "2024-01-15T10:05:00Z", "level": "INFO", "message": "Scheduled task completed", "task": "cleanup_old_sessions", "deleted": 1250}
+{"timestamp": "2024-01-15T11:00:00Z", "level": "ERROR", "message": "External API timeout", "service": "payment-gateway", "timeout_ms": 30000}
+

@@ -1,0 +1,59 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "http-kit"
+version = "0.1.0"
+description = "HTTP 客户端工程化工具库"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Python Learner" }]
+keywords = ["http", "client", "httpx", "retry", "rate-limit"]
+
+dependencies = [
+    "httpx>=0.25.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.0",
+    "respx>=0.20.0",
+    "ruff>=0.1.0",
+    "pyright>=1.1.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/http_kit"]
+
+[tool.ruff]
+src = ["src"]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["http_kit"]
+
+[tool.pyright]
+include = ["src"]
+pythonVersion = "3.11"
+typeCheckingMode = "basic"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_functions = "test_*"
+addopts = "-v --tb=short"
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["src/http_kit"]
+branch = true
+

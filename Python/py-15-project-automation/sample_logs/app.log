@@ -1,0 +1,27 @@
+2024-01-15 08:00:00 [INFO] Application starting...
+2024-01-15 08:00:01 [INFO] Loading configuration from config.yaml
+2024-01-15 08:00:02 [INFO] Connecting to database postgres://localhost:5432/mydb
+2024-01-15 08:00:03 [INFO] Database connection established
+2024-01-15 08:00:04 [INFO] Starting HTTP server on port 8080
+2024-01-15 08:00:05 [INFO] Application started successfully
+2024-01-15 08:15:00 [WARNING] Memory usage high: 75%
+2024-01-15 08:30:00 [WARNING] Slow query detected: SELECT * FROM orders (took 2.5s)
+2024-01-15 09:00:00 [ERROR] Failed to process order #12345: Payment gateway timeout
+2024-01-15 09:00:01 [INFO] Retrying payment for order #12345
+2024-01-15 09:00:05 [INFO] Payment successful for order #12345
+2024-01-15 09:30:00 [ERROR] Database connection lost
+2024-01-15 09:30:01 [WARNING] Attempting to reconnect to database
+2024-01-15 09:30:05 [INFO] Database connection restored
+2024-01-15 10:00:00 [WARNING] Memory usage critical: 90%
+2024-01-15 10:00:01 [INFO] Running garbage collection
+2024-01-15 10:00:02 [INFO] Memory freed: 500MB
+2024-01-15 10:30:00 [CRITICAL] Out of memory: Unable to allocate 1GB
+2024-01-15 10:30:01 [ERROR] Service degraded: Some features unavailable
+2024-01-15 10:30:05 [INFO] Emergency restart initiated
+2024-01-15 10:30:10 [INFO] Application restarted
+2024-01-15 11:00:00 [INFO] All systems operational
+2024-01-15 12:00:00 [ERROR] API rate limit exceeded for client 192.168.1.100
+2024-01-15 12:00:01 [WARNING] Blocking client 192.168.1.100 for 60 seconds
+2024-01-15 13:00:00 [INFO] Scheduled backup started
+2024-01-15 13:05:00 [INFO] Backup completed: 5.2GB
+
