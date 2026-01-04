@@ -1,0 +1,94 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bookmark-api"
+version = "1.0.0"
+description = "书签管理 API - 综合项目 4"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Python Learner" }]
+keywords = ["fastapi", "api", "bookmark", "jwt"]
+
+dependencies = [
+    # Web 框架
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+
+    # 数据库
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.12.0",
+    "aiosqlite>=0.19.0",
+
+    # 缓存
+    "redis>=5.0.0",
+
+    # 验证和配置
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+
+    # 安全
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.0",
+    "python-multipart>=0.0.6",
+
+    # 日志
+    "structlog>=23.2.0",
+
+    # HTTP 客户端（获取网页标题）
+    "httpx>=0.25.0",
+    "beautifulsoup4>=4.12.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.25.0",
+    "fakeredis>=2.20.0",
+    "ruff>=0.1.0",
+    "pyright>=1.1.0",
+]
+
+postgres = [
+    "psycopg2-binary>=2.9.0",
+    "asyncpg>=0.29.0",
+]
+
+[project.scripts]
+bookmark-api = "bookmark_api.main:run"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bookmark_api"]
+
+[tool.ruff]
+src = ["src"]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["bookmark_api"]
+
+[tool.pyright]
+include = ["src"]
+pythonVersion = "3.11"
+typeCheckingMode = "basic"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_functions = "test_*"
+addopts = "-v --tb=short"
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["src/bookmark_api"]
+branch = true
+
