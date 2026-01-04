@@ -34,7 +34,10 @@ py-03-oop/
 │   ├── 07-design-patterns.md     # 设计模式
 │   ├── 08-js-comparison.md       # JS 对照
 │   ├── 09-exercises.md           # 练习题
-│   └── 10-interview-questions.md # 面试题
+│   ├── 10-interview-questions.md # 面试题
+│   ├── 11-descriptors.md         # 描述符协议 ⭐
+│   ├── 12-metaclass.md           # 元类 ⭐
+│   └── 13-dynamic-attrs.md       # 动态属性 ⭐
 ├── examples/
 ├── exercises/
 ├── project/
@@ -157,6 +160,8 @@ class Point:
 
 ## 📖 学习路径
 
+### 基础篇
+
 1. [类基础](docs/01-class-basics.md)
 2. [继承](docs/02-inheritance.md)
 3. [魔法方法](docs/03-magic-methods.md)
@@ -165,8 +170,17 @@ class Point:
 6. [dataclass](docs/06-dataclass.md)
 7. [设计模式](docs/07-design-patterns.md)
 8. [JS 对照](docs/08-js-comparison.md)
-9. [练习题](docs/09-exercises.md)
-10. [面试题](docs/10-interview-questions.md)
+
+### 进阶篇：元编程
+
+9. [描述符协议](docs/11-descriptors.md) ⭐ - 属性访问的底层机制
+10. [元类](docs/12-metaclass.md) ⭐ - 类的类，控制类创建
+11. [动态属性](docs/13-dynamic-attrs.md) ⭐ - __getattr__、动态类创建
+
+### 练习
+
+12. [练习题](docs/09-exercises.md)
+13. [面试题](docs/10-interview-questions.md)
 
 ---
 

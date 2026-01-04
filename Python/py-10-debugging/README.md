@@ -41,7 +41,9 @@ py-10-debugging/
 │   ├── 04-memory.md           # 内存分析
 │   ├── 05-optimization.md     # 优化技巧
 │   ├── 06-exercises.md        # 练习题
-│   └── 07-interview-questions.md # 面试题
+│   ├── 07-interview-questions.md # 面试题
+│   ├── 08-optimization-advanced.md # 高级性能优化 ⭐
+│   └── 09-memory-advanced.md  # 高级内存优化 ⭐
 ├── examples/
 │   ├── pdb_demo.py
 │   ├── logging_demo.py
@@ -97,9 +99,21 @@ python -c "import tracemalloc; tracemalloc.start(); ..."
 
 ## 学习路径
 
+### 基础篇
+
 1. [pdb 调试器](docs/01-pdb.md)
 2. [日志最佳实践](docs/02-logging.md)
 3. [性能分析](docs/03-profiling.md)
 4. [内存分析](docs/04-memory.md)
 5. [优化技巧](docs/05-optimization.md)
+
+### 进阶篇：性能优化
+
+6. [高级性能优化](docs/08-optimization-advanced.md) ⭐ - Numba/Cython/C扩展/JIT
+7. [高级内存优化](docs/09-memory-advanced.md) ⭐ - __slots__/对象池/大数据处理
+
+### 练习
+
+8. [练习题](docs/06-exercises.md)
+9. [面试题](docs/07-interview-questions.md)
 
