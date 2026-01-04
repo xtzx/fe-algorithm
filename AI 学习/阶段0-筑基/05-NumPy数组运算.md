@@ -4,6 +4,140 @@
 
 ---
 
+## 🔄 NumPy vs JS TypedArray 对比
+
+> 前端开发者：NumPy 数组类似于 JS 的 TypedArray，但功能强大得多
+
+### 基础对比
+
+```javascript
+// JS TypedArray
+const arr = new Float32Array([1, 2, 3, 4]);
+const doubled = arr.map(x => x * 2);
+console.log(doubled); // Float32Array [2, 4, 6, 8]
+
+// 限制：只能一维，功能有限
+```
+
+```python
+# NumPy
+import numpy as np
+arr = np.array([1, 2, 3, 4], dtype=np.float32)
+doubled = arr * 2  # 直接乘！向量化操作
+print(doubled)  # [2. 4. 6. 8.]
+
+# 强大之处：支持多维、广播、丰富的数学函数
+```
+
+### 性能对比
+
+```python
+import numpy as np
+import time
+
+# Python 原生列表 vs NumPy
+size = 1_000_000
+
+# 原生 Python（类似 JS 数组）
+python_list = list(range(size))
+start = time.time()
+result = [x * 2 for x in python_list]
+print(f"Python list: {time.time() - start:.4f}s")
+
+# NumPy 向量化
+numpy_arr = np.arange(size)
+start = time.time()
+result = numpy_arr * 2
+print(f"NumPy: {time.time() - start:.4f}s")
+
+# 结果：NumPy 快 50-100 倍！
+```
+
+### 🤖 AI 场景案例
+
+#### 场景 1：图像数据处理
+
+```python
+import numpy as np
+
+# 图像通常是 (height, width, channels) 的 3D 数组
+# 例如 224x224 的 RGB 图像
+image = np.random.randint(0, 256, (224, 224, 3), dtype=np.uint8)
+
+print(f"图像形状: {image.shape}")  # (224, 224, 3)
+print(f"数据类型: {image.dtype}")  # uint8
+print(f"内存占用: {image.nbytes / 1024:.1f} KB")  # 147.0 KB
+
+# 归一化到 [0, 1]（深度学习预处理常见操作）
+normalized = image.astype(np.float32) / 255.0
+print(f"归一化后: min={normalized.min():.2f}, max={normalized.max():.2f}")
+
+# 标准化（减均值除标准差）
+mean = np.array([0.485, 0.456, 0.406])  # ImageNet 均值
+std = np.array([0.229, 0.224, 0.225])   # ImageNet 标准差
+standardized = (normalized - mean) / std  # 广播！
+
+# 调整通道顺序 HWC -> CHW（PyTorch 需要）
+chw_image = normalized.transpose(2, 0, 1)
+print(f"转换后形状: {chw_image.shape}")  # (3, 224, 224)
+```
+
+#### 场景 2：Batch 数据处理
+
+```python
+# 深度学习中的 batch 处理
+batch_size = 32
+images = np.random.randn(batch_size, 3, 224, 224).astype(np.float32)
+
+print(f"Batch 形状: {images.shape}")  # (32, 3, 224, 224)
+
+# 计算每张图的均值（保持维度用于广播）
+per_image_mean = images.mean(axis=(1, 2, 3), keepdims=True)
+print(f"均值形状: {per_image_mean.shape}")  # (32, 1, 1, 1)
+
+# 中心化
+centered = images - per_image_mean
+```
+
+#### 场景 3：向量相似度计算
+
+```python
+# 计算文本嵌入的相似度（常见于 RAG、搜索）
+embeddings = np.random.randn(1000, 768)  # 1000 个 768 维向量
+query = np.random.randn(768)
+
+# 余弦相似度
+def cosine_similarity_batch(query, embeddings):
+    # 归一化
+    query_norm = query / np.linalg.norm(query)
+    embeddings_norm = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
+    # 点积即为余弦相似度
+    return embeddings_norm @ query_norm
+
+similarities = cosine_similarity_batch(query, embeddings)
+top_k_indices = np.argsort(similarities)[::-1][:10]  # Top 10
+print(f"Top 10 索引: {top_k_indices}")
+```
+
+### 📝 常见面试题
+
+**Q1: NumPy 数组和 Python 列表有什么区别？**
+- NumPy 连续内存存储，列表存储指针
+- NumPy 同类型，列表可混合类型
+- NumPy 支持向量化运算，快 10-100 倍
+- NumPy 支持广播，列表不支持
+
+**Q2: 什么是向量化？为什么快？**
+- 向量化：对整个数组操作，而非循环
+- 快的原因：底层 C 实现、SIMD 指令、缓存友好
+
+**Q3: 解释 reshape(-1) 的含义**
+- `-1` 表示自动计算该维度大小
+- `arr.reshape(-1)` 展平为一维
+- `arr.reshape(2, -1)` 2 行，列数自动计算
+
+---
+
 ## 目录
 
 1. [NumPy 简介](#1-numpy-简介)

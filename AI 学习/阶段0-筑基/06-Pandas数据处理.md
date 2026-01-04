@@ -4,6 +4,210 @@
 
 ---
 
+## 🔄 Pandas vs SQL 操作对比
+
+> 如果你懂 SQL，这个对照表帮你快速理解 Pandas
+
+| SQL | Pandas | 说明 |
+|-----|--------|------|
+| `SELECT *` | `df` | 查看全部 |
+| `SELECT col1, col2` | `df[['col1', 'col2']]` | 选择列 |
+| `WHERE condition` | `df[df['col'] > 10]` | 条件筛选 |
+| `ORDER BY col` | `df.sort_values('col')` | 排序 |
+| `GROUP BY col` | `df.groupby('col')` | 分组 |
+| `COUNT(*)` | `df.count()` 或 `len(df)` | 计数 |
+| `SUM(col)` | `df['col'].sum()` | 求和 |
+| `AVG(col)` | `df['col'].mean()` | 平均 |
+| `JOIN` | `pd.merge(df1, df2)` | 连接 |
+| `UNION` | `pd.concat([df1, df2])` | 合并 |
+| `DISTINCT` | `df.drop_duplicates()` | 去重 |
+| `LIMIT 10` | `df.head(10)` | 限制行数 |
+
+### SQL 查询 vs Pandas 代码
+
+```sql
+-- SQL: 查询各部门平均工资超过 50000 的记录
+SELECT department, AVG(salary) as avg_salary
+FROM employees
+WHERE age > 25
+GROUP BY department
+HAVING AVG(salary) > 50000
+ORDER BY avg_salary DESC;
+```
+
+```python
+# Pandas 等价写法
+(df[df['age'] > 25]
+    .groupby('department')['salary']
+    .mean()
+    .reset_index(name='avg_salary')
+    .query('avg_salary > 50000')
+    .sort_values('avg_salary', ascending=False))
+```
+
+---
+
+## 🗂️ 真实数据集案例（Kaggle）
+
+> 使用 Titanic 数据集演示实际数据分析流程
+
+### 获取数据
+
+```python
+import pandas as pd
+import numpy as np
+
+# 方法 1：从 URL 读取
+url = "https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv"
+df = pd.read_csv(url)
+
+# 方法 2：从 Kaggle 下载后读取
+# df = pd.read_csv('titanic.csv')
+
+print(f"数据形状: {df.shape}")
+print(f"列名: {df.columns.tolist()}")
+df.head()
+```
+
+### 数据探索
+
+```python
+# 基本信息
+print(df.info())
+print(df.describe())
+
+# 缺失值统计
+print("\n缺失值:")
+print(df.isnull().sum())
+
+# 分布查看
+print("\n生存情况分布:")
+print(df['Survived'].value_counts())
+
+print("\n性别分布:")
+print(df['Sex'].value_counts())
+
+print("\n船舱等级分布:")
+print(df['Pclass'].value_counts())
+```
+
+### 数据清洗
+
+```python
+# 处理缺失值
+df['Age'].fillna(df['Age'].median(), inplace=True)
+df['Embarked'].fillna(df['Embarked'].mode()[0], inplace=True)
+df.drop('Cabin', axis=1, inplace=True)  # 缺失太多，删除
+
+# 创建新特征
+df['FamilySize'] = df['SibSp'] + df['Parch'] + 1
+df['IsAlone'] = (df['FamilySize'] == 1).astype(int)
+
+# 年龄分组
+df['AgeGroup'] = pd.cut(df['Age'], bins=[0, 12, 18, 35, 60, 100],
+                        labels=['Child', 'Teen', 'Young', 'Middle', 'Senior'])
+
+print("清洗后缺失值:", df.isnull().sum().sum())
+```
+
+### 数据分析
+
+```python
+# 生存率分析
+print("各船舱等级生存率:")
+print(df.groupby('Pclass')['Survived'].mean())
+
+print("\n各性别生存率:")
+print(df.groupby('Sex')['Survived'].mean())
+
+print("\n船舱等级 × 性别生存率:")
+print(df.pivot_table(values='Survived', index='Pclass', columns='Sex', aggfunc='mean'))
+```
+
+---
+
+## 💡 大数据处理技巧
+
+### 减少内存使用
+
+```python
+# 查看内存使用
+print(f"原始内存: {df.memory_usage(deep=True).sum() / 1e6:.2f} MB")
+
+# 优化数据类型
+def reduce_mem_usage(df):
+    for col in df.columns:
+        col_type = df[col].dtype
+
+        if col_type != object:
+            c_min, c_max = df[col].min(), df[col].max()
+
+            if str(col_type)[:3] == 'int':
+                if c_min > np.iinfo(np.int8).min and c_max < np.iinfo(np.int8).max:
+                    df[col] = df[col].astype(np.int8)
+                elif c_min > np.iinfo(np.int16).min and c_max < np.iinfo(np.int16).max:
+                    df[col] = df[col].astype(np.int16)
+                elif c_min > np.iinfo(np.int32).min and c_max < np.iinfo(np.int32).max:
+                    df[col] = df[col].astype(np.int32)
+
+            elif str(col_type)[:5] == 'float':
+                if c_min > np.finfo(np.float16).min and c_max < np.finfo(np.float16).max:
+                    df[col] = df[col].astype(np.float16)
+                elif c_min > np.finfo(np.float32).min and c_max < np.finfo(np.float32).max:
+                    df[col] = df[col].astype(np.float32)
+
+        else:
+            # 分类类型
+            num_unique = df[col].nunique()
+            if num_unique / len(df) < 0.5:  # 唯一值比例 < 50%
+                df[col] = df[col].astype('category')
+
+    return df
+
+df_optimized = reduce_mem_usage(df.copy())
+print(f"优化后内存: {df_optimized.memory_usage(deep=True).sum() / 1e6:.2f} MB")
+```
+
+### 分块读取大文件
+
+```python
+# 大文件分块处理
+chunk_size = 10000
+result = []
+
+for chunk in pd.read_csv('large_file.csv', chunksize=chunk_size):
+    # 处理每个块
+    processed = chunk[chunk['value'] > 100]
+    result.append(processed)
+
+df_final = pd.concat(result, ignore_index=True)
+```
+
+---
+
+## 📝 常见面试题
+
+**Q1: iloc 和 loc 的区别？**
+- `iloc`: 按位置索引（integer location）
+- `loc`: 按标签索引（label location）
+
+**Q2: 如何处理缺失值？**
+- `dropna()`: 删除
+- `fillna()`: 填充（常数、均值、中位数、前向填充）
+- `interpolate()`: 插值
+
+**Q3: merge 和 concat 的区别？**
+- `merge`: 类似 SQL JOIN，基于键连接
+- `concat`: 简单堆叠（垂直或水平）
+
+**Q4: 如何提高 Pandas 性能？**
+- 使用向量化操作，避免 `apply` 和循环
+- 优化数据类型（int64 → int32）
+- 使用分类类型（category）
+- 大文件分块读取
+
+---
+
 ## 目录
 
 1. [Pandas 简介](#1-pandas-简介)

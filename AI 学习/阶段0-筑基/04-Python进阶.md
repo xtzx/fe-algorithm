@@ -4,6 +4,103 @@
 
 ---
 
+## 🔄 JS vs Python 进阶特性对比
+
+> 前端开发者注意：这些概念在 JS 中可能有不同的名称或实现方式
+
+### 装饰器对比
+
+```javascript
+// JS 装饰器（Stage 3 提案，需要 Babel）
+function log(target, name, descriptor) {
+  const original = descriptor.value;
+  descriptor.value = function(...args) {
+    console.log(`Calling ${name}`);
+    return original.apply(this, args);
+  };
+  return descriptor;
+}
+
+class Example {
+  @log
+  method() { return 'result'; }
+}
+```
+
+```python
+# Python 装饰器（原生支持，更常用）
+def log(func):
+    def wrapper(*args, **kwargs):
+        print(f"Calling {func.__name__}")
+        return func(*args, **kwargs)
+    return wrapper
+
+@log
+def method():
+    return 'result'
+```
+
+### 生成器对比
+
+```javascript
+// JS Generator
+function* countUp(n) {
+  for (let i = 1; i <= n; i++) {
+    yield i;
+  }
+}
+
+const gen = countUp(3);
+console.log(gen.next().value); // 1
+console.log(gen.next().value); // 2
+```
+
+```python
+# Python Generator
+def count_up(n):
+    for i in range(1, n + 1):
+        yield i
+
+gen = count_up(3)
+print(next(gen))  # 1
+print(next(gen))  # 2
+```
+
+### async/await 对比
+
+```javascript
+// JS async/await
+async function fetchData() {
+  const response = await fetch(url);
+  return await response.json();
+}
+
+// 并发
+const results = await Promise.all([fetch(url1), fetch(url2)]);
+```
+
+```python
+# Python async/await
+async def fetch_data():
+    response = await aiohttp.get(url)
+    return await response.json()
+
+# 并发
+results = await asyncio.gather(fetch(url1), fetch(url2))
+```
+
+### ⚠️ 前端开发者容易踩的坑
+
+| 特性 | JS | Python |
+|------|-----|--------|
+| **装饰器语法** | `@decorator` 在类方法上 | `@decorator` 在任何函数上 |
+| **生成器调用** | `gen.next()` | `next(gen)` |
+| **async 入口** | 可直接在顶层 await | 需要 `asyncio.run()` |
+| **this/self** | 隐式绑定 | 必须显式写 `self` |
+| **私有属性** | `#private` | `_private`（约定）或 `__name`（名称改写） |
+
+---
+
 ## 目录
 
 1. [列表/字典/集合推导式](#1-推导式)
