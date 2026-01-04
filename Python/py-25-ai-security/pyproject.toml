@@ -1,0 +1,59 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ai-safety"
+version = "1.0.0"
+description = "AI 服务安全与评测工具包"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Python Learner" }]
+keywords = ["ai", "safety", "security", "evaluation", "llm"]
+
+dependencies = [
+    # 验证
+    "pydantic>=2.5.0",
+    
+    # HTTP 客户端
+    "httpx>=0.25.0",
+    
+    # 日志
+    "structlog>=23.2.0",
+    
+    # 正则
+    "regex>=2023.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.0",
+    "ruff>=0.1.0",
+    "pyright>=1.1.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ai_safety"]
+
+[tool.ruff]
+src = ["src"]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+
+[tool.pyright]
+include = ["src"]
+pythonVersion = "3.11"
+typeCheckingMode = "basic"
+
+
