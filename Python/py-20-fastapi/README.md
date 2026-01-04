@@ -44,7 +44,13 @@ py-20-fastapi/
 │   ├── 06-auth.md               # 认证与授权
 │   ├── 07-testing.md            # 测试
 │   ├── 08-exercises.md          # 练习题
-│   └── 09-interview.md          # 面试题
+│   ├── 09-interview.md          # 面试题
+│   ├── 10-websocket-basics.md   # WebSocket 基础
+│   ├── 11-fastapi-websocket.md  # FastAPI WebSocket
+│   ├── 12-connection-manager.md # 连接管理
+│   ├── 13-heartbeat-reconnection.md # 心跳与重连
+│   ├── 14-scaling.md            # 扩展与部署
+│   └── 15-websocket-exercises.md # WebSocket 练习
 ├── src/api/
 │   ├── __init__.py
 │   ├── main.py                  # 应用入口
@@ -157,6 +163,7 @@ async def read_users_me(token: str = Depends(oauth2_scheme)):
 
 ## 📚 学习路径
 
+### 基础
 1. **FastAPI 基础** - 路由、参数、响应
 2. **pydantic 集成** - 验证、序列化
 3. **依赖注入** - Depends、数据库
@@ -165,8 +172,17 @@ async def read_users_me(token: str = Depends(oauth2_scheme)):
 6. **认证授权** - JWT、OAuth2
 7. **测试** - TestClient、mock
 
+### WebSocket 专题
+10. **WebSocket 基础** - 协议、vs HTTP/SSE
+11. **FastAPI WebSocket** - 端点、消息收发、认证
+12. **连接管理** - 广播、私聊、房间
+13. **心跳与重连** - Ping/Pong、断线处理
+14. **扩展与部署** - Redis Pub/Sub、Nginx、多实例
+15. **练习题** - 聊天室、协作编辑
+
 ## ✅ 功能清单
 
+### HTTP API
 - [x] 路由与请求处理
 - [x] 请求参数（path、query、body）
 - [x] 响应模型
@@ -183,4 +199,17 @@ async def read_users_me(token: str = Depends(oauth2_scheme)):
 - [x] JWT 认证
 - [x] 权限控制
 - [x] TestClient 测试
+
+### WebSocket
+- [x] WebSocket 端点
+- [x] 消息收发（text/json/bytes）
+- [x] 路径/查询参数
+- [x] WebSocket 认证
+- [x] 连接管理器
+- [x] 广播与私聊
+- [x] 房间/频道
+- [x] 心跳检测
+- [x] 重连策略
+- [x] Redis Pub/Sub 扩展
+- [x] 消息持久化
 

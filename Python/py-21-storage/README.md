@@ -44,9 +44,12 @@ py-21-storage/
 │   ├── 03-alembic.md            # 数据库迁移
 │   ├── 04-repository.md         # Repository 模式
 │   ├── 05-redis.md              # Redis 缓存
-│   ├── 06-queue.md              # 任务队列
+│   ├── 06-queue.md              # 任务队列概念
 │   ├── 07-exercises.md          # 练习题
-│   └── 08-interview.md          # 面试题
+│   ├── 08-interview.md          # 面试题
+│   ├── 09-async-sqlalchemy.md   # 异步 SQLAlchemy
+│   ├── 10-db-advanced.md        # 数据库高级话题
+│   └── 11-celery.md             # Celery 任务队列
 ├── src/storage_lab/
 │   ├── __init__.py
 │   ├── cli.py                   # CLI 入口
@@ -95,21 +98,21 @@ Base = declarative_base()
 
 class User(Base):
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
     email = Column(String(200), unique=True)
-    
+
     # 一对多关系
     items = relationship("Item", back_populates="owner")
 
 class Item(Base):
     __tablename__ = "items"
-    
+
     id = Column(Integer, primary_key=True)
     name = Column(String(100))
     owner_id = Column(Integer, ForeignKey("users.id"))
-    
+
     owner = relationship("User", back_populates="items")
 ```
 
@@ -119,13 +122,13 @@ class Item(Base):
 class UserRepository:
     def __init__(self, session: Session):
         self.session = session
-    
+
     def get_by_id(self, user_id: int) -> User | None:
         return self.session.get(User, user_id)
-    
+
     def get_by_email(self, email: str) -> User | None:
         return self.session.query(User).filter(User.email == email).first()
-    
+
     def create(self, name: str, email: str) -> User:
         user = User(name=name, email=email)
         self.session.add(user)
@@ -141,13 +144,13 @@ import redis
 class CacheClient:
     def __init__(self, url: str = "redis://localhost:6379"):
         self.client = redis.from_url(url)
-    
+
     def get(self, key: str) -> str | None:
         return self.client.get(key)
-    
+
     def set(self, key: str, value: str, ttl: int = 300):
         self.client.setex(key, ttl, value)
-    
+
     def delete(self, key: str):
         self.client.delete(key)
 ```
@@ -173,19 +176,25 @@ def distributed_lock(client, lock_name: str, timeout: int = 10):
 
 ## 📚 学习路径
 
+### 基础
 1. **SQLAlchemy** - 模型、关系、查询、事务
 2. **Alembic** - 迁移脚本、升级降级
 3. **Repository** - CRUD 抽象、依赖注入
 4. **Redis** - 缓存策略、分布式锁
 5. **任务队列** - 概念、简单实现
 
+### 高级专题
+9. **异步 SQLAlchemy** - AsyncSession、asyncpg、与 FastAPI 集成
+10. **数据库高级** - N+1 问题、事务隔离、连接池、软删除、锁
+11. **Celery** - 任务定义、定时任务、重试、监控
+
 ## ✅ 功能清单
 
+### 基础
 - [x] SQLAlchemy 模型定义
 - [x] 一对多、多对多关系
 - [x] 查询 API
 - [x] 事务处理
-- [x] 异步支持
 - [x] Alembic 迁移
 - [x] Repository 模式
 - [x] Redis 基础操作
@@ -193,5 +202,17 @@ def distributed_lock(client, lock_name: str, timeout: int = 10):
 - [x] 分布式锁
 - [x] 限流
 - [x] 任务队列概念
+
+### 高级
+- [x] 异步 SQLAlchemy
+- [x] N+1 问题解决
+- [x] 事务隔离级别
+- [x] 连接池调优
+- [x] 软删除模式
+- [x] 乐观锁/悲观锁
+- [x] Celery 任务定义
+- [x] 定时任务（Beat）
+- [x] 任务重试与错误处理
+- [x] Flower 监控
 
 

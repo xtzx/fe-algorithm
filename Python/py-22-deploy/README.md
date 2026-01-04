@@ -20,7 +20,9 @@ py-22-deploy/
 │   ├── 04-production.md         # 生产实践
 │   ├── 05-distribution.md       # 脚本分发
 │   ├── 06-exercises.md          # 练习题
-│   └── 07-interview.md          # 面试题
+│   ├── 07-interview.md          # 面试题
+│   ├── 08-cicd.md               # CI/CD 实战
+│   └── 09-sentry.md             # Sentry 错误监控
 ├── examples/
 │   ├── docker/
 │   │   ├── Dockerfile           # 多阶段构建示例
@@ -134,7 +136,7 @@ async def readiness():
     # 检查数据库、Redis 等依赖
     db_ok = await check_database()
     cache_ok = await check_cache()
-    
+
     if db_ok and cache_ok:
         return {"status": "ready"}
     raise HTTPException(status_code=503, detail="Not ready")
@@ -142,14 +144,20 @@ async def readiness():
 
 ## 📚 学习路径
 
+### 基础
 1. **ASGI 服务器** - uvicorn、gunicorn
 2. **Docker** - Dockerfile、Compose
 3. **可观测性** - 日志、指标、追踪
 4. **生产实践** - 优雅停机、配置管理
 5. **脚本分发** - zipapp、pex
 
+### 进阶专题
+8. **CI/CD 实战** - GitHub Actions、GitLab CI、多环境部署
+9. **Sentry 监控** - 错误追踪、性能监控、告警配置
+
 ## ✅ 功能清单
 
+### 基础部署
 - [x] uvicorn 配置
 - [x] gunicorn + uvicorn workers
 - [x] 进程管理
@@ -164,7 +172,22 @@ async def readiness():
 - [x] 优雅停机
 - [x] 配置管理
 - [x] 密钥管理
-- [x] CI/CD 概念
 - [x] zipapp
+
+### CI/CD
+- [x] GitHub Actions 完整配置
+- [x] GitLab CI 配置
+- [x] 测试/lint/构建 workflow
+- [x] 多环境部署（staging/production）
+- [x] 自动化版本管理
+- [x] 蓝绿/滚动部署
+
+### 监控
+- [x] Sentry SDK 集成
+- [x] FastAPI 集成
+- [x] 错误上下文
+- [x] 性能追踪
+- [x] 数据过滤
+- [x] 告警配置
 
 
