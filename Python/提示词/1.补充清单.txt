@@ -1,0 +1,425 @@
+# Python 完整学习课程 - 补充清单
+
+> 基于对 26 个模块的审查，以下为需要补充和拓展的内容
+
+===============================================================================
+## 一、需要新建的模块/专题
+===============================================================================
+
+### 【新建】异常处理专题
+建议位置：P01-basics 扩展文档 或 独立新建 py-01.5-exceptions
+优先级：🔴 高
+
+内容大纲：
+├── 01-exception-hierarchy.md          # 异常层次结构
+│   ├── BaseException vs Exception
+│   ├── 内置异常分类（ValueError, TypeError, KeyError, IndexError...）
+│   ├── 何时捕获何种异常
+│   └── JS 对照：Error 类型 vs Python 异常
+│
+├── 02-try-except-syntax.md            # try-except 完整语法
+│   ├── try-except-else-finally 四件套
+│   ├── 多异常捕获 except (TypeError, ValueError)
+│   ├── 异常别名 except Exception as e
+│   ├── 裸 except 的危害
+│   └── JS 对照：try-catch-finally
+│
+├── 03-exception-chaining.md           # 异常链
+│   ├── raise ... from e（显式链）
+│   ├── __cause__ vs __context__
+│   ├── raise ... from None（抑制链）
+│   └── 调试时如何阅读异常链
+│
+├── 04-custom-exceptions.md            # 自定义异常
+│   ├── 继承 Exception 设计异常类
+│   ├── 添加额外属性
+│   ├── 异常分层设计（AppError → ValidationError → ...）
+│   └── 最佳实践：何时抛出 vs 返回错误
+│
+├── 05-context-managers.md             # 上下文管理器
+│   ├── with 语句原理
+│   ├── __enter__ / __exit__ 协议
+│   ├── contextlib.contextmanager 装饰器
+│   ├── contextlib.suppress / closing / ExitStack
+│   ├── 异步上下文管理器 async with
+│   └── JS 对照：using 提案 / Symbol.dispose
+│
+└── 06-exercises.md                    # 练习与面试题
+
+
+-------------------------------------------------------------------------------
+
+### 【新建】多线程与多进程专题
+建议位置：P06-runtime 扩展 或 独立新建 py-06.5-concurrency
+优先级：🔴 高
+
+内容大纲：
+├── 01-threading-basics.md             # threading 基础
+│   ├── Thread 创建与启动
+│   ├── 守护线程 daemon
+│   ├── join 等待
+│   ├── 线程局部变量 threading.local()
+│   └── JS 对照：Worker threads
+│
+├── 02-thread-synchronization.md       # 线程同步
+│   ├── Lock / RLock
+│   ├── Condition
+│   ├── Event
+│   ├── Semaphore / BoundedSemaphore
+│   ├── Barrier
+│   └── 死锁预防
+│
+├── 03-thread-queue.md                 # 线程安全队列
+│   ├── queue.Queue / LifoQueue / PriorityQueue
+│   ├── 生产者-消费者模式
+│   └── 任务完成信号 task_done / join
+│
+├── 04-multiprocessing.md              # multiprocessing
+│   ├── Process 创建
+│   ├── 进程池 Pool
+│   ├── 进程间通信 Queue / Pipe
+│   ├── 共享内存 Value / Array / shared_memory
+│   └── 与 GIL 的关系
+│
+├── 05-concurrent-futures.md           # concurrent.futures
+│   ├── ThreadPoolExecutor
+│   ├── ProcessPoolExecutor
+│   ├── Future 对象
+│   ├── as_completed / wait
+│   └── map 方法
+│
+├── 06-gil-deep-dive.md                # GIL 深度解析
+│   ├── GIL 工作原理
+│   ├── CPU 密集 vs IO 密集选型指南
+│   ├── GIL 释放时机
+│   ├── 绕过 GIL 的方法
+│   └── Python 3.13+ free-threading 展望
+│
+└── 07-exercises.md                    # 练习与面试题
+
+
+-------------------------------------------------------------------------------
+
+### 【新建】WebSocket 专题
+建议位置：P20-fastapi 扩展 或 独立新建 py-20.5-websocket
+优先级：🔴 高
+
+内容大纲：
+├── 01-websocket-basics.md             # WebSocket 基础
+│   ├── WebSocket 协议简介
+│   ├── vs HTTP 长轮询 / SSE
+│   └── 适用场景
+│
+├── 02-fastapi-websocket.md            # FastAPI WebSocket
+│   ├── 基础 WebSocket 端点
+│   ├── 接收与发送消息
+│   ├── 路径参数与查询参数
+│   └── WebSocket 认证
+│
+├── 03-connection-management.md        # 连接管理
+│   ├── ConnectionManager 类设计
+│   ├── 广播与私聊
+│   ├── 房间/频道管理
+│   └── 连接数限制
+│
+├── 04-heartbeat-reconnection.md       # 心跳与重连
+│   ├── Ping/Pong 机制
+│   ├── 超时断开
+│   ├── 客户端重连策略
+│   └── 优雅关闭
+│
+├── 05-scaling.md                      # 扩展与部署
+│   ├── Redis Pub/Sub 跨进程通信
+│   ├── 多实例部署
+│   └── 负载均衡注意事项
+│
+└── 06-exercises.md                    # 练习：实时聊天室
+
+
+===============================================================================
+## 二、现有模块需要拓展的内容
+===============================================================================
+
+### P05-stdlib：类型系统深度拓展
+优先级：🔴 高
+文件：docs/09-typing.md 需大幅扩展
+
+需补充内容：
+├── 泛型 Generic
+│   ├── TypeVar 基础与约束 (bound, constraints)
+│   ├── Generic 类定义
+│   ├── 协变/逆变 (covariant/contravariant)
+│   └── 示例：自定义容器类型
+│
+├── ParamSpec 与 Callable
+│   ├── Callable[[int, str], bool] 语法
+│   ├── ParamSpec 保持签名（装饰器场景）
+│   ├── Concatenate 添加参数
+│   └── 示例：类型安全的装饰器
+│
+├── 高级类型
+│   ├── Literal["a", "b"] 字面量类型
+│   ├── TypedDict 结构化字典
+│   ├── Final 常量标注
+│   ├── ClassVar 类变量
+│   ├── Self（Python 3.11+）
+│   └── TypeAlias 类型别名
+│
+├── 类型守卫与窄化
+│   ├── TypeGuard 自定义守卫
+│   ├── assert isinstance 窄化
+│   └── 条件类型推导
+│
+├── 函数重载 @overload
+│   ├── 语法与用法
+│   ├── 与实现函数的关系
+│   └── 何时使用
+│
+├── Protocol 进阶（扩展 P03）
+│   ├── @runtime_checkable
+│   ├── 与 ABC 的对比
+│   └── 结构化子类型 vs 名义子类型
+│
+└── JS/TS 开发者对照
+    ├── TypeVar vs TS 泛型 <T>
+    ├── Protocol vs TS interface
+    ├── TypedDict vs TS type { ... }
+    └── 运行时类型检查差异
+
+
+-------------------------------------------------------------------------------
+
+### P21-storage：存储与缓存深度拓展
+优先级：🟡 中
+
+需补充内容：
+
+1. SQLAlchemy 异步支持（新建 docs/XX-async-sqlalchemy.md）
+   ├── AsyncSession 配置
+   ├── async_sessionmaker
+   ├── 异步查询语法
+   ├── 与 FastAPI 集成
+   └── 事务管理
+
+2. 数据库高级话题（新建 docs/XX-db-advanced.md）
+   ├── N+1 问题及解决（joinedload, selectinload）
+   ├── 复杂查询优化
+   ├── 事务隔离级别
+   ├── 连接池调优
+   ├── 软删除模式
+   └── 乐观锁/悲观锁
+
+3. Celery 任务队列（新建 docs/XX-celery.md 或独立模块）
+   ├── Celery 基础配置
+   ├── 任务定义与调用
+   ├── 定时任务 (celery beat)
+   ├── 任务链与组
+   ├── 重试与错误处理
+   ├── 结果后端
+   └── 监控 (flower)
+
+
+-------------------------------------------------------------------------------
+
+### P22-deploy：部署与可观测性拓展
+优先级：🟡 中
+
+需补充内容：
+
+1. CI/CD 实战（新建 docs/XX-cicd.md）
+   ├── GitHub Actions 完整配置
+   │   ├── 测试 workflow
+   │   ├── 代码检查 workflow
+   │   ├── 构建发布 workflow
+   │   └── 多环境部署
+   ├── GitLab CI 配置示例
+   └── 自动化版本管理
+
+2. Sentry 错误监控（新建 docs/XX-sentry.md）
+   ├── Sentry SDK 集成
+   ├── FastAPI 集成
+   ├── 错误上下文
+   ├── 性能监控
+   └── 告警配置
+
+3. Prometheus + Grafana（扩展 observability）
+   ├── prometheus_client 使用
+   ├── 自定义指标
+   ├── FastAPI 集成
+   └── Grafana 面板配置
+
+
+-------------------------------------------------------------------------------
+
+### P10-debugging：调试与性能优化拓展
+优先级：🟡 中
+
+需补充内容：
+
+1. 性能优化进阶（新建 docs/XX-optimization-advanced.md）
+   ├── 算法与数据结构优化
+   ├── 惰性求值与生成器
+   ├── 预计算与缓存
+   ├── NumPy 向量化（简介）
+   ├── Cython 入门（简介）
+   └── C 扩展调用 ctypes/cffi（简介）
+
+2. 内存优化（扩展 docs/04-memory.md）
+   ├── __slots__ 使用
+   ├── 弱引用 weakref
+   ├── 大对象处理策略
+   └── memory_profiler 详细使用
+
+
+-------------------------------------------------------------------------------
+
+### P03-oop：面向对象拓展
+优先级：🟡 中
+
+需补充内容：
+
+1. 元编程（新建 docs/XX-metaprogramming.md）
+   ├── 描述符协议 __get__/__set__/__delete__
+   ├── 元类 metaclass
+   │   ├── __new__ vs __init__
+   │   ├── __call__ 拦截实例化
+   │   └── 常见用途（ORM、注册模式）
+   ├── __getattr__ / __setattr__ / __delattr__
+   ├── __getattribute__（所有属性访问）
+   ├── 动态创建类 type()
+   └── 慎用元编程的建议
+
+
+-------------------------------------------------------------------------------
+
+### P20-fastapi：FastAPI 拓展
+优先级：🟢 低
+
+需补充内容：
+
+1. 后台任务（扩展或新建）
+   ├── BackgroundTasks 使用
+   ├── 适用场景
+   └── 与 Celery 的对比
+
+2. 文件上传下载（可能已有，检查补充）
+   ├── UploadFile 处理
+   ├── 大文件流式处理
+   ├── 文件下载响应
+   └── 静态文件服务
+
+
+-------------------------------------------------------------------------------
+
+### P12-data-processing：数据处理拓展
+优先级：🟢 低（可选）
+
+可选补充内容：
+
+1. Pandas 入门（新建 docs/XX-pandas-intro.md）
+   ├── DataFrame 基础
+   ├── 数据读取 (csv, json, excel)
+   ├── 数据清洗
+   ├── 基础分析
+   └── 与 pydantic 配合
+
+注：此项为可选，因 Pandas 较为专业化，可视受众需求决定
+
+
+===============================================================================
+## 三、现有模块深度检查清单
+===============================================================================
+
+以下模块内容基本完整，无需大改，仅列出可能的小补充：
+
+| 模块 | 状态 | 可选补充 |
+|------|------|---------|
+| P01-basics | ✅ 完整 | 可加入异常处理章节链接 |
+| P02-containers | ✅ 完整 | - |
+| P03-oop | ⚠️ 可扩展 | 元编程专题 |
+| P04-functional | ✅ 完整 | - |
+| P05-stdlib | ⚠️ 需扩展 | 类型系统深度 |
+| P06-runtime | ⚠️ 需扩展 | 多线程/多进程 |
+| P07-packaging | ✅ 完整 | - |
+| P08-quality | ✅ 完整 | - |
+| P09-testing | ✅ 完整 | 可加 hypothesis 属性测试 |
+| P10-debugging | ⚠️ 可扩展 | 性能优化进阶 |
+| P11-project-cli | ✅ 完整 | - |
+| P12-data-processing | ✅ 完整 | 可选 Pandas |
+| P13-automation | ✅ 完整 | - |
+| P14-scaffold | ✅ 完整 | - |
+| P15-project-automation | ✅ 完整 | - |
+| P16-http-client | ✅ 完整 | - |
+| P17-asyncio | ✅ 完整 | - |
+| P18-scraping | ✅ 完整 | 可加 Playwright 动态页面 |
+| P19-project-scraping | ✅ 完整 | - |
+| P20-fastapi | ⚠️ 可扩展 | WebSocket、后台任务 |
+| P21-storage | ⚠️ 需扩展 | 异步ORM、Celery、高级查询 |
+| P22-deploy | ⚠️ 需扩展 | CI/CD 实战、Sentry |
+| P23-project-api | ✅ 完整 | - |
+| P24-llm-client | ✅ 完整 | - |
+| P25-ai-security | ✅ 完整 | - |
+| P26-project-final | ✅ 完整 | - |
+
+
+===============================================================================
+## 四、实施优先级建议
+===============================================================================
+
+### 第一阶段（核心补充）
+1. 异常处理专题 → 新建文档
+2. 类型系统深度 → 扩展 P05
+3. 多线程/多进程 → 新建文档或扩展 P06
+
+### 第二阶段（实用增强）
+4. WebSocket → 扩展 P20 或新建
+5. SQLAlchemy 异步 + 数据库高级 → 扩展 P21
+6. CI/CD 实战 → 扩展 P22
+
+### 第三阶段（锦上添花）
+7. 元编程 → 扩展 P03
+8. Celery 任务队列 → 扩展 P21 或新建
+9. Sentry 监控 → 扩展 P22
+10. 性能优化进阶 → 扩展 P10
+
+### 第四阶段（可选）
+11. Pandas 入门
+12. GraphQL
+13. Playwright 动态爬虫
+
+
+===============================================================================
+## 五、文件组织建议
+===============================================================================
+
+对于新建专题，有两种组织方式：
+
+方式一：融入现有模块
+- 在对应模块的 docs/ 目录下新建文档
+- 更新 README.md 的学习路径
+- 优点：结构简洁，便于查找
+
+方式二：独立新建模块
+- 创建 py-XX.5-xxx/ 独立目录
+- 完整的项目结构（docs/examples/exercises）
+- 优点：内容独立，便于单独学习
+
+建议：
+- 异常处理 → 融入 P01 或 独立（因为太基础重要）
+- 多线程/多进程 → 融入 P06（因为与运行时紧密相关）
+- WebSocket → 融入 P20（因为与 FastAPI 紧密相关）
+- 类型系统 → 融入 P05（扩展现有 typing 文档）
+- 其他扩展 → 融入对应模块
+
+
+===============================================================================
+## 备注
+===============================================================================
+
+1. 以上清单基于对 26 个模块 README 的审查
+2. 部分模块的 docs/ 详细内容未全部阅读，实际可能已有覆盖
+3. 优先级可根据实际受众反馈调整
+4. 预计补充工作量：第一阶段约 3-5 天，全部完成约 2 周
+
+最后更新：2026-01-04
+

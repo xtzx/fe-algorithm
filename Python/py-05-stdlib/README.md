@@ -29,7 +29,11 @@ py-05-stdlib/
 │   ├── 06-os-shutil.md            # 系统操作
 │   ├── 07-logging.md              # 日志
 │   ├── 08-argparse.md             # 命令行参数
-│   ├── 09-typing.md               # 类型提示
+│   ├── 09-typing.md               # 类型提示基础
+│   ├── 09a-typing-generics.md     # 泛型 Generic
+│   ├── 09b-typing-callable.md     # Callable 与 ParamSpec
+│   ├── 09c-typing-advanced.md     # 高级类型
+│   ├── 09d-typing-guards-protocol.md # TypeGuard 与 Protocol
 │   ├── 10-other-modules.md        # 其他模块
 │   ├── 11-exercises.md            # 练习题
 │   └── 12-interview-questions.md  # 面试题
@@ -107,6 +111,7 @@ matches = re.findall(pattern, "123 abc 456")
 
 ## 学习路径
 
+### 标准库
 1. [pathlib](docs/01-pathlib.md)
 2. [collections](docs/02-collections.md)
 3. [datetime](docs/03-datetime.md)
@@ -115,8 +120,14 @@ matches = re.findall(pattern, "123 abc 456")
 6. [os 和 shutil](docs/06-os-shutil.md)
 7. [logging](docs/07-logging.md)
 8. [argparse](docs/08-argparse.md)
-9. [typing](docs/09-typing.md)
+9. [typing 基础](docs/09-typing.md)
 10. [其他模块](docs/10-other-modules.md)
+
+### 类型系统深度
+9a. [泛型 Generic](docs/09a-typing-generics.md) - TypeVar、Generic 类、协变/逆变
+9b. [Callable 与 ParamSpec](docs/09b-typing-callable.md) - 函数类型、装饰器签名
+9c. [高级类型](docs/09c-typing-advanced.md) - Literal、TypedDict、Final、overload
+9d. [TypeGuard 与 Protocol](docs/09d-typing-guards-protocol.md) - 类型守卫、结构化子类型
 
 ## 小项目：文件整理器
 

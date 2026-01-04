@@ -63,7 +63,13 @@ py-01-basics/
 │   ├── 07-file-io.md
 │   ├── 08-js-comparison-table.md
 │   ├── 09-exercises.md
-│   └── 10-interview-questions.md
+│   ├── 10-interview-questions.md
+│   ├── 11-exception-hierarchy.md     # 异常层次结构
+│   ├── 12-try-except-syntax.md       # try-except 语法
+│   ├── 13-exception-chaining.md      # 异常链
+│   ├── 14-custom-exceptions.md       # 自定义异常
+│   ├── 15-context-managers.md        # 上下文管理器
+│   └── 16-exception-exercises.md     # 异常处理练习
 ├── examples/               # 示例代码
 ├── exercises/              # 练习题
 │   ├── basic/
@@ -157,11 +163,15 @@ squares = [x**2 for x in range(10)]
 | **is vs ==** | `[] is []` 为 `False` | 比较值用 `==` |
 | **整数除法** | `3 / 2 = 1.5` | 整除用 `//` |
 | **字符串不可变** | `s[0] = 'a'` 报错 | `s = 'a' + s[1:]` |
+| **裸 except** | 捕获 `KeyboardInterrupt` | 用 `except Exception` |
+| **异常顺序** | 父类在前拦截子类 | 子类异常放前面 |
+| **忘记 from e** | 丢失原始异常信息 | `raise New from e` |
 
 ---
 
 ## 📖 学习路径
 
+### 基础语法
 1. [环境配置](docs/01-environment-setup.md)
 2. [变量与类型](docs/02-variables-and-types.md)
 3. [运算符](docs/03-operators.md)
@@ -172,6 +182,14 @@ squares = [x**2 for x in range(10)]
 8. [JS 对照表](docs/08-js-comparison-table.md)
 9. [练习题](docs/09-exercises.md)
 10. [面试题](docs/10-interview-questions.md)
+
+### 异常处理
+11. [异常层次结构](docs/11-exception-hierarchy.md)
+12. [try-except 语法](docs/12-try-except-syntax.md)
+13. [异常链](docs/13-exception-chaining.md)
+14. [自定义异常](docs/14-custom-exceptions.md)
+15. [上下文管理器](docs/15-context-managers.md)
+16. [异常处理练习](docs/16-exception-exercises.md)
 
 ---
 

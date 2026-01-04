@@ -23,12 +23,19 @@ py-06-runtime/
 ├── docs/
 │   ├── 01-cpython-execution.md    # CPython 执行链路
 │   ├── 02-bytecode-pyc.md         # 字节码与 .pyc
-│   ├── 03-gil-concurrency.md      # GIL 与并发
+│   ├── 03-gil-concurrency.md      # GIL 与并发概述
 │   ├── 04-import-system.md        # import 系统
 │   ├── 05-memory-gc.md            # 内存与 GC
 │   ├── 06-traceback.md            # 错误与 traceback
 │   ├── 07-performance-tools.md    # 性能工具
-│   └── 08-interview-questions.md  # 面试题
+│   ├── 08-interview-questions.md  # 面试题
+│   ├── 09-threading-basics.md     # 多线程基础
+│   ├── 10-thread-synchronization.md # 线程同步
+│   ├── 11-thread-queue.md         # 线程安全队列
+│   ├── 12-multiprocessing.md      # 多进程
+│   ├── 13-concurrent-futures.md   # 线程池/进程池
+│   ├── 14-gil-deep-dive.md        # GIL 深度解析
+│   └── 15-concurrency-exercises.md # 并发练习题
 ├── examples/
 └── scripts/
 ```
@@ -88,12 +95,22 @@ print(sys.path)
 
 ## 学习路径
 
+### 运行时基础
 1. [CPython 执行链路](docs/01-cpython-execution.md)
 2. [字节码与 .pyc](docs/02-bytecode-pyc.md)
-3. [GIL 与并发](docs/03-gil-concurrency.md)
+3. [GIL 与并发概述](docs/03-gil-concurrency.md)
 4. [import 系统](docs/04-import-system.md)
 5. [内存与 GC](docs/05-memory-gc.md)
 6. [错误与 traceback](docs/06-traceback.md)
 7. [性能工具](docs/07-performance-tools.md)
 8. [面试题](docs/08-interview-questions.md)
+
+### 多线程与多进程专题
+9. [多线程基础](docs/09-threading-basics.md) - Thread 创建、守护线程、join
+10. [线程同步](docs/10-thread-synchronization.md) - Lock、RLock、Condition、Event、Semaphore
+11. [线程安全队列](docs/11-thread-queue.md) - Queue、生产者-消费者模式
+12. [多进程](docs/12-multiprocessing.md) - Process、Pool、进程间通信
+13. [concurrent.futures](docs/13-concurrent-futures.md) - ThreadPoolExecutor、ProcessPoolExecutor
+14. [GIL 深度解析](docs/14-gil-deep-dive.md) - GIL 原理、影响、绕过方法
+15. [并发练习题](docs/15-concurrency-exercises.md)
 
