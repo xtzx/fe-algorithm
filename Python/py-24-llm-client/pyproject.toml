@@ -1,0 +1,70 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "llm-kit"
+version = "1.0.0"
+description = "LLM 客户端与 RAG 工具包"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Python Learner" }]
+keywords = ["llm", "rag", "openai", "embedding"]
+
+dependencies = [
+    # HTTP 客户端
+    "httpx>=0.25.0",
+    
+    # 验证
+    "pydantic>=2.5.0",
+    
+    # 重试
+    "tenacity>=8.2.0",
+    
+    # 向量计算
+    "numpy>=1.24.0",
+    
+    # 文档处理
+    "tiktoken>=0.5.0",
+    
+    # 日志
+    "structlog>=23.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.0",
+    "ruff>=0.1.0",
+    "pyright>=1.1.0",
+]
+
+openai = [
+    "openai>=1.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/llm_kit"]
+
+[tool.ruff]
+src = ["src"]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+asyncio_mode = "auto"
+
+[tool.pyright]
+include = ["src"]
+pythonVersion = "3.11"
+typeCheckingMode = "basic"
+
+
