@@ -1,0 +1,84 @@
+# ============================================
+# Docker Compose - AI 知识库助手
+# ============================================
+
+version: "3.9"
+
+services:
+  # ==================== API 服务 ====================
+  app:
+    build: .
+    container_name: knowledge-assistant
+    restart: unless-stopped
+    environment:
+      # 应用配置
+      - APP_ENV=production
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
+      
+      # API 配置
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - API_PREFIX=/api/v1
+      
+      # JWT 认证
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-me-in-production}
+      - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+      
+      # LLM 配置
+      - LLM_PROVIDER=${LLM_PROVIDER:-stub}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      
+      # 嵌入模型配置
+      - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-stub}
+      
+      # 存储配置
+      - DATA_DIR=/app/data
+      - INDEX_DIR=/app/data/index
+      - UPLOAD_DIR=/app/data/uploads
+      
+    volumes:
+      - app_data:/app/data
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - app-network
+
+  # ==================== 开发环境（可选） ====================
+  app-dev:
+    build: .
+    container_name: knowledge-assistant-dev
+    profiles:
+      - dev
+    environment:
+      - APP_ENV=development
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - LOG_FORMAT=console
+      - LLM_PROVIDER=stub
+      - EMBEDDING_PROVIDER=stub
+    volumes:
+      - ./src:/app/src:ro
+      - ./data:/app/data
+    ports:
+      - "8001:8000"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  app_data:
+
+
