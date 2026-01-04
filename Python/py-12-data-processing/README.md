@@ -45,7 +45,9 @@ py-12-data-processing/
 │   ├── 06-cleaning.md       # 数据清洗
 │   ├── 07-transformation.md # 数据转换
 │   ├── 08-exercises.md      # 练习题
-│   └── 09-interview.md      # 面试题
+│   ├── 09-interview.md      # 面试题
+│   ├── 10-pandas-basics.md  # Pandas 基础 ⭐
+│   └── 11-pandas-analysis.md # Pandas 分析 ⭐
 ├── src/data_lab/
 │   ├── __init__.py
 │   ├── models.py            # pydantic 模型
@@ -117,10 +119,23 @@ dirty.csv → 解析 → 清洗 → 验证 → clean.jsonl
 
 ## 学习路径
 
+### 基础篇
+
 1. [JSON 处理](docs/01-json.md)
-2. [CSV 处理](docs/02-csv.md)
-3. [pydantic 核心](docs/03-pydantic.md)
-4. [验证与约束](docs/04-validation.md)
-5. [数据清洗](docs/05-cleaning.md)
-6. [数据转换](docs/06-transformation.md)
+2. [CSV 处理](docs/03-csv.md)
+3. [YAML/TOML 配置](docs/02-yaml-toml.md)
+4. [pydantic 核心](docs/04-pydantic.md)
+5. [验证与约束](docs/05-validation.md)
+6. [数据清洗](docs/06-cleaning.md)
+7. [数据转换](docs/07-transformation.md)
+
+### Pandas 专题
+
+8. [Pandas 基础](docs/10-pandas-basics.md) ⭐ - DataFrame、数据读取、数据选择
+9. [Pandas 分析](docs/11-pandas-analysis.md) ⭐ - 分组聚合、透视表、时序分析
+
+### 练习
+
+10. [练习题](docs/08-exercises.md)
+11. [面试题](docs/09-interview.md)
 
